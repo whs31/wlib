@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds and tests every Conan configuration of the GitLab test:linux matrix locally.
+# Builds and tests every Conan configuration of the GitLab test:cpp:x86_64 matrix locally.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

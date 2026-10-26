@@ -36,7 +36,7 @@ class WCommonRecipe(ConanFile):
 
   user = "whs31"
   channel = "dev"
-  python_requires = "conan_helpers/1.0@whs31/dev"
+  python_requires = "conan_helpers/1.1@whs31/dev"
   python_requires_extend = "conan_helpers.Base"
   cmake_package_prune = ("lib/cmake", "lib/pkgconfig", "res", "share")
 
