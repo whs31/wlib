@@ -12,7 +12,7 @@ class WCommonRecipe(ConanFile):
   author = "whs31 <whs31@github.io>"
   settings = "os", "arch", "compiler", "build_type"
   license = "MIT"
-  url = "http://gitlab.uav.radar-mms.com/developers/v2/support/wcommon"
+  url = "https://git.whs31.com/shared/support/wlib"
   exports = "CMakeLists.txt"
   exports_sources = "CMakeLists.txt", "cmake/*", "config/*", "src/*", "include/*", "tests/*"
   options = {
@@ -31,12 +31,12 @@ class WCommonRecipe(ConanFile):
     "with_qt": False,
     "with_nlohmann": False,
     "with_glaze": False,
-    "namespace": "whs31",
+    "namespace": "w",
   }
 
-  user = "radar"
+  user = "whs31"
   channel = "dev"
-  python_requires = "conan_helpers/1.0@radar/dev"
+  python_requires = "conan_helpers/1.0@whs31/dev"
   python_requires_extend = "conan_helpers.Base"
   cmake_package_prune = ("lib/cmake", "lib/pkgconfig", "res", "share")
 
