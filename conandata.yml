@@ -5,6 +5,7 @@ requirements:
 
 test_requirements:
   catch2: '[>=3.15]'
+  glm: '[^1.0.1]'
 
 build_requirements:
   cmake: '[>=4.4]'

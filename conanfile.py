@@ -18,7 +18,6 @@ class WLibRecipe(ConanFile):
     "test": [True, False],
     "with_qt": [True, False],
     "with_glaze": [True, False],
-    "precision": ["float", "double"],
   }
   default_options = {
     "shared": True,
@@ -26,7 +25,6 @@ class WLibRecipe(ConanFile):
     "test": False,
     "with_qt": False,
     "with_glaze": False,
-    "precision": "float",
   }
 
   user = "whs31"
@@ -58,13 +56,13 @@ class WLibRecipe(ConanFile):
       self.req("glaze", transitive_headers=True)
     if self.options.test:
       self.req("catch2", test=True)
+      self.req("glm", test=True)
 
   def configure_cmake_toolchain(self, toolchain):
     toolchain.shared = self.options.shared
     toolchain.cache_variables["BUILD_TESTING"] = bool(self.options.test)
     toolchain.cache_variables["WLIB_WITH_QT"] = bool(self.options.with_qt)
     toolchain.cache_variables["WLIB_WITH_GLAZE"] = bool(self.options.with_glaze)
-    toolchain.cache_variables["WLIB_PRECISION"] = str(self.options.precision)
 
   def package_info(self):
     self.cpp_info.set_property("cmake_file_name", "WLib")

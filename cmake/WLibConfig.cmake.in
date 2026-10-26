@@ -29,7 +29,4 @@ if(@WLIB_WITH_QT@)
   )
 endif()
 
-# The floating-point type of the quantities and the linear algebra types: float or double.
-set(WLib_PRECISION "@WLIB_PRECISION@")
-
 check_required_components(WLib)

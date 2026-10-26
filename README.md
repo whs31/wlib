@@ -28,6 +28,9 @@ are prefixed with `W_` (e.g. `W_LOG`, `W_COMMON_API`).
   with `with_qt=True` in Conan or `WLIB_WITH_QT=ON` in CMake (**LGPL/GPL/commercial**)
 - <img src="./docs/images/logos/catch2.png" alt="" height="16px" width="16px"/>[**catch2**](https://github.com/catchorg/Catch2) - c++ testing
   framework (**BSL-1.0**)
+- [**glm**](https://github.com/g-truc/glm) - test-only reference that the linear algebra, the
+  projections and the bounds are compared against with random inputs; never a dependency of the
+  library (**MIT**)
 
 #### CMake targets
 
@@ -56,26 +59,30 @@ default_options = {"wlib/*:with_glaze": True}
 
 or on the command line with `-o "wlib/*:with_glaze=True"`.
 
-#### Precision
+#### Numbers and linear algebra
 
-The physical quantities (`Distance`, `Angle`, `Mass`, `Velocity`, ...) and the linear algebra
-types (`Vector2`, `Vector3`, `Point2`, `Point3`, `Quaternion`, `Matrix3x3`, `EulerAngles`) store
-`w::Real`, which the Conan option `precision` selects:
+The physical quantities (`Distance`, `Angle`, `Mass`, `Velocity`, ...), the linear algebra types
+and colours store `float`; `w::Real` is `float`. The linear algebra is header-only on the hot path
+and covers what a game or a simulation needs:
 
-| `precision`       | `w::Real` | CMake                   | Macro in `<w/common/config.h>` |
-|-------------------|-----------|-------------------------|--------------------------------|
-| `float` (default) | `float`   | `WLIB_PRECISION=float`  | —                              |
-| `double`          | `double`  | `WLIB_PRECISION=double` | `W_COMMON_DOUBLE_PRECISION`    |
+- `Vector2`, `Vector3` (12 bytes, no SIMD padding), `Vector4`, `Matrix3x3`, `Matrix4x4`,
+  `Quaternion`, `EulerAngles` and `Transform` (position, rotation, scale);
+- `perspective()` and `orthographic()` with depth in `[0, 1]`, optionally reversed and, for a
+  perspective, with an infinite far plane; `look_at_rh()`, `look_at_lh()` and `snap_to_texel()`;
+- `AABB`, `Sphere`, `Plane`, `Ray`, `Frustum`, `Rect` and `Recti`;
+- `Rgba` (linear `float`) and `Rgba8` (sRGB bytes), with HSV and hex strings, e.g.
+  `"#e4a672"_rgba8`.
 
-```python
-default_options = {"wlib/*:precision": "double"}
-```
+Matrices are row-major and multiply column vectors, `M * v`; quaternions store `w, x, y, z`; the
+math takes the handedness as a parameter. `<w/common/conventions.h>` documents the conventions,
+including how shaders read the matrices, and checks them with `static_assert`.
 
-The choice is part of the ABI, and an installed package records it in `WLib_PRECISION` after
-`find_package(WLib)`.
+With glaze, vectors, quaternions, matrices and planes are arrays, e.g. `[x, y, z]`, a quaternion
+`[w, x, y, z]` and a matrix its rows; an `Rgba8` is a hex string, so a palette lives in TOML as
+`sand = "#e4a672"`.
 
 Positions on the Earth need more than a `float`, which resolves a longitude to about a metre and a
-half, so geodesy stays in `double` either way. `Latitude` and `Longitude` are dedicated coordinate
+half, so geodesy stays in `double`. `Latitude` and `Longitude` are dedicated coordinate
 types rather than angles:
 
 - they store `double` degrees, so a coordinate keeps the digits it was written with;

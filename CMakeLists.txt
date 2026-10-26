@@ -13,13 +13,6 @@ project(wlib
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(WLIB_WITH_QT "Enable Qt integration" OFF)
 option(WLIB_WITH_GLAZE "Build the glaze adapters (w::lib::glaze)" OFF)
-set(WLIB_PRECISION "float" CACHE STRING
-  "Floating-point type of the quantities and the linear algebra types: float or double"
-)
-set_property(CACHE WLIB_PRECISION PROPERTY STRINGS float double)
-if(NOT WLIB_PRECISION MATCHES "^(float|double)$")
-  message(FATAL_ERROR "WLIB_PRECISION must be 'float' or 'double', got '${WLIB_PRECISION}'")
-endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

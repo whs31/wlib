@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <array>
 #include <bit>
 #include <compare>
@@ -29,9 +30,39 @@ W_COMMON_NAMESPACE_BEGIN
 class Quaternion;
 
 /**
- * @brief Roll, pitch, and yaw rotation angles.
+ * @brief Order in which Quaternion::from_euler() composes its three rotations about the
+ * coordinate axes.
+ * @details `EulerOrder::ABC` is the rotation `R_A(a) * R_B(b) * R_C(c)` with column vectors: about
+ * the fixed axes, C turns first, then B, then A; about the moving axes, A turns first, then the
+ * new B, then the newer C. The names match glm's `eulerAngleABC`.
+ *
+ * - **ZYX** is the aerospace yaw, pitch, roll sequence of EulerAngles and helisim:
+ *   Quaternion::from_yaw_pitch_roll().
+ * - **YXZ** is the y-up editor sequence: yaw about y, then pitch about x, then roll about z, as in
+ *   glm's `yawPitchRoll` and Godot.
+ *
+ * Only the six Tait–Bryan orders, each axis once, exist.
+ * @ingroup core_math
+ * @see Quaternion::from_euler
+ * @see Quaternion::to_euler
+ */
+enum class EulerOrder : std::uint8_t
+{
+  XYZ,
+  XZY,
+  YXZ,
+  YZX,
+  ZXY,
+  ZYX,
+};
+
+/**
+ * @brief Roll, pitch, and yaw rotation angles of the aerospace ZYX sequence.
  * @details Values are stored as three Angle objects. The `*Radians` and
- * `*Degrees` properties are provided for convenient QML use.
+ * `*Degrees` properties are provided for convenient QML use. The angles always mean
+ * EulerOrder::ZYX: yaw about z, then pitch about the new y, then roll about the new x. Other
+ * orders, e.g. an editor's y-up display angles, go through Quaternion::from_euler() and
+ * Quaternion::to_euler() instead.
  *
  * @par Layout
  * The storage is exactly three contiguous Angle values in `roll, pitch, yaw` order, each a single
@@ -104,8 +135,8 @@ class W_COMMON_API EulerAngles
 
   /**
    * @brief Returns the aerospace ZYX Euler angles of the unit quaternion @p attitude.
-   * @details Same as Quaternion::to_euler_angles(): roll and yaw are in `[-180°, 180°]`, pitch in
-   * `[-90°, 90°]`, and the roll is zero at ±90° pitch.
+   * @details Same as Quaternion::to_yaw_pitch_roll(): roll and yaw are in `[-180°, 180°]`, pitch
+   * in `[-90°, 90°]`, and the roll is zero at ±90° pitch.
    * @note Include `w/common/quaternion.h` to call it; this header only declares
    * Quaternion.
    * @see to_quaternion
@@ -137,7 +168,8 @@ class W_COMMON_API EulerAngles
 
   /**
    * @brief Returns the attitude of these aerospace ZYX Euler angles.
-   * @details Same as Quaternion::from_euler_angles(): `q = q_z(yaw) ⊗ q_y(pitch) ⊗ q_x(roll)`.
+   * @details Same as Quaternion::from_yaw_pitch_roll():
+   * `q = q_z(yaw) ⊗ q_y(pitch) ⊗ q_x(roll)`.
    * @note Include `w/common/quaternion.h` to call it; this header only declares
    * Quaternion.
    * @see from_quaternion

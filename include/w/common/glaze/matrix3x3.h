@@ -11,6 +11,7 @@ W_COMMON_NAMESPACE_BEGIN
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
   using Matrix3x3Rows = std::array<std::array<Real, 3>, 3>;
+  using Matrix3x3Input = ExactArray<ExactArray<Real, 3>, 3>;
 }  // namespace _glaze_impl
 
 W_COMMON_NAMESPACE_END
@@ -24,9 +25,9 @@ template <>
 struct glz::meta<w::common::Matrix3x3>
 {
   static auto constexpr value = glz::custom<
-    [](w::common::Matrix3x3& matrix, w::common::_glaze_impl::Matrix3x3Rows const& rows) {
+    [](w::common::Matrix3x3& matrix, w::common::_glaze_impl::Matrix3x3Input const& rows) {
       auto const row = [&rows](std::size_t const index) {
-        auto const [x, y, z] = rows.at(index);
+        auto const [x, y, z] = rows.values().at(index).values();
         return w::common::Vector3(x, y, z);
       };
       matrix = w::common::Matrix3x3::from_rows(row(0), row(1), row(2));

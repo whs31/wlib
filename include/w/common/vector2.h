@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <cmath>
@@ -33,9 +34,9 @@
 W_COMMON_NAMESPACE_BEGIN
 
 /**
- * @brief Two-dimensional displacement vector backed by Real values.
- * @details The API follows the usual split from euclid-style geometry:
- * vectors represent offsets and directions, while Point2 represents positions.
+ * @brief Two-dimensional vector backed by Real values: a position, an offset or a direction.
+ * @details The vector does not know its frame or unit; name the variable after them instead,
+ * e.g. `cursor_px` or `offset_world`.
  *
  * @par Layout
  * The storage is exactly two contiguous Real values in `x, y` order, with no padding. The class is
@@ -47,7 +48,6 @@ W_COMMON_NAMESPACE_BEGIN
  * only when wlib is built with `with_qt=True`.
  *
  * @ingroup core_measurements
- * @see Point2
  * @see Vector3
  * @see Angle
  */
@@ -130,9 +130,83 @@ class W_COMMON_API Vector2
     return this->m_x * other.m_y - this->m_y * other.m_x;
   }
 
+  /**
+   * @brief Returns the shortest signed angle from the direction of this vector to the direction of
+   * @p other.
+   * @see angle_towards
+   */
   [[nodiscard]] Angle angle_to(Vector2 const& other) const noexcept
   {
     return this->angle().angle_to(other.angle());
+  }
+
+  /**
+   * @brief Returns the direction from this position to the position @p target: the angle of
+   * `target - *this`.
+   * @see angle_to
+   */
+  [[nodiscard]] Angle angle_towards(Vector2 const& target) const noexcept
+  {
+    return Vector2(target.m_x - this->m_x, target.m_y - this->m_y).angle();
+  }
+
+  /**
+   * @brief Returns the distance from this position to the position @p other.
+   */
+  [[nodiscard]] Real distance_to(Vector2 const& other) const noexcept
+  {
+    return Vector2(other.m_x - this->m_x, other.m_y - this->m_y).length();
+  }
+
+  /**
+   * @brief Returns the component-wise product.
+   */
+  [[nodiscard]] constexpr Vector2 component_mul(Vector2 const& other) const noexcept
+  {
+    return {this->m_x * other.m_x, this->m_y * other.m_y};
+  }
+
+  /**
+   * @brief Returns the component-wise quotient.
+   */
+  [[nodiscard]] constexpr Vector2 component_div(Vector2 const& other) const noexcept
+  {
+    return {this->m_x / other.m_x, this->m_y / other.m_y};
+  }
+
+  /**
+   * @brief Returns the component-wise minimum.
+   */
+  [[nodiscard]] constexpr Vector2 min(Vector2 const& other) const noexcept
+  {
+    return {std::min(this->m_x, other.m_x), std::min(this->m_y, other.m_y)};
+  }
+
+  /**
+   * @brief Returns the component-wise maximum.
+   */
+  [[nodiscard]] constexpr Vector2 max(Vector2 const& other) const noexcept
+  {
+    return {std::max(this->m_x, other.m_x), std::max(this->m_y, other.m_y)};
+  }
+
+  /**
+   * @brief Returns the component-wise absolute value.
+   */
+  [[nodiscard]] constexpr Vector2 abs() const noexcept
+  {
+    return {common::abs(this->m_x), common::abs(this->m_y)};
+  }
+
+  /**
+   * @brief Returns `*this + (other - *this) * t`; @p t is not clamped.
+   */
+  [[nodiscard]] constexpr Vector2 lerp(Vector2 const& other, Real const t) const noexcept
+  {
+    return {
+      this->m_x + (other.m_x - this->m_x) * t,
+      this->m_y + (other.m_y - this->m_y) * t,
+    };
   }
 
   /**
@@ -315,7 +389,7 @@ W_COMMON_API std::ostream& operator<<(std::ostream& os, Vector2 vector);
 
 static_assert(std::is_standard_layout_v<Vector2>);
 static_assert(std::is_trivially_copyable_v<Vector2>);
-static_assert(sizeof(Vector2) == 2 * sizeof(Real));
+static_assert(sizeof(Vector2) == 8);
 static_assert(
   std::bit_cast<std::array<Real, 2>>(Vector2(1.0, 2.0)) == std::array<Real, 2> {1, 2},
   "Vector2 must store x, y contiguously"

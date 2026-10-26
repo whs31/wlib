@@ -4,7 +4,6 @@
 
 #cmakedefine W_COMMON_WITH_QT
 #cmakedefine W_COMMON_WITH_GLAZE
-#cmakedefine W_COMMON_DOUBLE_PRECISION
 
 #if defined(NDEBUG)
 #  define W_NO_DEBUG

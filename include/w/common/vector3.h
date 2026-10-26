@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <cmath>
@@ -34,21 +35,25 @@
 W_COMMON_NAMESPACE_BEGIN
 
 /**
- * @brief Three-dimensional displacement vector backed by Real values.
+ * @brief Three-dimensional vector backed by Real values: a position, an offset or a direction.
  * @details The vector does not know its frame or unit; name the variable after them instead,
- * e.g. `velocity_ned` or `omega_body`.
+ * e.g. `velocity_ned`, `omega_body` or `position_world`. Whether it is a position or a direction
+ * shows in how it is transformed: Matrix4x4::transform_point() translates it,
+ * Matrix4x4::transform_direction() does not.
  *
  * @par Layout
- * The storage is exactly three contiguous Real values in `x, y, z` order, with no padding. The
- * class is standard layout and trivially copyable, so it can be reflected by offset or bit-cast to
- * `std::array<Real, 3>`. `Q_GADGET` adds no data members and does not affect the layout. The
- * layout is part of the API and is checked by `static_assert`s in this header.
+ * The storage is exactly three contiguous Real values in `x, y, z` order: 12 bytes, with no
+ * padding and no SIMD alignment. The class is standard layout and trivially copyable, so it can be
+ * reflected by offset or bit-cast to `std::array<Real, 3>`. `Q_GADGET` adds no data members and
+ * does not affect the layout. The layout is part of the API and is checked by `static_assert`s in
+ * this header. A hot loop that needs SIMD gets batch functions over `std::span<Vector3>`, never
+ * padding.
  *
  * @note Qt properties, conversions, and metatype registration are available
  * only when wlib is built with `with_qt=True`.
  * @ingroup core_measurements
  * @see Vector2
- * @see Point3
+ * @see Vector4
  * @see Matrix3x3
  */
 class W_COMMON_API Vector3
@@ -195,6 +200,74 @@ class W_COMMON_API Vector3
     auto result = *this;
     result /= len;
     return result;
+  }
+
+  /**
+   * @brief Returns the distance from this position to the position @p other.
+   */
+  [[nodiscard]] Real distance_to(Vector3 const& other) const noexcept
+  {
+    return Vector3(other.m_x - this->m_x, other.m_y - this->m_y, other.m_z - this->m_z).length();
+  }
+
+  /**
+   * @brief Returns the component-wise product, e.g. a vector scaled per axis.
+   */
+  [[nodiscard]] constexpr Vector3 component_mul(Vector3 const& other) const noexcept
+  {
+    return {this->m_x * other.m_x, this->m_y * other.m_y, this->m_z * other.m_z};
+  }
+
+  /**
+   * @brief Returns the component-wise quotient.
+   */
+  [[nodiscard]] constexpr Vector3 component_div(Vector3 const& other) const noexcept
+  {
+    return {this->m_x / other.m_x, this->m_y / other.m_y, this->m_z / other.m_z};
+  }
+
+  /**
+   * @brief Returns the component-wise minimum.
+   */
+  [[nodiscard]] constexpr Vector3 min(Vector3 const& other) const noexcept
+  {
+    return {
+      std::min(this->m_x, other.m_x),
+      std::min(this->m_y, other.m_y),
+      std::min(this->m_z, other.m_z),
+    };
+  }
+
+  /**
+   * @brief Returns the component-wise maximum.
+   */
+  [[nodiscard]] constexpr Vector3 max(Vector3 const& other) const noexcept
+  {
+    return {
+      std::max(this->m_x, other.m_x),
+      std::max(this->m_y, other.m_y),
+      std::max(this->m_z, other.m_z),
+    };
+  }
+
+  /**
+   * @brief Returns the component-wise absolute value.
+   */
+  [[nodiscard]] constexpr Vector3 abs() const noexcept
+  {
+    return {common::abs(this->m_x), common::abs(this->m_y), common::abs(this->m_z)};
+  }
+
+  /**
+   * @brief Returns `*this + (other - *this) * t`; @p t is not clamped.
+   */
+  [[nodiscard]] constexpr Vector3 lerp(Vector3 const& other, Real const t) const noexcept
+  {
+    return {
+      this->m_x + (other.m_x - this->m_x) * t,
+      this->m_y + (other.m_y - this->m_y) * t,
+      this->m_z + (other.m_z - this->m_z) * t,
+    };
   }
 
 #ifdef W_COMMON_WITH_QT
@@ -367,7 +440,7 @@ W_COMMON_API std::ostream& operator<<(std::ostream& os, Vector3 vector);
 
 static_assert(std::is_standard_layout_v<Vector3>);
 static_assert(std::is_trivially_copyable_v<Vector3>);
-static_assert(sizeof(Vector3) == 3 * sizeof(Real));
+static_assert(sizeof(Vector3) == 12, "Vector3 is three floats without SIMD padding");
 static_assert(
   std::bit_cast<std::array<Real, 3>>(Vector3(1.0, 2.0, 3.0)) == std::array<Real, 3> {1, 2, 3},
   "Vector3 must store x, y, z contiguously"

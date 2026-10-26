@@ -9,9 +9,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_NAME lib::config)
 foreach(feature IN ITEMS QT GLAZE)
   set(W_COMMON_WITH_${feature} ${WLIB_WITH_${feature}})
 endforeach()
-if(WLIB_PRECISION STREQUAL "double")
-  set(W_COMMON_DOUBLE_PRECISION ON)
-endif()
 
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/config.h.in"

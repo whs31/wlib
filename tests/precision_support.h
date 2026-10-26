@@ -1,33 +1,28 @@
 #pragma once
 
 #include <algorithm>
-#include <concepts>
 
 #include <w/common/math.h>
-#include <w/common/precision.h>
 
 namespace test
 {
-  /// @brief Whether the library is built with `precision=double`.
-  inline auto constexpr double_precision = std::same_as<w::Real, double>;
-
-  /// @brief Relative error a short computation in Real stays within: a few units in the last
-  /// place of a `double`, or of a `float`.
-  inline auto constexpr real_tolerance = double_precision ? 1e-9 : 1e-6;
+  /// @brief Relative error a short computation in `float` stays within: a few units in the last
+  /// place.
+  inline auto constexpr real_tolerance = 1e-6;
 
   /**
-   * @brief Absolute tolerance of a check: @p for_double in double precision, @p for_float in
-   * single precision.
+   * @brief Absolute tolerance of a check: @p tolerance, but no tighter than @p float_floor, which
+   * a `float` computation resolves.
    */
-  [[nodiscard]] constexpr double tolerance(double const for_double, double const for_float = 1e-5)
+  [[nodiscard]] constexpr double tolerance(double const tolerance, double const float_floor = 1e-5)
   {
-    return double_precision ? for_double : std::max(for_double, for_float);
+    return std::max(tolerance, float_floor);
   }
 
   /**
    * @brief Checks that @p actual is within @p tolerance of @p expected, relative to the magnitude
    * of @p expected but never tighter than @p tolerance in absolute terms. The tolerance never goes
-   * below real_tolerance, so a check written for `double` still holds in `float`.
+   * below real_tolerance.
    */
   [[nodiscard]] constexpr bool near(
     double const actual,

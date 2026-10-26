@@ -13,12 +13,12 @@ W_COMMON_NAMESPACE_BEGIN
 
 EulerAngles EulerAngles::from_quaternion(Quaternion const& attitude) noexcept
 {
-  return attitude.to_euler_angles();
+  return attitude.to_yaw_pitch_roll();
 }
 
 Quaternion EulerAngles::to_quaternion() const noexcept
 {
-  return Quaternion::from_euler_angles(*this);
+  return Quaternion::from_yaw_pitch_roll(*this);
 }
 
 std::string EulerAngles::to_string() const

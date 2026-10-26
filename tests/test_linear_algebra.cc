@@ -81,7 +81,7 @@ namespace
     double m_tolerance;
   };
 
-  // in single precision, no tighter than test::tolerance() allows
+  // no tighter than test::tolerance() allows in float
   template <typename T>
   [[nodiscard]] IsCloseTo<T> is_close_to(T const& expected, double const tolerance = 1e-12)
   {
@@ -293,8 +293,8 @@ TEST_CASE("Symmetry check accepts inertia tensors and rejects others", "[linalg]
     CHECK((r * inertia * r.transposed()).is_symmetric());
   }
 
-  // well above the default tolerance of either precision
-  auto constexpr skew = test::double_precision ? Real {1e-6} : Real {1e-3};
+  // well above the default tolerance
+  auto constexpr skew = Real {1e-3};
   auto constexpr skewed = Matrix3x3::
     from_rows(inertia.row(0).with_y(inertia.at(0, 1) + skew), inertia.row(1), inertia.row(2));
   STATIC_CHECK_FALSE(skewed.is_symmetric());
@@ -457,17 +457,17 @@ TEST_CASE("Euler angles turn the body FRD axes in NED as documented", "[linalg][
 {
   // yaw +90°: the nose points east
   CHECK_THAT(
-    Quaternion::from_euler_angles(EulerAngles::from_degrees(0.0, 0.0, 90.0)).rotate(unit_x),
+    Quaternion::from_yaw_pitch_roll(EulerAngles::from_degrees(0.0, 0.0, 90.0)).rotate(unit_x),
     is_close_to(unit_y)
   );
   // pitch +90°: the nose points up, i.e. along -down
   CHECK_THAT(
-    Quaternion::from_euler_angles(EulerAngles::from_degrees(0.0, 90.0, 0.0)).rotate(unit_x),
+    Quaternion::from_yaw_pitch_roll(EulerAngles::from_degrees(0.0, 90.0, 0.0)).rotate(unit_x),
     is_close_to(-unit_z)
   );
   // roll +90°: the right side points down
   CHECK_THAT(
-    Quaternion::from_euler_angles(EulerAngles::from_degrees(90.0, 0.0, 0.0)).rotate(unit_y),
+    Quaternion::from_yaw_pitch_roll(EulerAngles::from_degrees(90.0, 0.0, 0.0)).rotate(unit_y),
     is_close_to(unit_z)
   );
 }
@@ -483,7 +483,7 @@ TEST_CASE("Euler angles compose as yaw, then pitch, then roll", "[linalg][quater
                       * Quaternion::from_axis_angle(unit_y, angles.pitch())
                       * Quaternion::from_axis_angle(unit_x, angles.roll());
 
-  CHECK_THAT(Quaternion::from_euler_angles(angles), is_close_to(expected));
+  CHECK_THAT(Quaternion::from_yaw_pitch_roll(angles), is_close_to(expected));
 }
 
 TEST_CASE("Euler angles round-trip away from the pitch singularity", "[linalg][quaternion]")
@@ -492,8 +492,8 @@ TEST_CASE("Euler angles round-trip away from the pitch singularity", "[linalg][q
   auto const pitch = GENERATE(as<Real> {}, -89.0, -10.0, 0.0, 60.0);
   auto const yaw = GENERATE(as<Real> {}, -120.0, 0.0, 15.0, 180.0);
 
-  auto const angles = Quaternion::from_euler_angles(EulerAngles::from_degrees(roll, pitch, yaw))
-                        .to_euler_angles();
+  auto const angles = Quaternion::from_yaw_pitch_roll(EulerAngles::from_degrees(roll, pitch, yaw))
+                        .to_yaw_pitch_roll();
 
   auto const margin = test::tolerance(1e-9, 1e-2);
   CHECK(angles.roll_degrees() == Catch::Approx(roll).margin(margin));
@@ -507,15 +507,17 @@ TEST_CASE(
 )
 {
   auto const pitch = GENERATE(as<Real> {}, -90.0, 90.0);
-  auto const attitude = Quaternion::from_euler_angles(EulerAngles::from_degrees(20.0, pitch, 50.0));
-  auto const angles = attitude.to_euler_angles();
+  auto const attitude = Quaternion::from_yaw_pitch_roll(
+    EulerAngles::from_degrees(20.0, pitch, 50.0)
+  );
+  auto const angles = attitude.to_yaw_pitch_roll();
 
   REQUIRE(angles.is_finite());
   CHECK(angles.roll_degrees() == 0.0);
   CHECK(angles.pitch_degrees() == Catch::Approx(pitch));
   CHECK(angles.yaw_degrees() == Catch::Approx(pitch > 0.0 ? 30.0 : 70.0));
   CHECK_THAT(
-    Quaternion::from_euler_angles(angles).to_rotation_matrix(),
+    Quaternion::from_yaw_pitch_roll(angles).to_rotation_matrix(),
     is_close_to(attitude.to_rotation_matrix(), 1e-12)
   );
 }
@@ -525,8 +527,8 @@ TEST_CASE("Euler angles convert to and from quaternions", "[linalg][quaternion]"
   auto const angles = EulerAngles::from_degrees(-30.0, 10.0, 120.0);
   auto const attitude = angles.to_quaternion();
 
-  CHECK(attitude == Quaternion::from_euler_angles(angles));
-  CHECK(EulerAngles::from_quaternion(attitude) == attitude.to_euler_angles());
+  CHECK(attitude == Quaternion::from_yaw_pitch_roll(angles));
+  CHECK(EulerAngles::from_quaternion(attitude) == attitude.to_yaw_pitch_roll());
 
   auto const round_trip = EulerAngles::from_quaternion(attitude);
   CHECK(round_trip.roll_degrees() == Catch::Approx(-30.0));

@@ -13,12 +13,6 @@ inline auto constexpr wlib_with_qt = true;
 inline auto constexpr wlib_with_qt = false;
 #endif
 
-#ifdef W_COMMON_DOUBLE_PRECISION
-inline auto constexpr wlib_double_precision = true;
-#else
-inline auto constexpr wlib_double_precision = false;
-#endif
-
 TEST_CASE("Version macros encode and decode components", "[core][config]")
 {
   auto constexpr version = W_VERSION_ENCODE(12, 34, 56);
@@ -49,9 +43,4 @@ TEST_CASE("Generated configuration records Qt support", "[core][config][qt]")
 #endif
 }
 
-TEST_CASE("Generated configuration records the precision of Real", "[core][config]")
-{
-  STATIC_CHECK(std::floating_point<w::Real>);
-  STATIC_CHECK(std::same_as<w::Real, double> == wlib_double_precision);
-  STATIC_CHECK(std::same_as<w::Real, float> == not wlib_double_precision);
-}
+TEST_CASE("Real is a float", "[core][config]") { STATIC_CHECK(std::same_as<w::Real, float>); }

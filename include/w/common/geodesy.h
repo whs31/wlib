@@ -267,9 +267,9 @@ namespace _geodesy_impl  // NOLINT(readability-identifier-naming)
  * lla_from_ned() keeps the latitude and longitude of the positions it was asked for last, per
  * thread, so asking again for the same horizontal position is a lookup.
  *
- * Positions in the frame are Vector3 in the `precision` of the library; the frame itself, its
- * origin on the Earth and its axes, is held and applied in `double`, so a `float` position keeps
- * its own resolution (half a millimetre at 10 km) wherever the origin is.
+ * Positions in the frame are `float` Vector3; the frame itself, its origin on the Earth and its
+ * axes, is held and applied in `double`, so a position keeps its own resolution (half a
+ * millimetre at 10 km) wherever the origin is.
  *
  * @code {.cpp}
  * using namespace w;

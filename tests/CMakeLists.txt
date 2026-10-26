@@ -1,4 +1,5 @@
 find_package(Catch2 REQUIRED)
+find_package(glm REQUIRED)
 
 set(WLIB_TESTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 file(GLOB WLIB_TEST_SOURCES CONFIGURE_DEPENDS "${WLIB_TESTS_DIR}/*.cc")
@@ -30,7 +31,12 @@ target_link_libraries(${PROJECT_NAME}_tests
   PRIVATE
   w::lib
   Catch2::Catch2
+  glm::glm
 )
+
+# note: glm is a test-only oracle for the linear algebra; gtx comparisons need the experimental
+# extensions
+target_compile_definitions(${PROJECT_NAME}_tests PRIVATE GLM_ENABLE_EXPERIMENTAL)
 
 if(WLIB_WITH_GLAZE)
   target_sources(${PROJECT_NAME}_tests PRIVATE ${WLIB_GLAZE_TEST_SOURCES})

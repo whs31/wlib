@@ -22,10 +22,6 @@ test:cpp:x86_64:
     matrix:
       - WLIB_WITH_QT: ["False", "True"]
         WLIB_WITH_GLAZE: ["False", "True"]
-        WLIB_PRECISION: ["float"]
-      - WLIB_WITH_QT: ["True"]
-        WLIB_WITH_GLAZE: ["True"]
-        WLIB_PRECISION: ["double"]
   script:
     - >
       conan build "$CONAN_RECIPE" "${conan_profile[@]}"
@@ -34,7 +30,6 @@ test:cpp:x86_64:
       -o "&:test=True"
       -o "&:with_qt=$WLIB_WITH_QT"
       -o "&:with_glaze=$WLIB_WITH_GLAZE"
-      -o "&:precision=$WLIB_PRECISION"
     - |
       mapfile -t WLIB_LIBRARIES < <(find "$CONAN_BUILD_DIR" -type f -name 'libwlib.so*')
       test "${#WLIB_LIBRARIES[@]}" -gt 0
@@ -51,7 +46,6 @@ test:cpp:x86_64:
     - bash ci/cmake-package.sh "$CONAN_BUILD_DIR"
     - ctest --test-dir "$CONAN_BUILD_DIR" --output-on-failure -j "${RUNNER_BUILD_JOBS:-2}" --output-junit "$CI_PROJECT_DIR/ctest.xml"
 
-# a tag publishes the recipe version it names, nothing else: `6.0.0` for version = "6.0.0"
 publish:conan:x86_64:
   extends: .publish:conan:x86_64
 

@@ -13,8 +13,8 @@
  * @defgroup core_measurements Measurements
  * @ingroup core
  * @brief Units, physical constants, and strongly typed measurement values.
- * @details Every scalar quantity derives from QuantityBase and stores one Real, `float` or
- * `double` as the `precision` option of the library selects, in its SI unit. The geographic
+ * @details Every scalar quantity derives from QuantityBase and stores one Real, a `float`, in its
+ * SI unit. The geographic
  * coordinates Latitude and Longitude are not quantities and always store a `double`.
  * @see QuantityBase
  * @see Distance
@@ -47,6 +47,7 @@
  * @brief Platform path helpers and filesystem-based locking.
  */
 
+#include <w/common/aabb.h>
 #include <w/common/acceleration.h>
 #include <w/common/adapter.h>
 #include <w/common/angle.h>
@@ -57,9 +58,12 @@
 #include <w/common/char_utils.h>
 #include <w/common/charge.h>
 #include <w/common/check.h>
+#include <w/common/clip_space.h>
+#include <w/common/colour.h>
 #include <w/common/concepts.h>
 #include <w/common/conductance.h>
 #include <w/common/constants.h>
+#include <w/common/conventions.h>
 #include <w/common/current.h>
 #include <w/common/curve.h>
 #include <w/common/density.h>
@@ -70,6 +74,7 @@
 #include <w/common/fatal.h>
 #include <w/common/force.h>
 #include <w/common/frequency.h>
+#include <w/common/frustum.h>
 #include <w/common/functional.h>
 #include <w/common/geodesy.h>
 #include <w/common/graph_resolver.h>
@@ -81,29 +86,35 @@
 #include <w/common/magnetic_flux_density.h>
 #include <w/common/mass.h>
 #include <w/common/math.h>
-#include <w/common/memo.h>
 #include <w/common/matrix3x3.h>
+#include <w/common/matrix4x4.h>
+#include <w/common/memo.h>
 #include <w/common/memory.h>
 #include <w/common/moment_of_inertia.h>
 #include <w/common/noise.h>
 #include <w/common/paths.h>
 #include <w/common/pimpl.h>
-#include <w/common/point2.h>
-#include <w/common/point3.h>
+#include <w/common/plane.h>
 #include <w/common/power.h>
 #include <w/common/precision.h>
 #include <w/common/pressure.h>
+#include <w/common/projection.h>
 #include <w/common/quantity.h>
 #include <w/common/quaternion.h>
 #include <w/common/random.h>
+#include <w/common/ray.h>
+#include <w/common/rect.h>
 #include <w/common/resistance.h>
 #include <w/common/sockaddr.h>
+#include <w/common/sphere.h>
 #include <w/common/temperature.h>
 #include <w/common/threading.h>
 #include <w/common/torque.h>
+#include <w/common/transform.h>
 #include <w/common/uuid.h>
 #include <w/common/vector2.h>
 #include <w/common/vector3.h>
+#include <w/common/vector4.h>
 #include <w/common/velocity.h>
 #include <w/common/version.h>
 #include <w/common/version_range.h>

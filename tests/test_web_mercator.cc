@@ -77,7 +77,7 @@ TEST_CASE("Web Mercator columns start and end at the antimeridian", "[web_mercat
 
 TEST_CASE("Web Mercator tiles shrink towards the poles", "[web_mercator]")
 {
-  // tile sizes are a Distance, in the precision of the library
+  // tile sizes are a float Distance
   auto const tolerance = test::tolerance(1e-12, 1e-6);
   CHECK_THAT(web_mercator::tile_size(0_lat, 0).as_m(), WithinRel(40'075'016.685'578'49, tolerance));
   CHECK_THAT(

@@ -56,7 +56,7 @@ namespace
     double m_tolerance;
   };
 
-  // positions in the plane are Vector3 in the precision of the library: a float resolves 50 km to
+  // positions in the plane are float Vector3: a float resolves 50 km to
   // 4 mm
   [[nodiscard]] IsCloseTo is_close_to(Vector3 const& expected, double const tolerance)
   {

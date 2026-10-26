@@ -38,7 +38,7 @@ namespace
   }
 }  // namespace
 
-TEST_CASE("Coordinates are double whatever the precision of the library", "[coordinates]")
+TEST_CASE("Coordinates are double although quantities are float", "[coordinates]")
 {
   STATIC_CHECK(sizeof(Latitude) == sizeof(double));
   STATIC_CHECK(sizeof(Longitude) == sizeof(double));

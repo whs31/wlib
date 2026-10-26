@@ -34,7 +34,8 @@ W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief 3×3 matrix of Real values, stored as three row vectors.
- * @details Row-major: `(m * v).x() == m.row(0).dot(v)`. The default value is the zero matrix.
+ * @details Row-major storage, column vectors: `(m * v).x() == m.row(0).dot(v)`, and `a * b` applies
+ * `b` first. The default value is the zero matrix. See @ref conventions.
  *
  * Typical uses are rotation matrices, inertia tensors and small linear systems. It is not a
  * general linear-algebra library; use Eigen when more is needed.
@@ -62,6 +63,7 @@ W_COMMON_NAMESPACE_BEGIN
  * @ingroup core_math
  * @see Vector3
  * @see Quaternion
+ * @see Matrix4x4
  */
 class W_COMMON_API Matrix3x3
 {
@@ -76,20 +78,14 @@ class W_COMMON_API Matrix3x3
 
  public:
   /**
-   * @brief Default tolerance of is_invertible(), relative to the product of the row magnitudes:
-   * `1e-12` in double precision, `1e-5` in single precision.
+   * @brief Default tolerance of is_invertible(), relative to the product of the row magnitudes.
    */
-  static constexpr Real singular_tolerance = static_cast<Real>(
-    std::same_as<Real, double> ? 1e-12 : 1e-5
-  );
+  static constexpr Real singular_tolerance = 1e-5F;
 
   /**
-   * @brief Default tolerance of is_symmetric(), relative to the largest element: `1e-12` in
-   * double precision, `1e-5` in single precision.
+   * @brief Default tolerance of is_symmetric(), relative to the largest element.
    */
-  static constexpr Real symmetric_tolerance = static_cast<Real>(
-    std::same_as<Real, double> ? 1e-12 : 1e-5
-  );
+  static constexpr Real symmetric_tolerance = 1e-5F;
 
   /**
    * @brief Creates a zero matrix.

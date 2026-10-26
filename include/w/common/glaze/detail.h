@@ -313,6 +313,55 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
       },
       [](T const& value) { return value.degrees(); }>;
   };
+
+  /**
+   * @brief What a fixed-size array, such as the components of a vector or the rows of a matrix,
+   * is read from: exactly @p N elements.
+   * @details Glaze reads a shorter array into a `std::array` without an error and leaves the rest
+   * of its elements as they were, so `[1, 2]` would be a Vector3 with a zero z. In a text format,
+   * JSON or TOML, this reads each element as optional and fails with `constraint_violated` where
+   * one is missing or null; a longer array fails with `exceeded_static_array_size`, as for a
+   * `std::array`. A binary format reads the `std::array` the adapters write.
+   */
+  template <typename T, std::size_t N>
+  class ExactArray
+  {
+   public:
+    // note: [whs31 : 2026-10-26]
+    // not an aggregate, so that glaze reads it through the specialization below rather than by
+    // reflection
+    [[nodiscard]] std::array<T, N>& values() noexcept { return this->m_values; }
+
+    [[nodiscard]] std::array<T, N> const& values() const noexcept { return this->m_values; }
+
+    [[nodiscard]] T const& operator[](std::size_t const index) const noexcept
+    {
+      return this->m_values[index];  // NOLINT(*-pro-bounds-constant-array-index)
+    }
+
+   private:
+    std::array<T, N> m_values {};
+  };
+
+  /**
+   * @brief Copies the elements of @p elements into @p values, or rejects the read where one is
+   * missing.
+   */
+  template <typename T, std::size_t N>
+  void complete(
+    std::array<std::optional<T>, N>& elements,
+    std::array<T, N>& values,
+    glz::context& ctx
+  ) noexcept
+  {
+    for(auto index = std::size_t {0}; index < N; ++index) {
+      if(not elements.at(index).has_value()) {
+        reject(ctx, "the array has too few elements");
+        return;
+      }
+      values.at(index) = std::move(*elements.at(index));
+    }
+  }
 }  // namespace _glaze_impl
 
 W_COMMON_NAMESPACE_END
@@ -354,5 +403,26 @@ struct glz::from<Format, w::common::_glaze_impl::CoordinateInput>
     else
       glz::from<Format, double>::template op<
         Opts>(input.value().template emplace<double>(), ctx, it, end);
+  }
+};
+
+/**
+ * @brief Reads an ExactArray: a text format rejects a missing element; any other format reads the
+ * `std::array` the adapters write.
+ */
+template <std::uint32_t Format, typename T, std::size_t N>
+struct glz::from<Format, w::common::_glaze_impl::ExactArray<T, N>>
+{
+  template <auto Opts>
+  static void op(auto&& input, is_context auto&& ctx, auto&& it, auto end)
+  {
+    if constexpr(Format == glz::JSON or Format == glz::TOML) {
+      auto elements = std::array<std::optional<T>, N> {};
+      glz::from<Format, std::array<std::optional<T>, N>>::template op<Opts>(elements, ctx, it, end);
+      if(not bool(ctx.error))
+        w::common::_glaze_impl::complete(elements, input.values(), ctx);
+    }
+    else
+      glz::from<Format, std::array<T, N>>::template op<Opts>(input.values(), ctx, it, end);
   }
 };
