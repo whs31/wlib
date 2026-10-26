@@ -153,10 +153,6 @@ std::string GeodeticPosition::to_string() const
     format("{}, {}, {} m MSL", this->latitude, this->longitude, this->altitude_msl.as_m());
 }
 
-#ifdef W_COMMON_WITH_QT
-QString GeodeticPosition::to_qstring() const { return QString::fromStdString(this->to_string()); }
-#endif
-
 std::ostream& operator<<(std::ostream& os, GeodeticPosition const& position)
 {
   return os << position.to_string();

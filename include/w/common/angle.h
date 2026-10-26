@@ -1,33 +1,28 @@
 #pragma once
 
+#include <concepts>
 #include <cmath>
 #include <limits>
 #include <numbers>
 #include <string>
 #include <string_view>
 
+#include <fmt/format.h>
+#include <type_traits>
+
 #include <w/common/concepts.h>
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/math.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Angle value stored in radians.
- * @details Angle is a small value type with degree/radian conversions,
- * wrapping helpers, interpolation along the shortest path, and Qt/QML
- * properties.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
+ * @details A small value type with degree/radian conversions, wrapping helpers and interpolation
+ * along the shortest path. `Angle` is the single-precision instantiation.
  *
  * @code {.cpp}
  * auto heading = w::common::Angle::from_degrees(350.0);
@@ -40,16 +35,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see to_degrees
  * @see to_radians
  */
-class W_COMMON_API Angle : public QuantityBase<Angle>
+template <std::floating_point T>
+class BasicAngle : public QuantityBase<BasicAngle<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double radians READ radians CONSTANT FINAL)
-  Q_PROPERTY(double degrees READ degrees CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicAngle, T>;
 
  public:
   /**
@@ -60,35 +49,46 @@ class W_COMMON_API Angle : public QuantityBase<Angle>
   /**
    * @brief Creates a zero angle.
    */
-  constexpr Angle() noexcept = default;
+  constexpr BasicAngle() noexcept = default;
 
   /**
    * @brief Creates an angle from radians.
    */
-  explicit constexpr Angle(Real const radians) noexcept
-    : QuantityBase(radians)
+  explicit constexpr BasicAngle(T const radians) noexcept
+    : Base(radians)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicAngle(BasicAngle<U> const other) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Returns radians.
    */
-  [[nodiscard]] constexpr Real radians() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T radians() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns degrees.
    */
-  [[nodiscard]] constexpr Real degrees() const noexcept { return to_degrees(this->magnitude()); }
+  [[nodiscard]] constexpr T degrees() const noexcept { return to_degrees(this->magnitude()); }
 
   /**
    * @brief Returns the angle wrapped into `[0, 2*pi)`.
    */
-  [[nodiscard]] constexpr Angle positive() const noexcept
+  [[nodiscard]] constexpr BasicAngle positive() const noexcept
   {
-    auto constexpr two_pi = std::numbers::pi_v<Real> * 2;
+    auto constexpr two_pi = std::numbers::pi_v<T> * 2;
     auto radians = fmod(this->magnitude(), two_pi);
     if(radians < 0)
       radians += two_pi;
-    if(approx_eq(radians, two_pi, std::numeric_limits<Real>::epsilon() * 3))
+    if(approx_eq(radians, two_pi, std::numeric_limits<T>::epsilon() * 3))
       radians = 0;
     return from_radians(radians);
   }
@@ -97,7 +97,8 @@ class W_COMMON_API Angle : public QuantityBase<Angle>
    * @brief Returns the equivalent signed angle in `[-pi, pi]`.
    */
   // The trailing underscore avoids the C++ keyword while preserving the public API.
-  [[nodiscard]] constexpr Angle signed_() const noexcept  // NOLINT(readability-identifier-naming)
+  [[nodiscard]] constexpr BasicAngle
+    signed_() const noexcept  // NOLINT(readability-identifier-naming)
   {
     auto inner = pi();
     inner -= *this;
@@ -105,8 +106,8 @@ class W_COMMON_API Angle : public QuantityBase<Angle>
 
     auto ret = pi();
     ret -= inner;
-    if(is_null(ret.radians(), std::numeric_limits<Real>::epsilon()))
-      return zero();
+    if(is_null(ret.radians(), std::numeric_limits<T>::epsilon()))
+      return Base::zero();
     return ret;
   }
 
@@ -115,9 +116,9 @@ class W_COMMON_API Angle : public QuantityBase<Angle>
    * @details The result accounts for wrapping and is suitable for steering or
    * heading interpolation.
    */
-  [[nodiscard]] constexpr Angle angle_to(Angle const& other) const noexcept
+  [[nodiscard]] constexpr BasicAngle angle_to(BasicAngle const& other) const noexcept
   {
-    auto constexpr max = std::numbers::pi_v<Real> * 2;
+    auto constexpr max = std::numbers::pi_v<T> * 2;
     auto const d = fmod(other.radians() - this->radians(), max);
     return from_radians(fmod(2 * d, max) - d);
   }
@@ -127,105 +128,133 @@ class W_COMMON_API Angle : public QuantityBase<Angle>
    * @param other Target angle.
    * @param t Interpolation factor.
    */
-  template <Number T>
-  [[nodiscard]] Angle lerp(Angle const& other, T const t) const noexcept
+  template <Number F>
+  [[nodiscard]] BasicAngle lerp(BasicAngle const& other, F const t) const noexcept
   {
     auto delta = this->angle_to(other);
-    delta *= static_cast<Real>(t);
+    delta *= static_cast<T>(t);
 
     auto result = *this;
     result += delta;
     return result;
   }
 
-  [[nodiscard]] Real sin() const noexcept { return std::sin(this->magnitude()); }
+  [[nodiscard]] T sin() const noexcept { return std::sin(this->magnitude()); }
 
-  [[nodiscard]] Real cos() const noexcept { return std::cos(this->magnitude()); }
+  [[nodiscard]] T cos() const noexcept { return std::cos(this->magnitude()); }
 
-  [[nodiscard]] Real tan() const noexcept { return std::tan(this->magnitude()); }
+  [[nodiscard]] T tan() const noexcept { return std::tan(this->magnitude()); }
 
-  [[nodiscard]] Real asin() const noexcept { return std::asin(this->magnitude()); }
+  [[nodiscard]] T asin() const noexcept { return std::asin(this->magnitude()); }
 
-  [[nodiscard]] Real acos() const noexcept { return std::acos(this->magnitude()); }
+  [[nodiscard]] T acos() const noexcept { return std::acos(this->magnitude()); }
 
-  [[nodiscard]] Real atan() const noexcept { return std::atan(this->magnitude()); }
+  [[nodiscard]] T atan() const noexcept { return std::atan(this->magnitude()); }
 
   /**
    * @brief Returns a compact string in degrees.
    */
   // Replaces the SI display of QuantityBase::to_string().
   // NOLINTNEXTLINE(bugprone-derived-method-shadowing-base-method)
-  [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_string() const { return fmt::format("{:.6g} deg", this->degrees()); }
 
   /**
    * @brief Creates an angle from radians.
    */
-  [[nodiscard]] static constexpr Angle from_radians(Real const radians) noexcept
+  [[nodiscard]] static constexpr BasicAngle from_radians(T const radians) noexcept
   {
-    return Angle(radians);
+    return BasicAngle(radians);
   }
 
   /**
    * @brief Creates an angle from degrees.
    */
-  [[nodiscard]] static constexpr Angle from_degrees(Real const degrees) noexcept
+  [[nodiscard]] static constexpr BasicAngle from_degrees(T const degrees) noexcept
   {
-    return Angle(to_radians(degrees));
+    return BasicAngle(to_radians(degrees));
   }
 
-  [[nodiscard]] static constexpr Angle pi() noexcept
+  [[nodiscard]] static constexpr BasicAngle pi() noexcept
   {
-    return from_radians(std::numbers::pi_v<Real>);
+    return from_radians(std::numbers::pi_v<T>);
   }
 
-  [[nodiscard]] static constexpr Angle tau() noexcept
+  [[nodiscard]] static constexpr BasicAngle tau() noexcept
   {
-    return from_radians(std::numbers::pi_v<Real> * 2);
+    return from_radians(std::numbers::pi_v<T> * 2);
   }
 
-  [[nodiscard]] static constexpr Angle frac_pi_2() noexcept
+  [[nodiscard]] static constexpr BasicAngle frac_pi_2() noexcept
   {
-    return from_radians(std::numbers::pi_v<Real> / 2);
+    return from_radians(std::numbers::pi_v<T> / 2);
   }
 
-  [[nodiscard]] static constexpr Angle frac_pi_3() noexcept
+  [[nodiscard]] static constexpr BasicAngle frac_pi_3() noexcept
   {
-    return from_radians(std::numbers::pi_v<Real> / 3);
+    return from_radians(std::numbers::pi_v<T> / 3);
   }
 
-  [[nodiscard]] static constexpr Angle frac_pi_4() noexcept
+  [[nodiscard]] static constexpr BasicAngle frac_pi_4() noexcept
   {
-    return from_radians(std::numbers::pi_v<Real> / 4);
+    return from_radians(std::numbers::pi_v<T> / 4);
   }
 
-  using QuantityBase::operator+=;
-  using QuantityBase::operator-=;
+  using Base::operator+=;
+  using Base::operator-=;
 
-  constexpr Angle& operator+=(Real const radians) noexcept { return *this += Angle(radians); }
+  constexpr BasicAngle& operator+=(T const radians) noexcept
+  {
+    return *this += BasicAngle(radians);
+  }
 
-  constexpr Angle& operator-=(Real const radians) noexcept { return *this -= Angle(radians); }
+  constexpr BasicAngle& operator-=(T const radians) noexcept
+  {
+    return *this -= BasicAngle(radians);
+  }
 };
 
-[[nodiscard]] constexpr Angle operator+(Angle lhs, Real const radians) noexcept
+/**
+ * @brief Angle in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Angle = BasicAngle<float>;
+
+template <std::floating_point T>
+[[nodiscard]] constexpr BasicAngle<T> operator+(
+  BasicAngle<T> lhs,
+  std::type_identity_t<T> const radians
+) noexcept
 {
   lhs += radians;
   return lhs;
 }
 
-[[nodiscard]] constexpr Angle operator+(Real const radians, Angle const rhs) noexcept
+template <std::floating_point T>
+[[nodiscard]] constexpr BasicAngle<T> operator+(
+  std::type_identity_t<T> const radians,
+  BasicAngle<T> const rhs
+) noexcept
 {
-  return Angle(radians) + rhs;
+  return BasicAngle<T>(radians) + rhs;
 }
 
-[[nodiscard]] constexpr Angle operator-(Angle lhs, Real const radians) noexcept
+template <std::floating_point T>
+[[nodiscard]] constexpr BasicAngle<T> operator-(
+  BasicAngle<T> lhs,
+  std::type_identity_t<T> const radians
+) noexcept
 {
   lhs -= radians;
   return lhs;
 }
 
-[[nodiscard]] constexpr Angle operator-(Real const radians, Angle const rhs) noexcept
+template <std::floating_point T>
+[[nodiscard]] constexpr BasicAngle<T> operator-(
+  std::type_identity_t<T> const radians,
+  BasicAngle<T> const rhs
+) noexcept
 {
-  return Angle(radians) - rhs;
+  return BasicAngle<T>(radians) - rhs;
 }
 
 inline namespace literals
@@ -276,17 +305,21 @@ inline namespace literals
  * @ingroup core_math
  * @relates Angle
  */
-[[nodiscard]] constexpr Real to_degrees(Angle const angle) noexcept { return angle.degrees(); }
+template <std::floating_point T>
+[[nodiscard]] constexpr T to_degrees(BasicAngle<T> const angle) noexcept
+{
+  return angle.degrees();
+}
 
 /**
  * @brief Returns @p angle in radians.
  * @ingroup core_math
  * @relates Angle
  */
-[[nodiscard]] constexpr Real to_radians(Angle const angle) noexcept { return angle.radians(); }
+template <std::floating_point T>
+[[nodiscard]] constexpr T to_radians(BasicAngle<T> const angle) noexcept
+{
+  return angle.radians();
+}
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Angle)
-#endif

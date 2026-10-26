@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <array>
 #include <cstdint>
 
@@ -10,14 +11,14 @@
  * @brief Glaze metadata of Rect: an array `[x, y, width, height]`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Rect>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicRect<T>>
 {
   static auto constexpr value = glz::custom<
-    [](w::common::Rect& rect, w::common::_glaze_impl::ExactArray<w::common::Real, 4> const& xywh) {
-      rect = w::common::Rect(xywh[0], xywh[1], xywh[2], xywh[3]);
+    [](w::common::BasicRect<T>& rect, w::common::_glaze_impl::ExactArray<T, 4> const& xywh) {
+      rect = w::common::BasicRect<T>(xywh[0], xywh[1], xywh[2], xywh[3]);
     },
-    [](w::common::Rect const& rect) { return rect.to_array(); }>;
+    [](w::common::BasicRect<T> const& rect) { return rect.to_array(); }>;
 };
 
 /**

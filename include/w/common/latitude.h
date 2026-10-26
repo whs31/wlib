@@ -20,17 +20,11 @@
 #include <w/common/detail/geographic.h>
 #include <w/common/detail/namespace.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Geodetic latitude on the WGS84 ellipsoid, positive north, stored in degrees as a
- * `double` whatever the `precision` option of the library.
+ * `double`.
  * @details A `float` resolves a coordinate on the Earth to about a metre; a `double` to
  * nanometres. Degrees are stored, not radians, so a latitude keeps the exact digits it was written
  * with, e.g. in a configuration file, and prints them back.
@@ -57,26 +51,12 @@ W_COMMON_NAMESPACE_BEGIN
  * Latitude::parse("59°46'15.6\"N");    // 59.771_north, as is "59.771north"
  * @endcode
  *
- * @note Qt properties, QString conversion, and metatype registration are available only when wlib
- * is built with `with_qt=True`.
  * @ingroup core_geodesy
  * @see Longitude
  * @see GeodeticPosition
  */
 class W_COMMON_API Latitude
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double degrees READ degrees CONSTANT FINAL)
-  Q_PROPERTY(double radians READ radians CONSTANT FINAL)
-  Q_PROPERTY(Hemisphere hemisphere READ hemisphere CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(bool isValid READ is_valid CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-  Q_PROPERTY(QString dmsString READ to_dms_qstring CONSTANT FINAL)
-#endif
-
  public:
   /**
    * @brief Side of the equator. The equator itself counts as north.
@@ -86,9 +66,6 @@ class W_COMMON_API Latitude
     North,
     South,
   };
-#ifdef W_COMMON_WITH_QT
-  Q_ENUM(Hemisphere)
-#endif
 
   /**
    * @brief Sexagesimal form of a latitude: whole degrees, whole minutes, seconds and the
@@ -386,14 +363,6 @@ class W_COMMON_API Latitude
    */
   [[nodiscard]] std::string to_dms_string(int second_decimals = 2) const;
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_dms_qstring() const;
-#endif
-
   /**
    * @brief Mirrors the latitude across the equator.
    */
@@ -544,7 +513,3 @@ struct std::hash<w::common::Latitude>
     return std::hash<double> {}(value.degrees());
   }
 };
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Latitude)
-#endif

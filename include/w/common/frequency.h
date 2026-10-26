@@ -1,18 +1,13 @@
 #pragma once
 
+#include <concepts>
 #include <chrono>
 #include <string_view>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -20,8 +15,6 @@ W_COMMON_NAMESPACE_BEGIN
  * @brief Frequency value stored in `Hz`.
  * @details Frequency is a small value type with hertz and kilohertz conversions. It
  * converts to and from the period as a `std::chrono` duration.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -37,16 +30,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see QuantityBase
  * @see AngularVelocity
  */
-class W_COMMON_API Frequency : public QuantityBase<Frequency>
+template <std::floating_point T>
+class BasicFrequency : public QuantityBase<BasicFrequency<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double hertz READ as_hertz CONSTANT FINAL)
-  Q_PROPERTY(double kilohertz READ as_kilohertz CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicFrequency, T>;
 
  public:
   /**
@@ -57,62 +44,81 @@ class W_COMMON_API Frequency : public QuantityBase<Frequency>
   /**
    * @brief Creates a zero frequency.
    */
-  constexpr Frequency() noexcept = default;
+  constexpr BasicFrequency() noexcept = default;
 
   /**
    * @brief Creates a frequency from hertz.
    */
-  explicit constexpr Frequency(Real const hertz) noexcept
-    : QuantityBase(hertz)
+  explicit constexpr BasicFrequency(T const hertz) noexcept
+    : Base(hertz)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicFrequency(
+    BasicFrequency<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a frequency from hertz.
    */
-  [[nodiscard]] static constexpr Frequency from_hertz(Real const hertz) noexcept
+  [[nodiscard]] static constexpr BasicFrequency from_hertz(T const hertz) noexcept
   {
-    return Frequency(hertz);
+    return BasicFrequency(hertz);
   }
 
   /**
    * @brief Creates a frequency from kilohertz.
    */
-  [[nodiscard]] static constexpr Frequency from_kilohertz(Real const kilohertz) noexcept
+  [[nodiscard]] static constexpr BasicFrequency from_kilohertz(T const kilohertz) noexcept
   {
-    return Frequency(kilohertz * 1'000);
+    return BasicFrequency(kilohertz * 1'000);
   }
 
   /**
    * @brief Returns hertz.
    */
-  [[nodiscard]] constexpr Real as_hertz() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_hertz() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns kilohertz.
    */
-  [[nodiscard]] constexpr Real as_kilohertz() const noexcept { return this->magnitude() / 1'000; }
+  [[nodiscard]] constexpr T as_kilohertz() const noexcept { return this->magnitude() / 1'000; }
 
   /**
    * @brief Creates the frequency of an event that repeats every @p period.
    * @details A zero period yields an infinite frequency.
    */
   template <typename Rep, typename Period>
-  [[nodiscard]] static constexpr Frequency from_period(
+  [[nodiscard]] static constexpr BasicFrequency from_period(
     std::chrono::duration<Rep, Period> const period
   ) noexcept
   {
-    return Frequency(1 / std::chrono::duration<Real>(period).count());
+    return BasicFrequency(static_cast<T>(1 / std::chrono::duration<double>(period).count()));
   }
 
   /**
    * @brief Returns the time between two events at this frequency.
    * @details A zero frequency yields an infinite period.
    */
-  [[nodiscard]] constexpr std::chrono::duration<Real> period() const noexcept
+  [[nodiscard]] constexpr std::chrono::duration<T> period() const noexcept
   {
-    return std::chrono::duration<Real>(1 / this->magnitude());
+    return std::chrono::duration<T>(1 / this->magnitude());
   }
 };
+
+/**
+ * @brief Frequency in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Frequency = BasicFrequency<float>;
 
 inline namespace literals
 {
@@ -158,7 +164,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Frequency)
-#endif

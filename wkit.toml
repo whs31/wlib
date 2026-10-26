@@ -21,4 +21,4 @@ system = "conan"
 runner = "ctest"
 
 [scripts]
-ci = { run = ["bash", "ci/matrix.sh"], description = "Build and test every Conan configuration with and without Qt and glaze" }
+ci = { run = ["bash", "ci/matrix.sh"], description = "Build and test every Conan configuration with and without glaze" }

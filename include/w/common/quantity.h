@@ -17,19 +17,15 @@
 #include <w/common/math.h>
 #include <w/common/precision.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qstring.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Common implementation of the strongly typed scalar quantities.
  * @details Every WLib quantity, e.g. Distance, Mass or Voltage, derives from
- * `QuantityBase<Derived>` and stores a single magnitude of type `Scalar` in its SI unit. `Scalar`
- * defaults to Real, which follows the `precision` option of the library; a quantity that needs a
- * fixed precision passes its own. The base provides the operations that are the same for every
- * quantity:
+ * `QuantityBase<Derived, Scalar>` and stores a single magnitude of type `Scalar` in its SI unit.
+ * Every WLib quantity is a class template over its scalar, `BasicDistance<T>`, whose short name
+ * is the `float` instantiation, `Distance`; see Real. The base provides the operations that are
+ * the same for every quantity:
  *   - `==` and `<=>` between equal types;
  *   - `+` and `-` between equal types, and `*` and `/` by a dimensionless factor;
  *   - `Derived / Derived`, which yields a dimensionless `Scalar` ratio;
@@ -51,17 +47,22 @@ W_COMMON_NAMESPACE_BEGIN
  * named factories and accessors. It may hide to_string() to choose another display unit.
  *
  * @code {.cpp}
- * class Luminance : public w::common::QuantityBase<Luminance>
+ * template <std::floating_point T>
+ * class BasicLuminance : public w::QuantityBase<BasicLuminance<T>, T>
  * {
+ *   using Base = w::QuantityBase<BasicLuminance, T>;
+ *
  *  public:
  *   static constexpr std::string_view si_symbol = "cd/m^2";
  *
- *   constexpr Luminance() noexcept = default;
- *   explicit constexpr Luminance(w::Real nits) noexcept : QuantityBase(nits) {}
+ *   constexpr BasicLuminance() noexcept = default;
+ *   explicit constexpr BasicLuminance(T nits) noexcept : Base(nits) {}
  *
- *   static constexpr Luminance from_nits(w::Real nits) noexcept { return Luminance(nits); }
- *   constexpr w::Real as_nits() const noexcept { return this->magnitude(); }
+ *   static constexpr BasicLuminance from_nits(T nits) noexcept { return BasicLuminance(nits); }
+ *   constexpr T as_nits() const noexcept { return this->magnitude(); }
  * };
+ *
+ * using Luminance = BasicLuminance<float>;
  * @endcode
  *
  * @tparam Derived The quantity type that derives from this base.
@@ -109,25 +110,13 @@ class QuantityBase
     return fmt::format("{:.6g} {}", this->m_magnitude, Derived::si_symbol);
   }
 
-#ifdef W_COMMON_WITH_QT
   /**
-   * @brief Returns to_string() of the derived type as a Qt string.
-   * @note Available only when wlib is built with `with_qt=True`.
+   * @brief Returns the magnitude in the SI unit, converted to @p U.
    */
-  [[nodiscard]] QString to_qstring() const
+  template <std::floating_point U>
+  [[nodiscard]] constexpr explicit operator U() const noexcept
   {
-    return QString::fromStdString(this->derived().to_string());
-  }
-#endif
-
-  [[nodiscard]] constexpr explicit operator float() const noexcept
-  {
-    return static_cast<float>(this->m_magnitude);
-  }
-
-  [[nodiscard]] constexpr explicit operator double() const noexcept
-  {
-    return static_cast<double>(this->m_magnitude);
+    return static_cast<U>(this->m_magnitude);
   }
 
   [[nodiscard]] constexpr Derived operator+() const noexcept { return this->derived(); }

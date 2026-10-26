@@ -16,30 +16,14 @@
 #include <w/common/detail/namespace.h>
 #include <w/common/ip.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#  include <qstringview.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief IPv4 socket address.
- * @note Qt properties, QString conversions, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  * @ingroup core_networking
  */
 class W_COMMON_API SockAddrV4
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-  Q_PROPERTY(Ipv4Addr ip READ ip CONSTANT FINAL)
-  Q_PROPERTY(std::uint32_t port READ port CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
-
  public:
   constexpr SockAddrV4() noexcept = default;
 
@@ -58,24 +42,11 @@ class W_COMMON_API SockAddrV4
 
   [[nodiscard]] static SockAddrV4 parse(std::string_view text);
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static SockAddrV4 from_qstring(QStringView text);
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static SockAddrV4 from_qstring(QString const& text);
-#endif
-
   [[nodiscard]] constexpr Ipv4Addr ip() const noexcept { return this->m_ip; }
 
   [[nodiscard]] constexpr std::uint32_t port() const noexcept { return this->m_port; }
 
   [[nodiscard]] std::string to_string() const;
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-#endif
 
   [[nodiscard]] constexpr bool operator==(SockAddrV4 const&) const noexcept = default;
   [[nodiscard]] constexpr std::strong_ordering operator<=>(SockAddrV4 const&) const noexcept =
@@ -88,21 +59,10 @@ class W_COMMON_API SockAddrV4
 
 /**
  * @brief IPv6 socket address.
- * @note Qt properties, QString conversions, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  * @ingroup core_networking
  */
 class W_COMMON_API SockAddrV6
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-  Q_PROPERTY(Ipv6Addr ip READ ip CONSTANT FINAL)
-  Q_PROPERTY(std::uint32_t port READ port CONSTANT FINAL)
-  Q_PROPERTY(std::uint32_t flowInfo READ flow_info CONSTANT FINAL)
-  Q_PROPERTY(std::uint32_t scopeId READ scope_id CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
-
  public:
   constexpr SockAddrV6() noexcept = default;
 
@@ -130,14 +90,6 @@ class W_COMMON_API SockAddrV6
 
   [[nodiscard]] static SockAddrV6 parse(std::string_view text);
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static SockAddrV6 from_qstring(QStringView text);
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static SockAddrV6 from_qstring(QString const& text);
-#endif
-
   [[nodiscard]] constexpr Ipv6Addr ip() const noexcept { return this->m_ip; }
 
   [[nodiscard]] constexpr std::uint32_t port() const noexcept { return this->m_port; }
@@ -147,11 +99,6 @@ class W_COMMON_API SockAddrV6
   [[nodiscard]] constexpr std::uint32_t scope_id() const noexcept { return this->m_scope_id; }
 
   [[nodiscard]] std::string to_string() const;
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-#endif
 
   [[nodiscard]] constexpr bool operator==(SockAddrV6 const&) const noexcept = default;
   [[nodiscard]] constexpr std::strong_ordering operator<=>(SockAddrV6 const&) const noexcept =
@@ -166,30 +113,16 @@ class W_COMMON_API SockAddrV6
 
 /**
  * @brief Type-erased IPv4 or IPv6 socket address.
- * @note Qt properties, QString conversions, enum reflection, and metatype
- * registration are available only when wlib is built with `with_qt=True`.
  * @ingroup core_networking
  */
 class W_COMMON_API SockAddr
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-  Q_PROPERTY(Family family READ family CONSTANT FINAL)
-  Q_PROPERTY(bool isIpv4 READ is_ipv4 CONSTANT FINAL)
-  Q_PROPERTY(bool isIpv6 READ is_ipv6 CONSTANT FINAL)
-  Q_PROPERTY(std::uint32_t port READ port CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
-
  public:
   enum class Family : std::uint8_t
   {
     Ipv4,
     Ipv6,
   };
-#ifdef W_COMMON_WITH_QT
-  Q_ENUM(Family)
-#endif
 
   SockAddr() noexcept = default;
 
@@ -202,14 +135,6 @@ class W_COMMON_API SockAddr
   {}
 
   [[nodiscard]] static SockAddr parse(std::string_view text);
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static SockAddr from_qstring(QStringView text);
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static SockAddr from_qstring(QString const& text);
-#endif
 
   [[nodiscard]] bool is_ipv4() const noexcept;
 
@@ -224,11 +149,6 @@ class W_COMMON_API SockAddr
   [[nodiscard]] SockAddrV6 const& as_v6() const;
 
   [[nodiscard]] std::string to_string() const;
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-#endif
 
   [[nodiscard]] bool operator==(SockAddr const& other) const noexcept;
   [[nodiscard]] std::strong_ordering operator<=>(SockAddr const& other) const noexcept;
@@ -291,10 +211,4 @@ struct fmt::formatter<w::common::SockAddrV6> : fmt::ostream_formatter
 template <>
 struct fmt::formatter<w::common::SockAddr> : fmt::ostream_formatter
 {};
-#endif
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::SockAddrV4)
-Q_DECLARE_METATYPE(w::common::SockAddrV6)
-Q_DECLARE_METATYPE(w::common::SockAddr)
 #endif

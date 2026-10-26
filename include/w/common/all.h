@@ -13,9 +13,11 @@
  * @defgroup core_measurements Measurements
  * @ingroup core
  * @brief Units, physical constants, and strongly typed measurement values.
- * @details Every scalar quantity derives from QuantityBase and stores one Real, a `float`, in its
- * SI unit. The geographic
- * coordinates Latitude and Longitude are not quantities and always store a `double`.
+ * @details Every scalar quantity is a template `BasicX<T>` over its precision that derives from
+ * QuantityBase and stores one `T` in its SI unit; the alias `X` is `BasicX<float>`, and
+ * `BasicX<double>` is spelled out. A `float` quantity widens to `double` implicitly; narrowing is
+ * explicit. The geographic coordinates Latitude and Longitude are not quantities and always store
+ * a `double`.
  * @see QuantityBase
  * @see Distance
  * @see Velocity
@@ -38,7 +40,7 @@
 /**
  * @defgroup core_logging Logging
  * @ingroup core
- * @brief spdlog and Qt logging setup helpers.
+ * @brief spdlog logging setup helpers; the wlib_qt package bridges Qt messages to them.
  */
 
 /**

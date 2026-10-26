@@ -14,9 +14,7 @@ TEST_CASE("Measurement constants preserve their unit relationships", "[constants
 {
   STATIC_CHECK(SECONDS_HOURS_FACTOR == 3'600.0);
   STATIC_CHECK(METER_MILLIMETER_FACTOR == 1'000.0);
-  STATIC_CHECK(
-    approx_eq(METER_FEET_FACTOR * Real {0.3048}, Real {1}, std::numeric_limits<Real>::epsilon())
-  );
+  STATIC_CHECK(approx_eq(METER_FEET_FACTOR * 0.3048, 1.0, std::numeric_limits<double>::epsilon()));
   STATIC_CHECK(approx_eq(EARTH_RADIUS_KM * 1'000.0, EARTH_RADIUS, 1e-6));
 }
 

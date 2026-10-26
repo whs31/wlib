@@ -26,10 +26,4 @@ std::string Latitude::to_dms_string(int const second_decimals) const
   return _sexagesimal_impl::format_dms(this->m_degrees, second_decimals, 'N', 'S', 0.0);
 }
 
-#ifdef W_COMMON_WITH_QT
-QString Latitude::to_qstring() const { return QString::fromStdString(this->to_string()); }
-
-QString Latitude::to_dms_qstring() const { return QString::fromStdString(this->to_dms_string()); }
-#endif
-
 W_COMMON_NAMESPACE_END

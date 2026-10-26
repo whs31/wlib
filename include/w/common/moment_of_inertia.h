@@ -1,25 +1,18 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Moment of inertia value stored in `kg*m^2`.
  * @details MomentOfInertia is a small value type stored in kilogram-square-meters.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -33,15 +26,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Torque
  * @see AngularAcceleration
  */
-class W_COMMON_API MomentOfInertia : public QuantityBase<MomentOfInertia>
+template <std::floating_point T>
+class BasicMomentOfInertia : public QuantityBase<BasicMomentOfInertia<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double kilogramSquareMeters READ as_kilogram_square_meters CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicMomentOfInertia, T>;
 
  public:
   /**
@@ -52,33 +40,49 @@ class W_COMMON_API MomentOfInertia : public QuantityBase<MomentOfInertia>
   /**
    * @brief Creates a zero moment of inertia.
    */
-  constexpr MomentOfInertia() noexcept = default;
+  constexpr BasicMomentOfInertia() noexcept = default;
 
   /**
    * @brief Creates a moment of inertia from kilogram-square-meters.
    */
-  explicit constexpr MomentOfInertia(Real const kilogram_square_meters) noexcept
-    : QuantityBase(kilogram_square_meters)
+  explicit constexpr BasicMomentOfInertia(T const kilogram_square_meters) noexcept
+    : Base(kilogram_square_meters)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicMomentOfInertia(
+    BasicMomentOfInertia<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a moment of inertia from kilogram-square-meters.
    */
-  [[nodiscard]] static constexpr MomentOfInertia from_kilogram_square_meters(
-    Real const kilogram_square_meters
+  [[nodiscard]] static constexpr BasicMomentOfInertia from_kilogram_square_meters(
+    T const kilogram_square_meters
   ) noexcept
   {
-    return MomentOfInertia(kilogram_square_meters);
+    return BasicMomentOfInertia(kilogram_square_meters);
   }
 
   /**
    * @brief Returns kilogram-square-meters.
    */
-  [[nodiscard]] constexpr Real as_kilogram_square_meters() const noexcept
-  {
-    return this->magnitude();
-  }
+  [[nodiscard]] constexpr T as_kilogram_square_meters() const noexcept { return this->magnitude(); }
 };
+
+/**
+ * @brief MomentOfInertia in single precision, the default.
+ * @ingroup core_measurements
+ */
+using MomentOfInertia = BasicMomentOfInertia<float>;
 
 inline namespace literals
 {
@@ -104,7 +108,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::MomentOfInertia)
-#endif

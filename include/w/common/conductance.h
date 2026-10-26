@@ -1,17 +1,12 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -19,8 +14,6 @@ W_COMMON_NAMESPACE_BEGIN
  * @brief Conductance value stored in `S`.
  * @details Conductance is a small value type stored in siemens. Its literal is `_siemens`
  * rather than `_s`, which would read as seconds next to `std::chrono` literals.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -33,15 +26,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Resistance
  * @see Current
  */
-class W_COMMON_API Conductance : public QuantityBase<Conductance>
+template <std::floating_point T>
+class BasicConductance : public QuantityBase<BasicConductance<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double siemens READ as_siemens CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicConductance, T>;
 
  public:
   /**
@@ -52,28 +40,47 @@ class W_COMMON_API Conductance : public QuantityBase<Conductance>
   /**
    * @brief Creates a zero conductance.
    */
-  constexpr Conductance() noexcept = default;
+  constexpr BasicConductance() noexcept = default;
 
   /**
    * @brief Creates a conductance from siemens.
    */
-  explicit constexpr Conductance(Real const siemens) noexcept
-    : QuantityBase(siemens)
+  explicit constexpr BasicConductance(T const siemens) noexcept
+    : Base(siemens)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicConductance(
+    BasicConductance<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a conductance from siemens.
    */
-  [[nodiscard]] static constexpr Conductance from_siemens(Real const siemens) noexcept
+  [[nodiscard]] static constexpr BasicConductance from_siemens(T const siemens) noexcept
   {
-    return Conductance(siemens);
+    return BasicConductance(siemens);
   }
 
   /**
    * @brief Returns siemens.
    */
-  [[nodiscard]] constexpr Real as_siemens() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_siemens() const noexcept { return this->magnitude(); }
 };
+
+/**
+ * @brief Conductance in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Conductance = BasicConductance<float>;
 
 inline namespace literals
 {
@@ -99,7 +106,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Conductance)
-#endif

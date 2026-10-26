@@ -58,18 +58,6 @@ IpError IpError::invalid_v6_string(std::string_view const text)
   return IpError("invalid ipv6 string: {}", text);
 }
 
-#ifdef W_COMMON_WITH_QT
-IpError IpError::invalid_qhostaddress_v4()
-{
-  return IpError("QHostAddress does not contain an ipv4");
-}
-
-IpError IpError::invalid_qhostaddress_v6()
-{
-  return IpError("QHostAddress does not contain an ipv6");
-}
-#endif
-
 IpError IpError::missing_colon(std::string_view const text)
 {
   return IpError("missing colon in a socket address: {}", text);
@@ -137,52 +125,5 @@ std::ostream& operator<<(std::ostream& stream, Ipv6Addr const& address)
 {
   return stream << address.to_string();
 }
-
-#ifdef W_COMMON_WITH_QT
-Ipv4Addr Ipv4Addr::from_qstring(QStringView const text)
-{
-  return parse(text.toString().toStdString());
-}
-
-Ipv4Addr Ipv4Addr::from_qstring(QString const& text) { return from_qstring(QStringView {text}); }
-
-Ipv4Addr Ipv4Addr::from_qhostaddress(QHostAddress const& host)
-{
-  if(host.protocol() != QAbstractSocket::IPv4Protocol)
-    throw IpError::invalid_qhostaddress_v4();
-  return Ipv4Addr(host.toIPv4Address());
-}
-
-QHostAddress Ipv4Addr::to_qhostaddress() const { return QHostAddress(this->m_address); }
-
-QString Ipv4Addr::to_qstring() const { return QString::fromStdString(this->to_string()); }
-
-Ipv6Addr Ipv6Addr::from_qstring(QStringView const text)
-{
-  return parse(text.toString().toStdString());
-}
-
-Ipv6Addr Ipv6Addr::from_qstring(QString const& text) { return from_qstring(QStringView {text}); }
-
-Ipv6Addr Ipv6Addr::from_qhostaddress(QHostAddress const& host)
-{
-  if(host.protocol() != QAbstractSocket::IPv6Protocol)
-    throw IpError::invalid_qhostaddress_v6();
-
-  auto octets = std::array<std::uint8_t, 16> {};
-  auto const native = host.toIPv6Address();
-  std::memcpy(octets.data(), std::data(native.c), octets.size());
-  return Ipv6Addr(octets);
-}
-
-QHostAddress Ipv6Addr::to_qhostaddress() const
-{
-  auto native = Q_IPV6ADDR {};
-  std::memcpy(std::data(native.c), this->m_octets.data(), this->m_octets.size());
-  return QHostAddress(native);
-}
-
-QString Ipv6Addr::to_qstring() const { return QString::fromStdString(this->to_string()); }
-#endif
 
 W_COMMON_NAMESPACE_END

@@ -1,25 +1,18 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Capacitance value stored in `F`.
  * @details Capacitance is a small value type with farad and microfarad conversions.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -32,16 +25,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Charge
  * @see Voltage
  */
-class W_COMMON_API Capacitance : public QuantityBase<Capacitance>
+template <std::floating_point T>
+class BasicCapacitance : public QuantityBase<BasicCapacitance<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double farads READ as_farads CONSTANT FINAL)
-  Q_PROPERTY(double microfarads READ as_microfarads CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicCapacitance, T>;
 
  public:
   /**
@@ -52,44 +39,63 @@ class W_COMMON_API Capacitance : public QuantityBase<Capacitance>
   /**
    * @brief Creates a zero capacitance.
    */
-  constexpr Capacitance() noexcept = default;
+  constexpr BasicCapacitance() noexcept = default;
 
   /**
    * @brief Creates a capacitance from farads.
    */
-  explicit constexpr Capacitance(Real const farads) noexcept
-    : QuantityBase(farads)
+  explicit constexpr BasicCapacitance(T const farads) noexcept
+    : Base(farads)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicCapacitance(
+    BasicCapacitance<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a capacitance from farads.
    */
-  [[nodiscard]] static constexpr Capacitance from_farads(Real const farads) noexcept
+  [[nodiscard]] static constexpr BasicCapacitance from_farads(T const farads) noexcept
   {
-    return Capacitance(farads);
+    return BasicCapacitance(farads);
   }
 
   /**
    * @brief Creates a capacitance from microfarads.
    */
-  [[nodiscard]] static constexpr Capacitance from_microfarads(Real const microfarads) noexcept
+  [[nodiscard]] static constexpr BasicCapacitance from_microfarads(T const microfarads) noexcept
   {
-    return Capacitance(microfarads / 1'000'000);
+    return BasicCapacitance(microfarads / 1'000'000);
   }
 
   /**
    * @brief Returns farads.
    */
-  [[nodiscard]] constexpr Real as_farads() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_farads() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns microfarads.
    */
-  [[nodiscard]] constexpr Real as_microfarads() const noexcept
+  [[nodiscard]] constexpr T as_microfarads() const noexcept
   {
     return this->magnitude() * 1'000'000;
   }
 };
+
+/**
+ * @brief Capacitance in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Capacitance = BasicCapacitance<float>;
 
 inline namespace literals
 {
@@ -135,7 +141,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Capacitance)
-#endif

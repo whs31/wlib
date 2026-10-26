@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+#include <ostream>
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -9,7 +11,6 @@
 
 #include <fmt/format.h>
 
-#include <w/common/detail/export.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
@@ -25,25 +26,36 @@ W_COMMON_NAMESPACE_BEGIN
  * @details The default value is the point at the origin, with a zero radius.
  *
  * @par Layout
- * The storage is a Vector3 center and a Real radius, four contiguous Real values, so it bit-casts
+ * The storage is a Vector3 center and a @p T radius, four contiguous @p T values, so it bit-casts
  * to an HLSL `float4`. The class is standard layout and trivially copyable.
  * @ingroup core_math
  * @see AABB
  * @see Frustum
  */
-class W_COMMON_API Sphere
+template <std::floating_point T>
+class BasicSphere
 {
  public:
-  constexpr Sphere() noexcept = default;
+  constexpr BasicSphere() noexcept = default;
 
-  constexpr Sphere(Vector3 const center, Real const radius) noexcept
+  /**
+   * @brief Converts from another precision: implicitly when no value can lose digits, e.g. from
+   * `float` to `double`, and explicitly otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicSphere(BasicSphere<U> const& other) noexcept
+    : BasicSphere(BasicVector3<T>(other.center()), static_cast<T>(other.radius()))
+  {}
+
+  constexpr BasicSphere(BasicVector3<T> const center, T const radius) noexcept
     : m_center(center)
     , m_radius(radius)
   {}
 
-  [[nodiscard]] constexpr Vector3 center() const noexcept { return this->m_center; }
+  [[nodiscard]] constexpr BasicVector3<T> center() const noexcept { return this->m_center; }
 
-  [[nodiscard]] constexpr Real radius() const noexcept { return this->m_radius; }
+  [[nodiscard]] constexpr T radius() const noexcept { return this->m_radius; }
 
   /**
    * @brief Checks whether every component is neither infinite nor NaN.
@@ -56,7 +68,7 @@ class W_COMMON_API Sphere
   /**
    * @brief Checks whether @p point is inside or on the sphere.
    */
-  [[nodiscard]] constexpr bool contains(Vector3 const point) const noexcept
+  [[nodiscard]] constexpr bool contains(BasicVector3<T> const point) const noexcept
   {
     return (point - this->m_center).length_squared() <= this->m_radius * this->m_radius;
   }
@@ -64,7 +76,7 @@ class W_COMMON_API Sphere
   /**
    * @brief Checks whether the two spheres overlap or touch.
    */
-  [[nodiscard]] constexpr bool intersects(Sphere const& other) const noexcept
+  [[nodiscard]] constexpr bool intersects(BasicSphere<T> const& other) const noexcept
   {
     auto const reach = this->m_radius + other.m_radius;
     return (other.m_center - this->m_center).length_squared() <= reach * reach;
@@ -74,7 +86,7 @@ class W_COMMON_API Sphere
    * @brief Returns a sphere that contains this one after the affine transform @p matrix: the
    * center transformed, the radius scaled by the largest scale of the matrix.
    */
-  [[nodiscard]] Sphere transformed(Matrix4x4 const& matrix) const noexcept
+  [[nodiscard]] BasicSphere<T> transformed(BasicMatrix4x4<T> const& matrix) const noexcept
   {
     auto const linear = matrix.linear();
     auto const scale = std::sqrt(
@@ -87,16 +99,25 @@ class W_COMMON_API Sphere
     return {matrix.transform_point(this->m_center), this->m_radius * scale};
   }
 
-  [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_string() const { return fmt::format("{}", *this); }
 
-  [[nodiscard]] constexpr bool operator==(Sphere const&) const noexcept = default;
+  [[nodiscard]] constexpr bool operator==(BasicSphere<T> const&) const noexcept = default;
 
  private:
-  Vector3 m_center;
-  Real m_radius = 0.0;
+  BasicVector3<T> m_center;
+  T m_radius = 0.0;
 };
 
-W_COMMON_API std::ostream& operator<<(std::ostream& os, Sphere const& sphere);
+/**
+ * @brief Sphere in single precision, the default.
+ */
+using Sphere = BasicSphere<float>;
+
+template <std::floating_point T>
+std::ostream& operator<<(std::ostream& os, BasicSphere<T> const& sphere)
+{
+  return os << sphere.to_string();
+}
 
 static_assert(std::is_standard_layout_v<Sphere>);
 static_assert(std::is_trivially_copyable_v<Sphere>);
@@ -104,10 +125,10 @@ static_assert(sizeof(Sphere) == 16);
 
 W_COMMON_NAMESPACE_END
 
-template <>
-struct std::hash<w::common::Sphere>
+template <std::floating_point T>
+struct std::hash<w::common::BasicSphere<T>>
 {
-  [[nodiscard]] std::size_t operator()(w::common::Sphere const& sphere) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::BasicSphere<T> const& sphere) const noexcept
   {
     return w::common::_hash_impl::combine(sphere.center(), sphere.radius());
   }
@@ -118,19 +139,22 @@ struct std::hash<w::common::Sphere>
  * @brief Formats as `{center (x, y, z), radius r}`; the format spec, e.g. `{:.3f}`, applies to
  * every component.
  */
-template <>
-struct fmt::formatter<w::common::Sphere> : fmt::formatter<w::common::Real>
+template <std::floating_point T>
+struct fmt::formatter<w::common::BasicSphere<T>> : fmt::formatter<T>
 {
-  format_context::iterator format(w::common::Sphere const& sphere, format_context& ctx) const
+  format_context::iterator format(
+    w::common::BasicSphere<T> const& sphere,
+    format_context& ctx
+  ) const
   {
     auto const center = sphere.center();
     auto out = fmt::format_to(ctx.out(), "{{center ");
     ctx.advance_to(out);
-    out = w::common::_format_impl::format_components<
-      3>(*this, {center.x(), center.y(), center.z()}, ctx);
+    out = w::common::_format_impl::
+      format_components<3, T>(*this, {center.x(), center.y(), center.z()}, ctx);
     out = fmt::format_to(out, ", radius ");
     ctx.advance_to(out);
-    out = fmt::formatter<w::common::Real>::format(sphere.radius(), ctx);
+    out = fmt::formatter<T>::format(sphere.radius(), ctx);
     *out++ = '}';
     return out;
   }

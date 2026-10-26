@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,29 +10,31 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct TemperatureFields
   {
-    std::optional<Real> kelvin;
-    std::optional<Real> celsius;
-    std::optional<Real> fahrenheit;
+    std::optional<T> kelvin;
+    std::optional<T> celsius;
+    std::optional<T> fahrenheit;
   };
 
+  template <std::floating_point T>
   inline auto constexpr temperature_reading = QuantityReading<
-    Temperature,
-    TemperatureFields,
+    BasicTemperature<T>,
+    TemperatureFields<T>,
     3,
     3> {
     .fields =
       {
-        field_unit(&TemperatureFields::kelvin, &Temperature::from_kelvin),
-        field_unit(&TemperatureFields::celsius, &Temperature::from_celsius),
-        field_unit(&TemperatureFields::fahrenheit, &Temperature::from_fahrenheit),
+        field_unit(&TemperatureFields<T>::kelvin, &BasicTemperature<T>::from_kelvin),
+        field_unit(&TemperatureFields<T>::celsius, &BasicTemperature<T>::from_celsius),
+        field_unit(&TemperatureFields<T>::fahrenheit, &BasicTemperature<T>::from_fahrenheit),
       },
     .literals =
       {
-        literal_unit("k", &Temperature::from_kelvin),
-        literal_unit("degc", &Temperature::from_celsius),
-        literal_unit("degf", &Temperature::from_fahrenheit),
+        literal_unit("k", &BasicTemperature<T>::from_kelvin),
+        literal_unit("degc", &BasicTemperature<T>::from_celsius),
+        literal_unit("degf", &BasicTemperature<T>::from_fahrenheit),
       },
     .unknown_suffix = "a temperature literal needs one of the unit suffixes k, degc, degf",
   };
@@ -46,9 +49,9 @@ W_COMMON_NAMESPACE_END
  * `degc`, `degf`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Temperature>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicTemperature<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::temperature_reading>::value;
+    w::common::_glaze_impl::temperature_reading<T>>::value;
 };

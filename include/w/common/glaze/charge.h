@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,24 +10,26 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct ChargeFields
   {
-    std::optional<Real> coulombs;
-    std::optional<Real> ampere_hours;
-    std::optional<Real> milliampere_hours;
+    std::optional<T> coulombs;
+    std::optional<T> ampere_hours;
+    std::optional<T> milliampere_hours;
   };
 
-  inline auto constexpr charge_reading = QuantityReading<Charge, ChargeFields, 3, 2> {
+  template <std::floating_point T>
+  inline auto constexpr charge_reading = QuantityReading<BasicCharge<T>, ChargeFields<T>, 3, 2> {
     .fields =
       {
-        field_unit(&ChargeFields::coulombs, &Charge::from_coulombs),
-        field_unit(&ChargeFields::ampere_hours, &Charge::from_ampere_hours),
-        field_unit(&ChargeFields::milliampere_hours, &Charge::from_milliampere_hours),
+        field_unit(&ChargeFields<T>::coulombs, &BasicCharge<T>::from_coulombs),
+        field_unit(&ChargeFields<T>::ampere_hours, &BasicCharge<T>::from_ampere_hours),
+        field_unit(&ChargeFields<T>::milliampere_hours, &BasicCharge<T>::from_milliampere_hours),
       },
     .literals =
       {
-        literal_unit("ah", &Charge::from_ampere_hours),
-        literal_unit("mah", &Charge::from_milliampere_hours),
+        literal_unit("ah", &BasicCharge<T>::from_ampere_hours),
+        literal_unit("mah", &BasicCharge<T>::from_milliampere_hours),
       },
     .unknown_suffix = "a charge literal needs one of the unit suffixes ah, mah",
   };
@@ -41,9 +44,9 @@ W_COMMON_NAMESPACE_END
  * `ah`, `mah`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Charge>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicCharge<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::charge_reading>::value;
+    w::common::_glaze_impl::charge_reading<T>>::value;
 };

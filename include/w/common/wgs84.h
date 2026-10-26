@@ -6,7 +6,7 @@ W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief The WGS84 ellipsoid.
- * @details Plain `double` constants in metres, whatever the `precision` option of the library.
+ * @details Plain `double` constants in metres.
  * @ingroup core_geodesy
  */
 namespace wgs84

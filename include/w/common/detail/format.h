@@ -6,7 +6,6 @@
 #include <fmt/format.h>
 
 #include <w/common/detail/namespace.h>
-#include <w/common/precision.h>
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -16,10 +15,10 @@ namespace _format_impl  // NOLINT(*-identifier-naming)
    * @brief Formats `values` as `(a, b, ...)`, applying the parsed spec of `formatter`, e.g.
    * `{:.3f}`, to every component.
    */
-  template <std::size_t N>
+  template <std::size_t N, typename T>
   fmt::format_context::iterator format_components(
-    fmt::formatter<Real> const& formatter,
-    std::array<Real, N> const& values,
+    fmt::formatter<T> const& formatter,
+    std::array<T, N> const& values,
     fmt::format_context& ctx
   )
   {

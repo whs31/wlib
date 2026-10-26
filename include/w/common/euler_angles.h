@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 #include <array>
 #include <bit>
@@ -15,19 +16,13 @@
 
 #include <w/common/angle.h>
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/precision.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
-class Quaternion;
+template <std::floating_point T>
+class BasicQuaternion;
 
 /**
  * @brief Order in which Quaternion::from_euler() composes its three rotations about the
@@ -66,72 +61,82 @@ enum class EulerOrder : std::uint8_t
  *
  * @par Layout
  * The storage is exactly three contiguous Angle values in `roll, pitch, yaw` order, each a single
- * Real in radians, with no padding. The class is standard layout and trivially copyable, so it
- * can be reflected by offset or bit-cast to `std::array<Real, 3>` of radians. `Q_GADGET` adds no
- * data members and does not affect the layout. The layout is part of the API and is checked by
- * `static_assert`s in this header.
- *
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
+ * @p T in radians, with no padding. The class is standard layout and trivially copyable, so it
+ * can be reflected by offset or bit-cast to `std::array<T, 3>` of radians. The layout is part of
+ * the API and is checked by `static_assert`s in this header.
  *
  * @ingroup core_measurements
  * @see Angle
  * @see Quaternion
  */
-class W_COMMON_API EulerAngles
+template <std::floating_point T>
+class BasicEulerAngles
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(Angle roll READ roll CONSTANT FINAL)
-  Q_PROPERTY(Angle pitch READ pitch CONSTANT FINAL)
-  Q_PROPERTY(Angle yaw READ yaw CONSTANT FINAL)
-  Q_PROPERTY(double rollRadians READ roll_radians CONSTANT FINAL)
-  Q_PROPERTY(double pitchRadians READ pitch_radians CONSTANT FINAL)
-  Q_PROPERTY(double yawRadians READ yaw_radians CONSTANT FINAL)
-  Q_PROPERTY(double rollDegrees READ roll_degrees CONSTANT FINAL)
-  Q_PROPERTY(double pitchDegrees READ pitch_degrees CONSTANT FINAL)
-  Q_PROPERTY(double yawDegrees READ yaw_degrees CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
-
  public:
-  constexpr EulerAngles() noexcept = default;
+  constexpr BasicEulerAngles() noexcept = default;
 
-  constexpr EulerAngles(Angle const roll, Angle const pitch, Angle const yaw) noexcept
+  /**
+   * @brief Converts from another precision: implicitly when no value can lose digits, e.g. from
+   * `float` to `double`, and explicitly otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicEulerAngles(
+    BasicEulerAngles<U> const& other
+  ) noexcept
+    : BasicEulerAngles(
+        BasicAngle<T>(other.roll()),
+        BasicAngle<T>(other.pitch()),
+        BasicAngle<T>(other.yaw())
+      )
+  {}
+
+  constexpr BasicEulerAngles(
+    BasicAngle<T> const roll,
+    BasicAngle<T> const pitch,
+    BasicAngle<T> const yaw
+  ) noexcept
     : m_roll(roll)
     , m_pitch(pitch)
     , m_yaw(yaw)
   {}
 
-  [[nodiscard]] static constexpr EulerAngles from_angles(
-    Angle const roll,
-    Angle const pitch,
-    Angle const yaw
+  [[nodiscard]] static constexpr BasicEulerAngles<T> from_angles(
+    BasicAngle<T> const roll,
+    BasicAngle<T> const pitch,
+    BasicAngle<T> const yaw
   ) noexcept
   {
     return {roll, pitch, yaw};
   }
 
-  [[nodiscard]] static constexpr EulerAngles from_radians(
-    Real const roll,
-    Real const pitch,
-    Real const yaw
+  [[nodiscard]] static constexpr BasicEulerAngles<T> from_radians(
+    T const roll,
+    T const pitch,
+    T const yaw
   ) noexcept
   {
-    return {Angle::from_radians(roll), Angle::from_radians(pitch), Angle::from_radians(yaw)};
+    return {
+      BasicAngle<T>::from_radians(roll),
+      BasicAngle<T>::from_radians(pitch),
+      BasicAngle<T>::from_radians(yaw)
+    };
   }
 
-  [[nodiscard]] static constexpr EulerAngles from_degrees(
-    Real const roll,
-    Real const pitch,
-    Real const yaw
+  [[nodiscard]] static constexpr BasicEulerAngles<T> from_degrees(
+    T const roll,
+    T const pitch,
+    T const yaw
   ) noexcept
   {
-    return {Angle::from_degrees(roll), Angle::from_degrees(pitch), Angle::from_degrees(yaw)};
+    return {
+      BasicAngle<T>::from_degrees(roll),
+      BasicAngle<T>::from_degrees(pitch),
+      BasicAngle<T>::from_degrees(yaw)
+    };
   }
 
-  [[nodiscard]] static constexpr EulerAngles zero() noexcept { return {}; }
+  [[nodiscard]] static constexpr BasicEulerAngles<T> zero() noexcept { return {}; }
 
   /**
    * @brief Returns the aerospace ZYX Euler angles of the unit quaternion @p attitude.
@@ -141,25 +146,27 @@ class W_COMMON_API EulerAngles
    * Quaternion.
    * @see to_quaternion
    */
-  [[nodiscard]] static EulerAngles from_quaternion(Quaternion const& attitude) noexcept;
+  [[nodiscard]] static BasicEulerAngles<T> from_quaternion(
+    BasicQuaternion<T> const& attitude
+  ) noexcept;
 
-  [[nodiscard]] constexpr Angle roll() const noexcept { return this->m_roll; }
+  [[nodiscard]] constexpr BasicAngle<T> roll() const noexcept { return this->m_roll; }
 
-  [[nodiscard]] constexpr Angle pitch() const noexcept { return this->m_pitch; }
+  [[nodiscard]] constexpr BasicAngle<T> pitch() const noexcept { return this->m_pitch; }
 
-  [[nodiscard]] constexpr Angle yaw() const noexcept { return this->m_yaw; }
+  [[nodiscard]] constexpr BasicAngle<T> yaw() const noexcept { return this->m_yaw; }
 
-  [[nodiscard]] constexpr Real roll_radians() const noexcept { return this->m_roll.radians(); }
+  [[nodiscard]] constexpr T roll_radians() const noexcept { return this->m_roll.radians(); }
 
-  [[nodiscard]] constexpr Real pitch_radians() const noexcept { return this->m_pitch.radians(); }
+  [[nodiscard]] constexpr T pitch_radians() const noexcept { return this->m_pitch.radians(); }
 
-  [[nodiscard]] constexpr Real yaw_radians() const noexcept { return this->m_yaw.radians(); }
+  [[nodiscard]] constexpr T yaw_radians() const noexcept { return this->m_yaw.radians(); }
 
-  [[nodiscard]] constexpr Real roll_degrees() const noexcept { return this->m_roll.degrees(); }
+  [[nodiscard]] constexpr T roll_degrees() const noexcept { return this->m_roll.degrees(); }
 
-  [[nodiscard]] constexpr Real pitch_degrees() const noexcept { return this->m_pitch.degrees(); }
+  [[nodiscard]] constexpr T pitch_degrees() const noexcept { return this->m_pitch.degrees(); }
 
-  [[nodiscard]] constexpr Real yaw_degrees() const noexcept { return this->m_yaw.degrees(); }
+  [[nodiscard]] constexpr T yaw_degrees() const noexcept { return this->m_yaw.degrees(); }
 
   [[nodiscard]] bool is_finite() const noexcept
   {
@@ -174,59 +181,64 @@ class W_COMMON_API EulerAngles
    * Quaternion.
    * @see from_quaternion
    */
-  [[nodiscard]] Quaternion to_quaternion() const noexcept;
+  [[nodiscard]] BasicQuaternion<T> to_quaternion() const noexcept;
 
-  [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_string() const
+  {
+    return fmt::format("roll {}, pitch {}, yaw {}", this->m_roll, this->m_pitch, this->m_yaw);
+  }
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-#endif
+  [[nodiscard]] constexpr bool operator==(BasicEulerAngles<T> const&) const noexcept = default;
 
-  [[nodiscard]] constexpr bool operator==(EulerAngles const&) const noexcept = default;
-
-  [[nodiscard]] constexpr std::partial_ordering operator<=>(EulerAngles const&) const noexcept =
-    default;
+  [[nodiscard]] constexpr std::partial_ordering operator<=>(
+    BasicEulerAngles<T> const&
+  ) const noexcept = default;
 
  private:
-  Angle m_roll;
-  Angle m_pitch;
-  Angle m_yaw;
+  BasicAngle<T> m_roll;
+  BasicAngle<T> m_pitch;
+  BasicAngle<T> m_yaw;
 };
 
-W_COMMON_API std::ostream& operator<<(std::ostream& os, EulerAngles const& angles);
+/**
+ * @brief EulerAngles in single precision, the default.
+ */
+using EulerAngles = BasicEulerAngles<float>;
+
+template <std::floating_point T>
+std::ostream& operator<<(std::ostream& os, BasicEulerAngles<T> const& angles)
+{
+  return os << angles.to_string();
+}
 
 static_assert(std::is_standard_layout_v<EulerAngles>);
 static_assert(std::is_trivially_copyable_v<EulerAngles>);
-static_assert(sizeof(EulerAngles) == 3 * sizeof(Real));
+static_assert(sizeof(EulerAngles) == 3 * sizeof(float));
+static_assert(sizeof(BasicEulerAngles<double>) == 3 * sizeof(double));
 static_assert(
-  std::bit_cast<std::array<Real, 3>>(EulerAngles::from_radians(1.0, 2.0, 3.0))
-    == std::array<Real, 3> {1, 2, 3},
+  std::bit_cast<std::array<float, 3>>(EulerAngles::from_radians(1.0, 2.0, 3.0))
+    == std::array<float, 3> {1, 2, 3},
   "EulerAngles must store roll, pitch, yaw radians contiguously"
 );
 
 W_COMMON_NAMESPACE_END
 
-template <>
-struct std::hash<w::common::EulerAngles>
+template <std::floating_point T>
+struct std::hash<w::common::BasicEulerAngles<T>>
 {
-  [[nodiscard]] std::size_t operator()(w::common::EulerAngles const& angles) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::BasicEulerAngles<T> const& angles) const noexcept
   {
-    auto hash = std::hash<w::common::Angle> {}(angles.roll());
-    hash ^= std::hash<w::common::Angle> {}(angles.pitch()) + 0x9e3779b97f4a7c15ull + (hash << 6)
-          + (hash >> 2);
-    hash ^= std::hash<w::common::Angle> {}(angles.yaw()) + 0x9e3779b97f4a7c15ull + (hash << 6)
-          + (hash >> 2);
+    auto hash = std::hash<w::common::BasicAngle<T>> {}(angles.roll());
+    hash ^= std::hash<w::common::BasicAngle<T>> {}(angles.pitch()) + 0x9e3779b97f4a7c15ull
+          + (hash << 6) + (hash >> 2);
+    hash ^= std::hash<w::common::BasicAngle<T>> {}(angles.yaw()) + 0x9e3779b97f4a7c15ull
+          + (hash << 6) + (hash >> 2);
     return hash;
   }
 };
 
 #ifndef __DOXYGEN__
-template <>
-struct fmt::formatter<w::common::EulerAngles> : fmt::ostream_formatter
+template <std::floating_point T>
+struct fmt::formatter<w::common::BasicEulerAngles<T>> : fmt::ostream_formatter
 {};
-#endif
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::EulerAngles)
 #endif

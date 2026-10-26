@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+#include <ostream>
 #include <cstddef>
 #include <algorithm>
 #include <array>
@@ -13,7 +15,6 @@
 
 #include <fmt/format.h>
 
-#include <w/common/detail/export.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
@@ -27,7 +28,7 @@
 W_COMMON_NAMESPACE_BEGIN
 
 /**
- * @brief 4×4 matrix of Real values, stored as four row vectors: affine transforms, views and
+ * @brief 4×4 matrix of @p T values, stored as four row vectors: affine transforms, views and
  * projections.
  * @details Row-major storage, column vectors: `(m * v).x() == m.row(0).dot(v)`, the translation
  * of an affine transform is the last column, and `a * b` applies `b` first, so
@@ -38,9 +39,9 @@ W_COMMON_NAMESPACE_BEGIN
  * `(p, 1)` and translates it, transform_direction() as `(d, 0)` and does not.
  *
  * @par Layout
- * The storage is exactly four contiguous Vector4 rows, i.e. sixteen contiguous Real values in
+ * The storage is exactly four contiguous Vector4 rows, i.e. sixteen contiguous @p T values in
  * row-major order (64 bytes), with no padding: `m.at(r, c)` is element `4 * r + c` of
- * `std::bit_cast<std::array<Real, 16>>(m)`. The class is standard layout and trivially copyable.
+ * `std::bit_cast<std::array<T, 16>>(m)`. The class is standard layout and trivially copyable.
  * The layout is part of the API and is checked by `static_assert`s in this header.
  *
  * @code {.cpp}
@@ -57,24 +58,42 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Vector4
  * @see Transform
  */
-class W_COMMON_API Matrix4x4
+template <std::floating_point T>
+class BasicMatrix4x4
 {
  public:
   /**
    * @brief Default tolerance of is_invertible(), relative to the product of the row magnitudes.
    */
-  static constexpr Real singular_tolerance = 1e-6F;
+  static constexpr T singular_tolerance = T {1e-6};
 
   /**
    * @brief Creates a zero matrix.
    */
-  constexpr Matrix4x4() noexcept = default;
+  constexpr BasicMatrix4x4() noexcept = default;
+
+  /**
+   * @brief Converts from another precision: implicitly when no value can lose digits, e.g. from
+   * `float` to `double`, and explicitly otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicMatrix4x4(
+    BasicMatrix4x4<U> const& other
+  ) noexcept
+    : BasicMatrix4x4(
+        BasicVector4<T>(std::get<0>(other.m_rows)),
+        BasicVector4<T>(std::get<1>(other.m_rows)),
+        BasicVector4<T>(std::get<2>(other.m_rows)),
+        BasicVector4<T>(std::get<3>(other.m_rows))
+      )
+  {}
 
   /**
    * @brief Returns the row at @p index.
    * @throws std::out_of_range if @p index is not in `[0, 4)`.
    */
-  [[nodiscard]] constexpr Vector4 row(std::size_t const index) const
+  [[nodiscard]] constexpr BasicVector4<T> row(std::size_t const index) const
   {
     return this->m_rows.at(index);
   }
@@ -83,7 +102,7 @@ class W_COMMON_API Matrix4x4
    * @brief Returns the column at @p index.
    * @throws std::out_of_range if @p index is not in `[0, 4)`.
    */
-  [[nodiscard]] constexpr Vector4 column(std::size_t const index) const
+  [[nodiscard]] constexpr BasicVector4<T> column(std::size_t const index) const
   {
     auto const& [a, b, c, d] = this->m_rows;
     return {component(a, index), component(b, index), component(c, index), component(d, index)};
@@ -93,7 +112,7 @@ class W_COMMON_API Matrix4x4
    * @brief Returns the element in @p row and @p column.
    * @throws std::out_of_range if either index is not in `[0, 4)`.
    */
-  [[nodiscard]] constexpr Real at(std::size_t const row, std::size_t const column) const
+  [[nodiscard]] constexpr T at(std::size_t const row, std::size_t const column) const
   {
     return component(this->m_rows.at(row), column);
   }
@@ -102,7 +121,7 @@ class W_COMMON_API Matrix4x4
    * @brief Returns the translation of an affine transform: the first three elements of the last
    * column.
    */
-  [[nodiscard]] constexpr Vector3 translation() const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> translation() const noexcept
   {
     auto const& [a, b, c, d] = this->m_rows;
     return {a.w(), b.w(), c.w()};
@@ -111,24 +130,21 @@ class W_COMMON_API Matrix4x4
   /**
    * @brief Returns the upper-left 3×3 block: the rotation and scale of an affine transform.
    */
-  [[nodiscard]] constexpr Matrix3x3 linear() const noexcept
+  [[nodiscard]] constexpr BasicMatrix3x3<T> linear() const noexcept
   {
     auto const& [a, b, c, d] = this->m_rows;
-    return Matrix3x3::from_rows(a.xyz(), b.xyz(), c.xyz());
+    return BasicMatrix3x3<T>::from_rows(a.xyz(), b.xyz(), c.xyz());
   }
 
-  [[nodiscard]] constexpr Matrix4x4 transposed() const noexcept
+  [[nodiscard]] constexpr BasicMatrix4x4<T> transposed() const noexcept
   {
     auto const& [a, b, c, d] = this->m_rows;
     return from_columns(a, b, c, d);
   }
 
-  [[nodiscard]] constexpr Real determinant() const noexcept
-  {
-    return Cofactors(*this).determinant();
-  }
+  [[nodiscard]] constexpr T determinant() const noexcept { return Cofactors(*this).determinant(); }
 
-  [[nodiscard]] constexpr Real trace() const noexcept
+  [[nodiscard]] constexpr T trace() const noexcept
   {
     auto const& [a, b, c, d] = this->m_rows;
     return a.x() + b.y() + c.z() + d.w();
@@ -139,7 +155,7 @@ class W_COMMON_API Matrix4x4
    */
   [[nodiscard]] constexpr bool is_finite() const noexcept
   {
-    return std::ranges::all_of(this->m_rows, &Vector4::is_finite);
+    return std::ranges::all_of(this->m_rows, &BasicVector4<T>::is_finite);
   }
 
   /**
@@ -148,7 +164,7 @@ class W_COMMON_API Matrix4x4
    */
   [[nodiscard]] constexpr bool is_affine() const noexcept
   {
-    return this->m_rows.back() == Vector4::unit_w();
+    return this->m_rows.back() == BasicVector4<T>::unit_w();
   }
 
   /**
@@ -160,9 +176,7 @@ class W_COMMON_API Matrix4x4
    * translation, so neither a tiny but well-conditioned matrix nor a view matrix far from the
    * origin counts as singular.
    */
-  [[nodiscard]] constexpr bool is_invertible(
-    Real const tolerance = singular_tolerance
-  ) const noexcept
+  [[nodiscard]] constexpr bool is_invertible(T const tolerance = singular_tolerance) const noexcept
   {
     if(not this->is_finite() or not common::is_finite(this->determinant()))
       return false;
@@ -173,7 +187,7 @@ class W_COMMON_API Matrix4x4
         return false;
       row /= largest;
     }
-    auto equilibrated = Matrix4x4(rows[0], rows[1], rows[2], rows[3]).transposed();
+    auto equilibrated = BasicMatrix4x4<T>(rows[0], rows[1], rows[2], rows[3]).transposed();
     auto columns = equilibrated.m_rows;
     for(auto& column : columns) {
       auto const largest = max_abs_component(column);
@@ -181,7 +195,7 @@ class W_COMMON_API Matrix4x4
         return false;
       column /= largest;
     }
-    equilibrated = Matrix4x4(columns[0], columns[1], columns[2], columns[3]);
+    equilibrated = BasicMatrix4x4<T>(columns[0], columns[1], columns[2], columns[3]);
     return abs(equilibrated.determinant()) > tolerance;
   }
 
@@ -189,7 +203,7 @@ class W_COMMON_API Matrix4x4
    * @brief Returns the inverse matrix, or `std::nullopt` unless is_invertible().
    * @see inverse
    */
-  [[nodiscard]] constexpr std::optional<Matrix4x4> try_inverse() const noexcept
+  [[nodiscard]] constexpr std::optional<BasicMatrix4x4<T>> try_inverse() const noexcept
   {
     if(not this->is_invertible())
       return std::nullopt;
@@ -201,7 +215,7 @@ class W_COMMON_API Matrix4x4
    * @throws NumericError unless is_invertible().
    * @see try_inverse
    */
-  [[nodiscard]] constexpr Matrix4x4 inverse() const
+  [[nodiscard]] constexpr BasicMatrix4x4<T> inverse() const
   {
     if(auto const result = this->try_inverse())
       return *result;
@@ -214,10 +228,12 @@ class W_COMMON_API Matrix4x4
    * projection.
    * @see transform_direction
    */
-  [[nodiscard]] constexpr Vector3 transform_point(Vector3 const point) const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> transform_point(
+    BasicVector3<T> const point
+  ) const noexcept
   {
     auto const& [a, b, c, d] = this->m_rows;
-    auto const p = Vector4::from_point(point);
+    auto const p = BasicVector4<T>::from_point(point);
     return {a.dot(p), b.dot(p), c.dot(p)};
   }
 
@@ -225,11 +241,11 @@ class W_COMMON_API Matrix4x4
    * @brief Transforms the position @p point, i.e. `(point, 1)`, and divides by the resulting `w`.
    * @details Maps a view-space point through a projection to normalized device coordinates.
    */
-  [[nodiscard]] constexpr Vector3 project_point(Vector3 const point) const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> project_point(BasicVector3<T> const point) const noexcept
   {
     auto const& [a, b, c, d] = this->m_rows;
-    auto const p = Vector4::from_point(point);
-    return Vector4(a.dot(p), b.dot(p), c.dot(p), d.dot(p)).perspective_divided();
+    auto const p = BasicVector4<T>::from_point(point);
+    return BasicVector4<T>(a.dot(p), b.dot(p), c.dot(p), d.dot(p)).perspective_divided();
   }
 
   /**
@@ -238,37 +254,39 @@ class W_COMMON_API Matrix4x4
    * @details A normal transforms with the inverse transpose instead, unless the scale is uniform.
    * @see transform_point
    */
-  [[nodiscard]] constexpr Vector3 transform_direction(Vector3 const direction) const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> transform_direction(
+    BasicVector3<T> const direction
+  ) const noexcept
   {
     auto const& [a, b, c, d] = this->m_rows;
-    auto const v = Vector4::from_direction(direction);
+    auto const v = BasicVector4<T>::from_direction(direction);
     return {a.dot(v), b.dot(v), c.dot(v)};
   }
 
   /**
    * @brief Returns the sixteen elements in row-major order, as they are stored.
    */
-  [[nodiscard]] constexpr std::array<Real, 16> to_array() const noexcept
+  [[nodiscard]] constexpr std::array<T, 16> to_array() const noexcept
   {
-    return std::bit_cast<std::array<Real, 16>>(*this);
+    return std::bit_cast<std::array<T, 16>>(*this);
   }
 
   /**
    * @brief Returns the rows as `[(a, b, c, d), (e, f, g, h), ...]`.
    */
-  [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_string() const { return fmt::format("{}", *this); }
 
-  [[nodiscard]] static constexpr Matrix4x4 zero() noexcept { return {}; }
+  [[nodiscard]] static constexpr BasicMatrix4x4<T> zero() noexcept { return {}; }
 
-  [[nodiscard]] static constexpr Matrix4x4 identity() noexcept
+  [[nodiscard]] static constexpr BasicMatrix4x4<T> identity() noexcept
   {
-    return diagonal(Vector4::splat(1.0));
+    return diagonal(BasicVector4<T>::splat(1.0));
   }
 
   /**
    * @brief Returns the diagonal matrix with @p diagonal on its main diagonal.
    */
-  [[nodiscard]] static constexpr Matrix4x4 diagonal(Vector4 const diagonal) noexcept
+  [[nodiscard]] static constexpr BasicMatrix4x4<T> diagonal(BasicVector4<T> const diagonal) noexcept
   {
     return from_rows(
       {diagonal.x(), 0.0, 0.0, 0.0},
@@ -278,21 +296,21 @@ class W_COMMON_API Matrix4x4
     );
   }
 
-  [[nodiscard]] static constexpr Matrix4x4 from_rows(
-    Vector4 const a,
-    Vector4 const b,
-    Vector4 const c,
-    Vector4 const d
+  [[nodiscard]] static constexpr BasicMatrix4x4<T> from_rows(
+    BasicVector4<T> const a,
+    BasicVector4<T> const b,
+    BasicVector4<T> const c,
+    BasicVector4<T> const d
   ) noexcept
   {
     return {a, b, c, d};
   }
 
-  [[nodiscard]] static constexpr Matrix4x4 from_columns(
-    Vector4 const a,
-    Vector4 const b,
-    Vector4 const c,
-    Vector4 const d
+  [[nodiscard]] static constexpr BasicMatrix4x4<T> from_columns(
+    BasicVector4<T> const a,
+    BasicVector4<T> const b,
+    BasicVector4<T> const c,
+    BasicVector4<T> const d
   ) noexcept
   {
     return from_rows(
@@ -306,99 +324,188 @@ class W_COMMON_API Matrix4x4
   /**
    * @brief Returns the matrix of the sixteen @p elements in row-major order.
    */
-  [[nodiscard]] static constexpr Matrix4x4 from_array(std::array<Real, 16> const& elements) noexcept
+  [[nodiscard]] static constexpr BasicMatrix4x4<T> from_array(
+    std::array<T, 16> const& elements
+  ) noexcept
   {
-    return std::bit_cast<Matrix4x4>(elements);
+    return std::bit_cast<BasicMatrix4x4<T>>(elements);
   }
 
   /**
    * @brief Returns the affine transform with @p linear as its upper-left block and the
    * translation @p translation.
    */
-  [[nodiscard]] static constexpr Matrix4x4 from_affine(
-    Matrix3x3 const& linear,
-    Vector3 const translation = {}
+  [[nodiscard]] static constexpr BasicMatrix4x4<T> from_affine(
+    BasicMatrix3x3<T> const& linear,
+    BasicVector3<T> const translation = {}
   ) noexcept
   {
     return from_rows(
       {linear.row(0), translation.x()},
       {linear.row(1), translation.y()},
       {linear.row(2), translation.z()},
-      Vector4::unit_w()
+      BasicVector4<T>::unit_w()
     );
   }
 
   /**
    * @brief Returns the translation by @p offset.
    */
-  [[nodiscard]] static constexpr Matrix4x4 from_translation(Vector3 const offset) noexcept
+  [[nodiscard]] static constexpr BasicMatrix4x4<T> from_translation(
+    BasicVector3<T> const offset
+  ) noexcept
   {
-    return from_affine(Matrix3x3::identity(), offset);
+    return from_affine(BasicMatrix3x3<T>::identity(), offset);
   }
 
   /**
    * @brief Returns the scale by @p factors along each axis.
    */
-  [[nodiscard]] static constexpr Matrix4x4 from_scale(Vector3 const factors) noexcept
+  [[nodiscard]] static constexpr BasicMatrix4x4<T> from_scale(
+    BasicVector3<T> const factors
+  ) noexcept
   {
     return diagonal({factors, 1.0});
   }
 
-  [[nodiscard]] constexpr bool operator==(Matrix4x4 const&) const noexcept = default;
+  [[nodiscard]] constexpr bool operator==(BasicMatrix4x4<T> const&) const noexcept = default;
 
-  [[nodiscard]] constexpr Matrix4x4 operator+() const noexcept { return *this; }
+  [[nodiscard]] constexpr BasicMatrix4x4<T> operator+() const noexcept { return *this; }
 
-  [[nodiscard]] constexpr Matrix4x4 operator-() const noexcept
+  [[nodiscard]] constexpr BasicMatrix4x4<T> operator-() const noexcept
   {
     auto const& [a, b, c, d] = this->m_rows;
     return from_rows(-a, -b, -c, -d);
   }
 
-  constexpr Matrix4x4& operator+=(Matrix4x4 const& rhs) noexcept
+  constexpr BasicMatrix4x4<T>& operator+=(BasicMatrix4x4<T> const& rhs) noexcept
   {
     for(auto index = std::size_t {0}; index < this->m_rows.size(); ++index)
       this->m_rows.at(index) += rhs.m_rows.at(index);
     return *this;
   }
 
-  constexpr Matrix4x4& operator-=(Matrix4x4 const& rhs) noexcept
+  constexpr BasicMatrix4x4<T>& operator-=(BasicMatrix4x4<T> const& rhs) noexcept
   {
     for(auto index = std::size_t {0}; index < this->m_rows.size(); ++index)
       this->m_rows.at(index) -= rhs.m_rows.at(index);
     return *this;
   }
 
-  constexpr Matrix4x4& operator*=(Real const rhs) noexcept
+  constexpr BasicMatrix4x4<T>& operator*=(T const rhs) noexcept
   {
     for(auto& row : this->m_rows)
       row *= rhs;
     return *this;
   }
 
-  constexpr Matrix4x4& operator/=(Real const rhs) noexcept
+  constexpr BasicMatrix4x4<T>& operator/=(T const rhs) noexcept
   {
     for(auto& row : this->m_rows)
       row /= rhs;
     return *this;
   }
 
+  [[nodiscard]] friend constexpr BasicMatrix4x4<T> operator+(
+    BasicMatrix4x4<T> lhs,
+    BasicMatrix4x4<T> const& rhs
+  ) noexcept
+  {
+    lhs += rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicMatrix4x4<T> operator-(
+    BasicMatrix4x4<T> lhs,
+    BasicMatrix4x4<T> const& rhs
+  ) noexcept
+  {
+    lhs -= rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicMatrix4x4<T> operator*(
+    BasicMatrix4x4<T> lhs,
+    T const rhs
+  ) noexcept
+  {
+    lhs *= rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicMatrix4x4<T> operator*(
+    T const lhs,
+    BasicMatrix4x4<T> rhs
+  ) noexcept
+  {
+    rhs *= lhs;
+    return rhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicMatrix4x4<T> operator/(
+    BasicMatrix4x4<T> lhs,
+    T const rhs
+  ) noexcept
+  {
+    lhs /= rhs;
+    return lhs;
+  }
+
+  /**
+   * @brief Returns the matrix-vector product `m v`.
+   * @relates Matrix4x4
+   */
+  [[nodiscard]] friend constexpr BasicVector4<T> operator*(
+    BasicMatrix4x4<T> const& m,
+    BasicVector4<T> const v
+  ) noexcept
+  {
+    return {m.row(0).dot(v), m.row(1).dot(v), m.row(2).dot(v), m.row(3).dot(v)};
+  }
+
+  /**
+   * @brief Returns the matrix product `lhs rhs`: `(lhs * rhs) * v == lhs * (rhs * v)`.
+   * @relates Matrix4x4
+   */
+  [[nodiscard]] friend constexpr BasicMatrix4x4<T> operator*(
+    BasicMatrix4x4<T> const& lhs,
+    BasicMatrix4x4<T> const& rhs
+  ) noexcept
+  {
+    auto const columns = rhs.transposed();
+    return BasicMatrix4x4<T>::from_rows(
+      columns * lhs.row(0),
+      columns * lhs.row(1),
+      columns * lhs.row(2),
+      columns * lhs.row(3)
+    );
+  }
+
  private:
-  constexpr Matrix4x4(Vector4 const a, Vector4 const b, Vector4 const c, Vector4 const d) noexcept
+  template <std::floating_point>
+  friend class BasicMatrix4x4;
+
+  constexpr BasicMatrix4x4(
+    BasicVector4<T> const a,
+    BasicVector4<T> const b,
+    BasicVector4<T> const c,
+    BasicVector4<T> const d
+  ) noexcept
     : m_rows {a, b, c, d}
   {}
 
-  [[nodiscard]] static constexpr Real component(Vector4 const v, std::size_t const index)
+  [[nodiscard]] static constexpr T component(BasicVector4<T> const v, std::size_t const index)
   {
     switch(index) {
       case 0: return v.x();
       case 1: return v.y();
       case 2: return v.z();
       case 3: return v.w();
-      default: throw std::out_of_range("Matrix4x4 index out of range");
+      default: throw std::out_of_range("BasicMatrix4x4<T> index out of range");
     }
   }
 
-  [[nodiscard]] static constexpr Real max_abs_component(Vector4 const v) noexcept
+  [[nodiscard]] static constexpr T max_abs_component(BasicVector4<T> const v) noexcept
   {
     return std::max({abs(v.x()), abs(v.y()), abs(v.z()), abs(v.w())});
   }
@@ -410,7 +517,7 @@ class W_COMMON_API Matrix4x4
   class Cofactors
   {
    public:
-    explicit constexpr Cofactors(Matrix4x4 const& m) noexcept
+    explicit constexpr Cofactors(BasicMatrix4x4<T> const& m) noexcept
       : m_rows(m.m_rows)
     {
       auto const& [a, b, c, d] = this->m_rows;
@@ -432,14 +539,14 @@ class W_COMMON_API Matrix4x4
       };
     }
 
-    [[nodiscard]] constexpr Real determinant() const noexcept
+    [[nodiscard]] constexpr T determinant() const noexcept
     {
       auto const& [s0, s1, s2, s3, s4, s5] = this->m_upper;
       auto const& [c0, c1, c2, c3, c4, c5] = this->m_lower;
       return s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
     }
 
-    [[nodiscard]] constexpr Matrix4x4 inverse() const noexcept
+    [[nodiscard]] constexpr BasicMatrix4x4<T> inverse() const noexcept
     {
       auto const& [a, b, c, d] = this->m_rows;
       auto const& [s0, s1, s2, s3, s4, s5] = this->m_upper;
@@ -475,85 +582,40 @@ class W_COMMON_API Matrix4x4
     }
 
    private:
-    std::array<Vector4, 4> m_rows;
-    std::array<Real, 6> m_upper {};
-    std::array<Real, 6> m_lower {};
+    std::array<BasicVector4<T>, 4> m_rows;
+    std::array<T, 6> m_upper {};
+    std::array<T, 6> m_lower {};
   };
 
-  std::array<Vector4, 4> m_rows {};
+  std::array<BasicVector4<T>, 4> m_rows {};
 };
 
-[[nodiscard]] constexpr Matrix4x4 operator+(Matrix4x4 lhs, Matrix4x4 const& rhs) noexcept
-{
-  lhs += rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Matrix4x4 operator-(Matrix4x4 lhs, Matrix4x4 const& rhs) noexcept
-{
-  lhs -= rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Matrix4x4 operator*(Matrix4x4 lhs, Real const rhs) noexcept
-{
-  lhs *= rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Matrix4x4 operator*(Real const lhs, Matrix4x4 rhs) noexcept
-{
-  rhs *= lhs;
-  return rhs;
-}
-
-[[nodiscard]] constexpr Matrix4x4 operator/(Matrix4x4 lhs, Real const rhs) noexcept
-{
-  lhs /= rhs;
-  return lhs;
-}
-
 /**
- * @brief Returns the matrix-vector product `m v`.
- * @relates Matrix4x4
+ * @brief Matrix4x4 in single precision, the default.
  */
-[[nodiscard]] constexpr Vector4 operator*(Matrix4x4 const& m, Vector4 const v) noexcept
-{
-  return {m.row(0).dot(v), m.row(1).dot(v), m.row(2).dot(v), m.row(3).dot(v)};
-}
+using Matrix4x4 = BasicMatrix4x4<float>;
 
-/**
- * @brief Returns the matrix product `lhs rhs`: `(lhs * rhs) * v == lhs * (rhs * v)`.
- * @relates Matrix4x4
- */
-[[nodiscard]] constexpr Matrix4x4 operator*(Matrix4x4 const& lhs, Matrix4x4 const& rhs) noexcept
+template <std::floating_point T>
+std::ostream& operator<<(std::ostream& os, BasicMatrix4x4<T> const& matrix)
 {
-  auto const columns = rhs.transposed();
-  return Matrix4x4::from_rows(
-    columns * lhs.row(0),
-    columns * lhs.row(1),
-    columns * lhs.row(2),
-    columns * lhs.row(3)
-  );
+  return os << matrix.to_string();
 }
-
-W_COMMON_API std::ostream& operator<<(std::ostream& os, Matrix4x4 const& matrix);
 
 static_assert(std::is_standard_layout_v<Matrix4x4>);
 static_assert(std::is_trivially_copyable_v<Matrix4x4>);
 static_assert(sizeof(Matrix4x4) == 64);
 static_assert(
   Matrix4x4::from_rows({0, 1, 2, 3}, {4, 5, 6, 7}, {8, 9, 10, 11}, {12, 13, 14, 15}).to_array()
-    == std::array<Real, 16> {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+    == std::array<float, 16> {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
   "Matrix4x4 must store four contiguous rows"
 );
 
 W_COMMON_NAMESPACE_END
 
-template <>
-struct std::hash<w::common::Matrix4x4>
+template <std::floating_point T>
+struct std::hash<w::common::BasicMatrix4x4<T>>
 {
-  [[nodiscard]] std::size_t operator()(w::common::Matrix4x4 const& matrix) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::BasicMatrix4x4<T> const& matrix) const noexcept
   {
     return w::common::_hash_impl::
       combine(matrix.row(0), matrix.row(1), matrix.row(2), matrix.row(3));
@@ -565,10 +627,13 @@ struct std::hash<w::common::Matrix4x4>
  * @brief Formats as `[(a, b, c, d), (e, f, g, h), ...]` row by row; the format spec, e.g. `{:.3f}`,
  * applies to every element.
  */
-template <>
-struct fmt::formatter<w::common::Matrix4x4> : fmt::formatter<w::common::Real>
+template <std::floating_point T>
+struct fmt::formatter<w::common::BasicMatrix4x4<T>> : fmt::formatter<T>
 {
-  format_context::iterator format(w::common::Matrix4x4 const& matrix, format_context& ctx) const
+  format_context::iterator format(
+    w::common::BasicMatrix4x4<T> const& matrix,
+    format_context& ctx
+  ) const
   {
     auto out = ctx.out();
     *out++ = '[';
@@ -578,7 +643,8 @@ struct fmt::formatter<w::common::Matrix4x4> : fmt::formatter<w::common::Real>
         *out++ = ' ';
       }
       ctx.advance_to(out);
-      out = w::common::_format_impl::format_components<4>(*this, matrix.row(index).to_array(), ctx);
+      out = w::common::_format_impl::
+        format_components<4, T>(*this, matrix.row(index).to_array(), ctx);
     }
     *out++ = ']';
     return out;

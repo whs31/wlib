@@ -16,14 +16,12 @@ class WLibRecipe(ConanFile):
     "shared": [True, False],
     "fPIC": [True, False],
     "test": [True, False],
-    "with_qt": [True, False],
     "with_glaze": [True, False],
   }
   default_options = {
     "shared": True,
     "fPIC": True,
     "test": False,
-    "with_qt": False,
     "with_glaze": False,
   }
 
@@ -47,11 +45,15 @@ class WLibRecipe(ConanFile):
   def requirements(self):
     self.req(
       "spdlog",
-      options={"shared": True},
+      options={"shared": bool(self.options.shared)},
       transitive_headers=True,
       transitive_libs=True,
     )
-    self.req("fmt", transitive_headers=True, transitive_libs=True)
+    self.req("fmt",
+      options={"shared": bool(self.options.shared)},
+      transitive_headers=True,
+      transitive_libs=True
+    )
     if self.options.with_glaze:
       self.req("glaze", transitive_headers=True)
     if self.options.test:
@@ -61,16 +63,10 @@ class WLibRecipe(ConanFile):
   def configure_cmake_toolchain(self, toolchain):
     toolchain.shared = self.options.shared
     toolchain.cache_variables["BUILD_TESTING"] = bool(self.options.test)
-    toolchain.cache_variables["WLIB_WITH_QT"] = bool(self.options.with_qt)
     toolchain.cache_variables["WLIB_WITH_GLAZE"] = bool(self.options.with_glaze)
 
   def package_info(self):
     self.cpp_info.set_property("cmake_file_name", "WLib")
-    if self.options.with_qt:
-      self.cpp_info.set_property(
-        "cmake_build_modules",
-        ["cmake_modules/WLibQtDependencies.cmake"],
-      )
     lib = self.cpp_info.components["lib"]
     lib.set_property("cmake_target_name", "w::lib")
     lib.libs = ["wlib"]

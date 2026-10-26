@@ -1,25 +1,18 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Density value stored in `kg/m^3`.
  * @details Density is a small value type stored in kilograms per cubic meter.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -33,15 +26,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Pressure
  * @see Temperature
  */
-class W_COMMON_API Density : public QuantityBase<Density>
+template <std::floating_point T>
+class BasicDensity : public QuantityBase<BasicDensity<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double kilogramsPerCubicMeter READ as_kilograms_per_cubic_meter CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicDensity, T>;
 
  public:
   /**
@@ -52,33 +40,52 @@ class W_COMMON_API Density : public QuantityBase<Density>
   /**
    * @brief Creates a zero density.
    */
-  constexpr Density() noexcept = default;
+  constexpr BasicDensity() noexcept = default;
 
   /**
    * @brief Creates a density from kilograms per cubic meter.
    */
-  explicit constexpr Density(Real const kilograms_per_cubic_meter) noexcept
-    : QuantityBase(kilograms_per_cubic_meter)
+  explicit constexpr BasicDensity(T const kilograms_per_cubic_meter) noexcept
+    : Base(kilograms_per_cubic_meter)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicDensity(
+    BasicDensity<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a density from kilograms per cubic meter.
    */
-  [[nodiscard]] static constexpr Density from_kilograms_per_cubic_meter(
-    Real const kilograms_per_cubic_meter
+  [[nodiscard]] static constexpr BasicDensity from_kilograms_per_cubic_meter(
+    T const kilograms_per_cubic_meter
   ) noexcept
   {
-    return Density(kilograms_per_cubic_meter);
+    return BasicDensity(kilograms_per_cubic_meter);
   }
 
   /**
    * @brief Returns kilograms per cubic meter.
    */
-  [[nodiscard]] constexpr Real as_kilograms_per_cubic_meter() const noexcept
+  [[nodiscard]] constexpr T as_kilograms_per_cubic_meter() const noexcept
   {
     return this->magnitude();
   }
 };
+
+/**
+ * @brief Density in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Density = BasicDensity<float>;
 
 inline namespace literals
 {
@@ -104,7 +111,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Density)
-#endif

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <algorithm>
 #include <array>
@@ -15,7 +16,6 @@
 #include <fmt/format.h>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/precision.h>
@@ -23,17 +23,10 @@
 #include <w/common/math.h>
 #include <w/common/vector3.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qgenericmatrix.h>
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 /**
- * @brief 3×3 matrix of Real values, stored as three row vectors.
+ * @brief 3×3 matrix of @p T values, stored as three row vectors.
  * @details Row-major storage, column vectors: `(m * v).x() == m.row(0).dot(v)`, and `a * b` applies
  * `b` first. The default value is the zero matrix. See @ref conventions.
  *
@@ -41,11 +34,10 @@ W_COMMON_NAMESPACE_BEGIN
  * general linear-algebra library; use Eigen when more is needed.
  *
  * @par Layout
- * The storage is exactly three contiguous Vector3 rows, i.e. nine contiguous Real values in
+ * The storage is exactly three contiguous Vector3 rows, i.e. nine contiguous @p T values in
  * row-major order, with no padding. The class is standard layout and trivially copyable, so it can
- * be reflected as `Vector3[3]` by offset or bit-cast to `std::array<Vector3, 3>`. `Q_GADGET` adds
- * no data members and does not affect the layout. The layout is part of the API and is checked by
- * `static_assert`s in this header.
+ * be reflected as `Vector3[3]` by offset or bit-cast to `std::array<Vector3, 3>`. The layout is
+ * part of the API and is checked by `static_assert`s in this header.
  *
  * @code {.cpp}
  * using namespace w;
@@ -58,50 +50,51 @@ W_COMMON_NAMESPACE_BEGIN
  *   inertia_body.inverse() * (torque_body - omega_body.cross(inertia_body * omega_body));
  * @endcode
  *
- * @note Qt properties, conversions, and metatype registration are available only when wlib is
- * built with `with_qt=True`.
  * @ingroup core_math
  * @see Vector3
  * @see Quaternion
  * @see Matrix4x4
  */
-class W_COMMON_API Matrix3x3
+template <std::floating_point T>
+class BasicMatrix3x3
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double determinant READ determinant CONSTANT FINAL)
-  Q_PROPERTY(double trace READ trace CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
-
  public:
   /**
    * @brief Default tolerance of is_invertible(), relative to the product of the row magnitudes.
    */
-  static constexpr Real singular_tolerance = 1e-5F;
+  static constexpr T singular_tolerance = T {1e-5};
 
   /**
    * @brief Default tolerance of is_symmetric(), relative to the largest element.
    */
-  static constexpr Real symmetric_tolerance = 1e-5F;
+  static constexpr T symmetric_tolerance = T {1e-5};
 
   /**
    * @brief Creates a zero matrix.
    */
-  constexpr Matrix3x3() noexcept = default;
+  constexpr BasicMatrix3x3() noexcept = default;
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  explicit Matrix3x3(QMatrix3x3 const& matrix) noexcept;
-#endif
+  /**
+   * @brief Converts from another precision: implicitly when no value can lose digits, e.g. from
+   * `float` to `double`, and explicitly otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicMatrix3x3(
+    BasicMatrix3x3<U> const& other
+  ) noexcept
+    : BasicMatrix3x3(
+        BasicVector3<T>(std::get<0>(other.m_rows)),
+        BasicVector3<T>(std::get<1>(other.m_rows)),
+        BasicVector3<T>(std::get<2>(other.m_rows))
+      )
+  {}
 
   /**
    * @brief Returns the row at @p index.
    * @throws std::out_of_range if @p index is not in `[0, 3)`.
    */
-  [[nodiscard]] constexpr Vector3 row(std::size_t const index) const
+  [[nodiscard]] constexpr BasicVector3<T> row(std::size_t const index) const
   {
     return this->m_rows.at(index);
   }
@@ -110,7 +103,7 @@ class W_COMMON_API Matrix3x3
    * @brief Returns the column at @p index.
    * @throws std::out_of_range if @p index is not in `[0, 3)`.
    */
-  [[nodiscard]] constexpr Vector3 column(std::size_t const index) const
+  [[nodiscard]] constexpr BasicVector3<T> column(std::size_t const index) const
   {
     auto const& [a, b, c] = this->m_rows;
     return {component(a, index), component(b, index), component(c, index)};
@@ -120,7 +113,7 @@ class W_COMMON_API Matrix3x3
    * @brief Returns the element in @p row and @p column.
    * @throws std::out_of_range if either index is not in `[0, 3)`.
    */
-  [[nodiscard]] constexpr Real at(std::size_t const row, std::size_t const column) const
+  [[nodiscard]] constexpr T at(std::size_t const row, std::size_t const column) const
   {
     return component(this->m_rows.at(row), column);
   }
@@ -128,25 +121,25 @@ class W_COMMON_API Matrix3x3
   /**
    * @brief Returns the main diagonal `(m00, m11, m22)`.
    */
-  [[nodiscard]] constexpr Vector3 diagonal() const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> diagonal() const noexcept
   {
     auto const& [a, b, c] = this->m_rows;
     return {a.x(), b.y(), c.z()};
   }
 
-  [[nodiscard]] constexpr Matrix3x3 transposed() const noexcept
+  [[nodiscard]] constexpr BasicMatrix3x3<T> transposed() const noexcept
   {
     auto const& [a, b, c] = this->m_rows;
     return from_columns(a, b, c);
   }
 
-  [[nodiscard]] constexpr Real determinant() const noexcept
+  [[nodiscard]] constexpr T determinant() const noexcept
   {
     auto const& [a, b, c] = this->m_rows;
     return a.dot(b.cross(c));
   }
 
-  [[nodiscard]] constexpr Real trace() const noexcept
+  [[nodiscard]] constexpr T trace() const noexcept
   {
     auto const& [a, b, c] = this->m_rows;
     return a.x() + b.y() + c.z();
@@ -166,9 +159,7 @@ class W_COMMON_API Matrix3x3
    * largest element, e.g. an inertia tensor after a change of frame.
    * @details A non-finite matrix is never symmetric.
    */
-  [[nodiscard]] constexpr bool is_symmetric(
-    Real const tolerance = symmetric_tolerance
-  ) const noexcept
+  [[nodiscard]] constexpr bool is_symmetric(T const tolerance = symmetric_tolerance) const noexcept
   {
     auto const& [a, b, c] = this->m_rows;
     auto const limit = tolerance * this->max_abs_element();
@@ -183,9 +174,7 @@ class W_COMMON_API Matrix3x3
    * That product bounds the determinant up to a constant factor, so the test does not depend on
    * the scale of the rows: a tiny but well-conditioned matrix is invertible.
    */
-  [[nodiscard]] constexpr bool is_invertible(
-    Real const tolerance = singular_tolerance
-  ) const noexcept
+  [[nodiscard]] constexpr bool is_invertible(T const tolerance = singular_tolerance) const noexcept
   {
     auto const& [a, b, c] = this->m_rows;
     auto const det = this->determinant();
@@ -198,7 +187,7 @@ class W_COMMON_API Matrix3x3
    * @brief Returns the inverse matrix, or `std::nullopt` unless is_invertible().
    * @see inverse
    */
-  [[nodiscard]] constexpr std::optional<Matrix3x3> try_inverse() const noexcept
+  [[nodiscard]] constexpr std::optional<BasicMatrix3x3<T>> try_inverse() const noexcept
   {
     if(not this->is_invertible())
       return std::nullopt;
@@ -212,60 +201,46 @@ class W_COMMON_API Matrix3x3
    * @throws NumericError unless is_invertible().
    * @see try_inverse
    */
-  [[nodiscard]] constexpr Matrix3x3 inverse() const
+  [[nodiscard]] constexpr BasicMatrix3x3<T> inverse() const
   {
     if(auto const result = this->try_inverse())
       return *result;
     throw NumericError("cannot invert a singular matrix, determinant {}", this->determinant());
   }
 
-#ifdef W_COMMON_WITH_QT
-  /**
-   * @brief Converts to a Qt matrix.
-   * @details The elements are narrowed to `float`.
-   * @note Available only when wlib is built with `with_qt=True`.
-   */
-  [[nodiscard]] QMatrix3x3 to_qmatrix3x3() const noexcept;
-#endif
-
   /**
    * @brief Returns the rows as `[(a, b, c), (d, e, f), (g, h, i)]`.
    */
-  [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_string() const { return fmt::format("{}", *this); }
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-#endif
+  [[nodiscard]] static constexpr BasicMatrix3x3<T> zero() noexcept { return {}; }
 
-  [[nodiscard]] static constexpr Matrix3x3 zero() noexcept { return {}; }
-
-  [[nodiscard]] static constexpr Matrix3x3 identity() noexcept
+  [[nodiscard]] static constexpr BasicMatrix3x3<T> identity() noexcept
   {
-    return diagonal(Vector3::splat(1.0));
+    return diagonal(BasicVector3<T>::splat(1.0));
   }
 
   /**
    * @brief Returns the diagonal matrix with @p diagonal on its main diagonal.
    */
-  [[nodiscard]] static constexpr Matrix3x3 diagonal(Vector3 const diagonal) noexcept
+  [[nodiscard]] static constexpr BasicMatrix3x3<T> diagonal(BasicVector3<T> const diagonal) noexcept
   {
     return from_rows({diagonal.x(), 0.0, 0.0}, {0.0, diagonal.y(), 0.0}, {0.0, 0.0, diagonal.z()});
   }
 
-  [[nodiscard]] static constexpr Matrix3x3 from_rows(
-    Vector3 const a,
-    Vector3 const b,
-    Vector3 const c
+  [[nodiscard]] static constexpr BasicMatrix3x3<T> from_rows(
+    BasicVector3<T> const a,
+    BasicVector3<T> const b,
+    BasicVector3<T> const c
   ) noexcept
   {
     return {a, b, c};
   }
 
-  [[nodiscard]] static constexpr Matrix3x3 from_columns(
-    Vector3 const a,
-    Vector3 const b,
-    Vector3 const c
+  [[nodiscard]] static constexpr BasicMatrix3x3<T> from_columns(
+    BasicVector3<T> const a,
+    BasicVector3<T> const b,
+    BasicVector3<T> const c
   ) noexcept
   {
     return from_rows({a.x(), b.x(), c.x()}, {a.y(), b.y(), c.y()}, {a.z(), b.z(), c.z()});
@@ -274,27 +249,22 @@ class W_COMMON_API Matrix3x3
   /**
    * @brief Returns the skew-symmetric cross-product matrix of @p v: `m * u == v.cross(u)`.
    */
-  [[nodiscard]] static constexpr Matrix3x3 cross_product(Vector3 const v) noexcept
+  [[nodiscard]] static constexpr BasicMatrix3x3<T> cross_product(BasicVector3<T> const v) noexcept
   {
     return from_rows({0.0, -v.z(), v.y()}, {v.z(), 0.0, -v.x()}, {-v.y(), v.x(), 0.0});
   }
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Matrix3x3 from_qmatrix3x3(QMatrix3x3 const& matrix) noexcept;
-#endif
+  [[nodiscard]] constexpr bool operator==(BasicMatrix3x3<T> const&) const noexcept = default;
 
-  [[nodiscard]] constexpr bool operator==(Matrix3x3 const&) const noexcept = default;
+  [[nodiscard]] constexpr BasicMatrix3x3<T> operator+() const noexcept { return *this; }
 
-  [[nodiscard]] constexpr Matrix3x3 operator+() const noexcept { return *this; }
-
-  [[nodiscard]] constexpr Matrix3x3 operator-() const noexcept
+  [[nodiscard]] constexpr BasicMatrix3x3<T> operator-() const noexcept
   {
     auto const& [a, b, c] = this->m_rows;
     return from_rows(-a, -b, -c);
   }
 
-  constexpr Matrix3x3& operator+=(Matrix3x3 const& rhs) noexcept
+  constexpr BasicMatrix3x3<T>& operator+=(BasicMatrix3x3<T> const& rhs) noexcept
   {
     auto& [a, b, c] = this->m_rows;
     auto const& [rhs_a, rhs_b, rhs_c] = rhs.m_rows;
@@ -304,7 +274,7 @@ class W_COMMON_API Matrix3x3
     return *this;
   }
 
-  constexpr Matrix3x3& operator-=(Matrix3x3 const& rhs) noexcept
+  constexpr BasicMatrix3x3<T>& operator-=(BasicMatrix3x3<T> const& rhs) noexcept
   {
     auto& [a, b, c] = this->m_rows;
     auto const& [rhs_a, rhs_b, rhs_c] = rhs.m_rows;
@@ -314,36 +284,114 @@ class W_COMMON_API Matrix3x3
     return *this;
   }
 
-  constexpr Matrix3x3& operator*=(Real const rhs) noexcept
+  constexpr BasicMatrix3x3<T>& operator*=(T const rhs) noexcept
   {
     for(auto& row : this->m_rows)
       row *= rhs;
     return *this;
   }
 
-  constexpr Matrix3x3& operator/=(Real const rhs) noexcept
+  constexpr BasicMatrix3x3<T>& operator/=(T const rhs) noexcept
   {
     for(auto& row : this->m_rows)
       row /= rhs;
     return *this;
   }
 
+  [[nodiscard]] friend constexpr BasicMatrix3x3<T> operator+(
+    BasicMatrix3x3<T> lhs,
+    BasicMatrix3x3<T> const& rhs
+  ) noexcept
+  {
+    lhs += rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicMatrix3x3<T> operator-(
+    BasicMatrix3x3<T> lhs,
+    BasicMatrix3x3<T> const& rhs
+  ) noexcept
+  {
+    lhs -= rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicMatrix3x3<T> operator*(
+    BasicMatrix3x3<T> lhs,
+    T const rhs
+  ) noexcept
+  {
+    lhs *= rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicMatrix3x3<T> operator*(
+    T const lhs,
+    BasicMatrix3x3<T> rhs
+  ) noexcept
+  {
+    rhs *= lhs;
+    return rhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicMatrix3x3<T> operator/(
+    BasicMatrix3x3<T> lhs,
+    T const rhs
+  ) noexcept
+  {
+    lhs /= rhs;
+    return lhs;
+  }
+
+  /**
+   * @brief Returns the matrix-vector product `m v`.
+   * @relates Matrix3x3
+   */
+  [[nodiscard]] friend constexpr BasicVector3<T> operator*(
+    BasicMatrix3x3<T> const& m,
+    BasicVector3<T> const v
+  ) noexcept
+  {
+    return {m.row(0).dot(v), m.row(1).dot(v), m.row(2).dot(v)};
+  }
+
+  /**
+   * @brief Returns the matrix product `lhs rhs`: `(lhs * rhs) * v == lhs * (rhs * v)`.
+   * @relates Matrix3x3
+   */
+  [[nodiscard]] friend constexpr BasicMatrix3x3<T> operator*(
+    BasicMatrix3x3<T> const& lhs,
+    BasicMatrix3x3<T> const& rhs
+  ) noexcept
+  {
+    auto const columns = rhs.transposed();
+    return BasicMatrix3x3<
+      T>::from_rows(columns * lhs.row(0), columns * lhs.row(1), columns * lhs.row(2));
+  }
+
  private:
-  constexpr Matrix3x3(Vector3 const a, Vector3 const b, Vector3 const c) noexcept
+  template <std::floating_point>
+  friend class BasicMatrix3x3;
+
+  constexpr BasicMatrix3x3(
+    BasicVector3<T> const a,
+    BasicVector3<T> const b,
+    BasicVector3<T> const c
+  ) noexcept
     : m_rows {a, b, c}
   {}
 
-  [[nodiscard]] static constexpr Real component(Vector3 const v, std::size_t const index)
+  [[nodiscard]] static constexpr T component(BasicVector3<T> const v, std::size_t const index)
   {
     switch(index) {
       case 0: return v.x();
       case 1: return v.y();
       case 2: return v.z();
-      default: throw std::out_of_range("Matrix3x3 index out of range");
+      default: throw std::out_of_range("BasicMatrix3x3<T> index out of range");
     }
   }
 
-  [[nodiscard]] static constexpr Real max_abs_component(Vector3 const v) noexcept
+  [[nodiscard]] static constexpr T max_abs_component(BasicVector3<T> const v) noexcept
   {
     auto const x = abs(v.x());
     auto const y = abs(v.y());
@@ -351,97 +399,57 @@ class W_COMMON_API Matrix3x3
     return std::max({x, y, z});
   }
 
-  [[nodiscard]] constexpr Real max_abs_element() const noexcept
+  [[nodiscard]] constexpr T max_abs_element() const noexcept
   {
-    auto result = Real {0};
+    auto result = T {0};
     for(auto const& row : this->m_rows)
       result = std::max(result, max_abs_component(row));
     return result;
   }
 
   // the columns of the adjugate are the cross products of the other two rows
-  [[nodiscard]] constexpr Matrix3x3 adjugate() const noexcept
+  [[nodiscard]] constexpr BasicMatrix3x3<T> adjugate() const noexcept
   {
     auto const& [a, b, c] = this->m_rows;
     return from_columns(b.cross(c), c.cross(a), a.cross(b));
   }
 
-  std::array<Vector3, 3> m_rows {};
+  std::array<BasicVector3<T>, 3> m_rows {};
 };
 
-[[nodiscard]] constexpr Matrix3x3 operator+(Matrix3x3 lhs, Matrix3x3 const& rhs) noexcept
-{
-  lhs += rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Matrix3x3 operator-(Matrix3x3 lhs, Matrix3x3 const& rhs) noexcept
-{
-  lhs -= rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Matrix3x3 operator*(Matrix3x3 lhs, Real const rhs) noexcept
-{
-  lhs *= rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Matrix3x3 operator*(Real const lhs, Matrix3x3 rhs) noexcept
-{
-  rhs *= lhs;
-  return rhs;
-}
-
-[[nodiscard]] constexpr Matrix3x3 operator/(Matrix3x3 lhs, Real const rhs) noexcept
-{
-  lhs /= rhs;
-  return lhs;
-}
-
 /**
- * @brief Returns the matrix-vector product `m v`.
- * @relates Matrix3x3
+ * @brief Matrix3x3 in single precision, the default.
  */
-[[nodiscard]] constexpr Vector3 operator*(Matrix3x3 const& m, Vector3 const v) noexcept
-{
-  return {m.row(0).dot(v), m.row(1).dot(v), m.row(2).dot(v)};
-}
+using Matrix3x3 = BasicMatrix3x3<float>;
 
-/**
- * @brief Returns the matrix product `lhs rhs`: `(lhs * rhs) * v == lhs * (rhs * v)`.
- * @relates Matrix3x3
- */
-[[nodiscard]] constexpr Matrix3x3 operator*(Matrix3x3 const& lhs, Matrix3x3 const& rhs) noexcept
+template <std::floating_point T>
+std::ostream& operator<<(std::ostream& os, BasicMatrix3x3<T> const& matrix)
 {
-  auto const columns = rhs.transposed();
-  return Matrix3x3::from_rows(columns * lhs.row(0), columns * lhs.row(1), columns * lhs.row(2));
+  return os << matrix.to_string();
 }
-
-W_COMMON_API std::ostream& operator<<(std::ostream& os, Matrix3x3 const& matrix);
 
 static_assert(std::is_standard_layout_v<Matrix3x3>);
 static_assert(std::is_trivially_copyable_v<Matrix3x3>);
-static_assert(sizeof(Matrix3x3) == 9 * sizeof(Real));
+static_assert(sizeof(Matrix3x3) == 9 * sizeof(float));
 static_assert(
-  std::bit_cast<std::array<Real, 9>>(
+  std::bit_cast<std::array<float, 9>>(
     Matrix3x3::from_rows({1.0, 2.0, 3.0}, {4.0, 5.0, 6.0}, {7.0, 8.0, 9.0})
-  ) == std::array<Real, 9> {1, 2, 3, 4, 5, 6, 7, 8, 9},
+  ) == std::array<float, 9> {1, 2, 3, 4, 5, 6, 7, 8, 9},
   "Matrix3x3 must store three contiguous rows"
 );
 
 W_COMMON_NAMESPACE_END
 
-template <>
-struct std::hash<w::common::Matrix3x3>
+template <std::floating_point T>
+struct std::hash<w::common::BasicMatrix3x3<T>>
 {
-  [[nodiscard]] std::size_t operator()(w::common::Matrix3x3 const& matrix) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::BasicMatrix3x3<T> const& matrix) const noexcept
   {
-    auto hash = std::hash<w::common::Vector3> {}(matrix.row(0));
-    hash ^= std::hash<w::common::Vector3> {}(matrix.row(1)) + 0x9e3779b97f4a7c15ull + (hash << 6U)
-          + (hash >> 2U);
-    hash ^= std::hash<w::common::Vector3> {}(matrix.row(2)) + 0x9e3779b97f4a7c15ull + (hash << 6U)
-          + (hash >> 2U);
+    auto hash = std::hash<w::common::BasicVector3<T>> {}(matrix.row(0));
+    hash ^= std::hash<w::common::BasicVector3<T>> {}(matrix.row(1)) + 0x9e3779b97f4a7c15ull
+          + (hash << 6U) + (hash >> 2U);
+    hash ^= std::hash<w::common::BasicVector3<T>> {}(matrix.row(2)) + 0x9e3779b97f4a7c15ull
+          + (hash << 6U) + (hash >> 2U);
     return hash;
   }
 };
@@ -451,10 +459,13 @@ struct std::hash<w::common::Matrix3x3>
  * @brief Formats as `[(a, b, c), (d, e, f), (g, h, i)]` row by row; the format spec, e.g.
  * `{:.3f}`, applies to every element.
  */
-template <>
-struct fmt::formatter<w::common::Matrix3x3> : fmt::formatter<w::common::Real>
+template <std::floating_point T>
+struct fmt::formatter<w::common::BasicMatrix3x3<T>> : fmt::formatter<T>
 {
-  format_context::iterator format(w::common::Matrix3x3 const& matrix, format_context& ctx) const
+  format_context::iterator format(
+    w::common::BasicMatrix3x3<T> const& matrix,
+    format_context& ctx
+  ) const
   {
     auto out = ctx.out();
     *out++ = '[';
@@ -465,14 +476,11 @@ struct fmt::formatter<w::common::Matrix3x3> : fmt::formatter<w::common::Real>
       }
       ctx.advance_to(out);
       auto const row = matrix.row(index);
-      out = w::common::_format_impl::format_components<3>(*this, {row.x(), row.y(), row.z()}, ctx);
+      out = w::common::_format_impl::
+        format_components<3, T>(*this, {row.x(), row.y(), row.z()}, ctx);
     }
     *out++ = ']';
     return out;
   }
 };
-#endif
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Matrix3x3)
 #endif

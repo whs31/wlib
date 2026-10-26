@@ -23,14 +23,6 @@
 #include <w/common/detail/namespace.h>
 #include <w/common/error.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#  include <qstringview.h>
-#  include <quuid.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 class W_COMMON_API UuidError final : public Error
@@ -46,20 +38,10 @@ class W_COMMON_API UuidError final : public Error
 
 /**
  * @brief Universally unique identifier value type.
- * @note Qt properties, conversions, and metatype registration are available
- * only when wlib is built with `with_qt=True`.
  * @ingroup core_identifiers
  */
 class W_COMMON_API Uuid
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-  Q_PROPERTY(std::uint64_t versionNum READ version_num CONSTANT FINAL)
-  Q_PROPERTY(bool isNil READ is_nil CONSTANT FINAL)
-  Q_PROPERTY(bool isMax READ is_max CONSTANT FINAL)
-#endif
-
  public:
   enum class Version : std::uint8_t
   {
@@ -141,34 +123,6 @@ class W_COMMON_API Uuid
     }
   }
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  // QUuid exposes its final field as a fixed-size C array.
-  // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-  explicit constexpr Uuid(QUuid const& uuid) noexcept
-    : m_bytes {
-        byte<3>(uuid.data1),
-        byte<2>(uuid.data1),
-        byte<1>(uuid.data1),
-        byte<0>(uuid.data1),
-        byte<1>(uuid.data2),
-        byte<0>(uuid.data2),
-        byte<1>(uuid.data3),
-        byte<0>(uuid.data3),
-        static_cast<std::uint8_t>(uuid.data4[0]),
-        static_cast<std::uint8_t>(uuid.data4[1]),
-        static_cast<std::uint8_t>(uuid.data4[2]),
-        static_cast<std::uint8_t>(uuid.data4[3]),
-        static_cast<std::uint8_t>(uuid.data4[4]),
-        static_cast<std::uint8_t>(uuid.data4[5]),
-        static_cast<std::uint8_t>(uuid.data4[6]),
-        static_cast<std::uint8_t>(uuid.data4[7]),
-      }
-  {}
-
-  // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-#endif
-
   [[nodiscard]] constexpr bool is_nil() const noexcept { return *this == nil(); }
 
   [[nodiscard]] constexpr bool is_max() const noexcept { return *this == max(); }
@@ -181,39 +135,6 @@ class W_COMMON_API Uuid
   [[nodiscard]] constexpr std::span<std::uint8_t, 16> bytes() noexcept { return this->m_bytes; }
 
   [[nodiscard]] std::string to_string(Format format = Format::Hyphenated) const;
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring(Format format = Format::Hyphenated) const;
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Uuid from_qstring(QStringView text);
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Uuid from_qstring(QString const& text);
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] constexpr QUuid to_quuid() const noexcept
-  {
-    auto const [d1, d2, d3, d4] = this->as_fields();
-    // std::span has no bounds-checked element access before C++26; the extent is fixed at 8.
-    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-    return {
-      static_cast<uint>(d1),
-      static_cast<ushort>(d2),
-      static_cast<ushort>(d3),
-      static_cast<uchar>(d4[0]),
-      static_cast<uchar>(d4[1]),
-      static_cast<uchar>(d4[2]),
-      static_cast<uchar>(d4[3]),
-      static_cast<uchar>(d4[4]),
-      static_cast<uchar>(d4[5]),
-      static_cast<uchar>(d4[6]),
-      static_cast<uchar>(d4[7]),
-    };
-    // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-  }
-#endif
 
   [[nodiscard]] constexpr static Uuid nil() noexcept { return {}; }
 
@@ -420,8 +341,4 @@ struct fmt::formatter<w::common::Uuid>
     return fmt::format_to(context.out(), "{}", uuid.to_string(output_format));
   }
 };
-#endif
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Uuid)
 #endif

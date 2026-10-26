@@ -44,6 +44,11 @@ if [[ " ${components[*]} " != *" glaze "* ]] && [[ -d "$install_dir/include/$inc
   echo "Headers of the disabled glaze component were installed" >&2
   exit 1
 fi
+# the Qt integration is the separate package wlib_qt
+if [[ -d "$install_dir/include/$include_prefix/qt" ]] || [[ -d "$install_dir/include/$include_prefix/qml" ]]; then
+  echo "Headers of the Qt integration were installed" >&2
+  exit 1
+fi
 
 for component in "${components[@]}"; do
   consumer_build="$build_dir/package-smoke/$component"
@@ -55,5 +60,12 @@ for component in "${components[@]}"; do
     -DCMAKE_BUILD_TYPE="$build_type" \
     -DCMAKE_PREFIX_PATH="$install_dir;$build_dir/generators"
   cmake --build "$consumer_build"
-  "$consumer_build/wlib_consumer"
+  # the run environment finds the shared dependencies of libwlib, e.g. spdlog
+  (
+    if [[ -f "$build_dir/generators/conanrun.sh" ]]; then
+      # shellcheck disable=SC1091
+      source "$build_dir/generators/conanrun.sh"
+    fi
+    "$consumer_build/wlib_consumer"
+  )
 done

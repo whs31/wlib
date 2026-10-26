@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <array>
 #include <bit>
@@ -7,6 +8,7 @@
 #include <functional>
 #include <iosfwd>
 #include <numbers>
+#include <limits>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -16,7 +18,6 @@
 
 #include <w/common/angle.h>
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/precision.h>
@@ -28,17 +29,11 @@
 #include <w/common/matrix4x4.h>
 #include <w/common/vector3.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qquaternion.h>
-#  include <qstring.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 /**
- * @brief Hamilton quaternion of Real values, scalar first, used for rotations and attitudes.
+ * @brief Hamilton quaternion of floating-point values, scalar first, used for rotations and
+ * attitudes.
  * @details The default value is the identity rotation.
  *
  * @par Conventions
@@ -59,9 +54,9 @@ W_COMMON_NAMESPACE_BEGIN
  * renormalize after each step with normalized().
  *
  * @par Layout
- * The storage is exactly four contiguous Real values in `w, x, y, z` order, with no padding. The
+ * The storage is exactly four contiguous @p T values in `w, x, y, z` order, with no padding. The
  * class is standard layout and trivially copyable, so it can be reflected by offset or bit-cast to
- * `std::array<Real, 4>`. `Q_GADGET` adds no data members and does not affect the layout. The
+ * `std::array<T, 4>`. The
  * layout is part of the API and is checked by `static_assert`s in this header. Jolt, HLSL and glm
  * store `x, y, z, w`; from_xyzw() and to_xyzw() convert at those edges, member by member.
  *
@@ -77,34 +72,38 @@ W_COMMON_NAMESPACE_BEGIN
  * attitude_body_to_ned = attitude_body_to_ned.normalized();
  * @endcode
  *
- * @note Qt properties, conversions, and metatype registration are available only when wlib is
- * built with `with_qt=True`.
  * @ingroup core_math
  * @see Matrix3x3
  * @see EulerAngles
  * @see Transform
  */
-class W_COMMON_API Quaternion
+template <std::floating_point T>
+class BasicQuaternion
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double w READ w CONSTANT FINAL)
-  Q_PROPERTY(double x READ x CONSTANT FINAL)
-  Q_PROPERTY(double y READ y CONSTANT FINAL)
-  Q_PROPERTY(double z READ z CONSTANT FINAL)
-  Q_PROPERTY(double length READ length CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
-
  public:
   /**
    * @brief Creates the identity rotation.
    */
-  constexpr Quaternion() noexcept = default;
+  constexpr BasicQuaternion() noexcept = default;
 
-  constexpr Quaternion(Real const w, Real const x, Real const y, Real const z) noexcept
+  /**
+   * @brief Converts from another precision: implicitly when no value can lose digits, e.g. from
+   * `float` to `double`, and explicitly otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicQuaternion(
+    BasicQuaternion<U> const& other
+  ) noexcept
+    : BasicQuaternion(
+        static_cast<T>(other.w()),
+        static_cast<T>(other.x()),
+        static_cast<T>(other.y()),
+        static_cast<T>(other.z())
+      )
+  {}
+
+  constexpr BasicQuaternion(T const w, T const x, T const y, T const z) noexcept
     : m_w(w)
     , m_x(x)
     , m_y(y)
@@ -114,48 +113,43 @@ class W_COMMON_API Quaternion
   /**
    * @brief Creates the quaternion with the scalar part @p w and the vector part @p vector.
    */
-  constexpr Quaternion(Real const w, Vector3 const vector) noexcept
+  constexpr BasicQuaternion(T const w, BasicVector3<T> const vector) noexcept
     : m_w(w)
     , m_x(vector.x())
     , m_y(vector.y())
     , m_z(vector.z())
   {}
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  explicit Quaternion(QQuaternion const& quaternion) noexcept;
-#endif
+  [[nodiscard]] constexpr T w() const noexcept { return this->m_w; }
 
-  [[nodiscard]] constexpr Real w() const noexcept { return this->m_w; }
+  [[nodiscard]] constexpr T x() const noexcept { return this->m_x; }
 
-  [[nodiscard]] constexpr Real x() const noexcept { return this->m_x; }
+  [[nodiscard]] constexpr T y() const noexcept { return this->m_y; }
 
-  [[nodiscard]] constexpr Real y() const noexcept { return this->m_y; }
-
-  [[nodiscard]] constexpr Real z() const noexcept { return this->m_z; }
+  [[nodiscard]] constexpr T z() const noexcept { return this->m_z; }
 
   /**
    * @brief Returns the vector part `(x, y, z)`.
    */
-  [[nodiscard]] constexpr Vector3 vector() const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> vector() const noexcept
   {
     return {this->m_x, this->m_y, this->m_z};
   }
 
-  [[nodiscard]] constexpr Quaternion conjugate() const noexcept
+  [[nodiscard]] constexpr BasicQuaternion<T> conjugate() const noexcept
   {
     return {this->m_w, -this->m_x, -this->m_y, -this->m_z};
   }
 
-  [[nodiscard]] constexpr Real dot(Quaternion const& other) const noexcept
+  [[nodiscard]] constexpr T dot(BasicQuaternion<T> const& other) const noexcept
   {
     return this->m_w * other.m_w + this->m_x * other.m_x + this->m_y * other.m_y
          + this->m_z * other.m_z;
   }
 
-  [[nodiscard]] constexpr Real length_squared() const noexcept { return this->dot(*this); }
+  [[nodiscard]] constexpr T length_squared() const noexcept { return this->dot(*this); }
 
-  [[nodiscard]] Real length() const noexcept { return std::sqrt(this->length_squared()); }
+  [[nodiscard]] T length() const noexcept { return std::sqrt(this->length_squared()); }
 
   /**
    * @brief Checks whether every component is neither infinite nor NaN.
@@ -171,12 +165,12 @@ class W_COMMON_API Quaternion
    * is zero or not finite.
    * @see normalized
    */
-  [[nodiscard]] std::optional<Quaternion> try_normalized() const noexcept
+  [[nodiscard]] std::optional<BasicQuaternion<T>> try_normalized() const noexcept
   {
     auto const len = this->length();
     if(not positive(len))
       return std::nullopt;
-    return Quaternion(this->m_w / len, this->m_x / len, this->m_y / len, this->m_z / len);
+    return BasicQuaternion<T>(this->m_w / len, this->m_x / len, this->m_y / len, this->m_z / len);
   }
 
   /**
@@ -184,12 +178,12 @@ class W_COMMON_API Quaternion
    * @throws NumericError if the length is zero or not finite.
    * @see try_normalized
    */
-  [[nodiscard]] Quaternion normalized() const;
+  [[nodiscard]] BasicQuaternion<T> normalized() const;
 
   /**
    * @brief Returns the multiplicative inverse `q* / |q|²`; for a unit quaternion, the conjugate.
    */
-  [[nodiscard]] constexpr Quaternion inverse() const noexcept
+  [[nodiscard]] constexpr BasicQuaternion<T> inverse() const noexcept
   {
     auto result = this->conjugate();
     result /= this->length_squared();
@@ -199,9 +193,9 @@ class W_COMMON_API Quaternion
   /**
    * @brief Returns the rotation angle of this unit quaternion, in `[0°, 180°]`.
    */
-  [[nodiscard]] Angle angle() const noexcept
+  [[nodiscard]] BasicAngle<T> angle() const noexcept
   {
-    return Angle::from_radians(2 * std::atan2(this->vector().length(), abs(this->m_w)));
+    return BasicAngle<T>::from_radians(2 * std::atan2(this->vector().length(), abs(this->m_w)));
   }
 
   /**
@@ -210,22 +204,22 @@ class W_COMMON_API Quaternion
    * @details Computed from the chord between the quaternions rather than an arc cosine, so it
    * stays accurate for nearby rotations.
    */
-  [[nodiscard]] Angle angle_to(Quaternion const& other) const noexcept
+  [[nodiscard]] BasicAngle<T> angle_to(BasicQuaternion<T> const& other) const noexcept
   {
     auto const target = this->dot(other) < 0 ? -other : other;
-    auto const chord = Quaternion(
+    auto const chord = BasicQuaternion<T>(
       this->m_w - target.m_w,
       this->m_x - target.m_x,
       this->m_y - target.m_y,
       this->m_z - target.m_z
     );
-    auto const sum = Quaternion(
+    auto const sum = BasicQuaternion<T>(
       this->m_w + target.m_w,
       this->m_x + target.m_x,
       this->m_y + target.m_y,
       this->m_z + target.m_z
     );
-    return Angle::from_radians(4 * std::atan2(chord.length(), sum.length()));
+    return BasicAngle<T>::from_radians(4 * std::atan2(chord.length(), sum.length()));
   }
 
   /**
@@ -235,7 +229,7 @@ class W_COMMON_API Quaternion
    * @pre Both quaternions are unit quaternions.
    * @see slerp
    */
-  [[nodiscard]] Quaternion nlerp(Quaternion const& other, Real t) const noexcept;
+  [[nodiscard]] BasicQuaternion<T> nlerp(BasicQuaternion<T> const& other, T t) const noexcept;
 
   /**
    * @brief Spherical linear interpolation toward @p other along the shorter arc, at constant
@@ -245,13 +239,13 @@ class W_COMMON_API Quaternion
    * @pre Both quaternions are unit quaternions.
    * @see nlerp
    */
-  [[nodiscard]] Quaternion slerp(Quaternion const& other, Real t) const noexcept;
+  [[nodiscard]] BasicQuaternion<T> slerp(BasicQuaternion<T> const& other, T t) const noexcept;
 
   /**
    * @brief Rotates @p v by this unit quaternion: `q ⊗ (0, v) ⊗ q*`.
    * @see inverse_rotate
    */
-  [[nodiscard]] constexpr Vector3 rotate(Vector3 const v) const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> rotate(BasicVector3<T> const v) const noexcept
   {
     auto const u = this->vector();
     auto const t = 2.0 * u.cross(v);
@@ -262,7 +256,7 @@ class W_COMMON_API Quaternion
    * @brief Rotates @p v by the inverse of this unit quaternion: `q* ⊗ (0, v) ⊗ q`.
    * @see rotate
    */
-  [[nodiscard]] constexpr Vector3 inverse_rotate(Vector3 const v) const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> inverse_rotate(BasicVector3<T> const v) const noexcept
   {
     return this->conjugate().rotate(v);
   }
@@ -271,13 +265,13 @@ class W_COMMON_API Quaternion
    * @brief Returns the rotation matrix `m` of this unit quaternion: `m * v == rotate(v)`.
    * @details The inverse rotation is the transpose of the matrix.
    */
-  [[nodiscard]] constexpr Matrix3x3 to_rotation_matrix() const noexcept
+  [[nodiscard]] constexpr BasicMatrix3x3<T> to_rotation_matrix() const noexcept
   {
     auto const w = this->m_w;
     auto const x = this->m_x;
     auto const y = this->m_y;
     auto const z = this->m_z;
-    return Matrix3x3::from_rows(
+    return BasicMatrix3x3<T>::from_rows(
       {1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)},
       {2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)},
       {2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)}
@@ -288,9 +282,9 @@ class W_COMMON_API Quaternion
    * @brief Returns the rotation matrix of this unit quaternion as an affine 4×4 transform without
    * translation.
    */
-  [[nodiscard]] constexpr Matrix4x4 to_matrix4() const noexcept
+  [[nodiscard]] constexpr BasicMatrix4x4<T> to_matrix4() const noexcept
   {
-    return Matrix4x4::from_affine(this->to_rotation_matrix());
+    return BasicMatrix4x4<T>::from_affine(this->to_rotation_matrix());
   }
 
   /**
@@ -302,7 +296,7 @@ class W_COMMON_API Quaternion
    * @see from_euler
    */
   template <EulerOrder Order>
-  [[nodiscard]] std::array<Angle, 3> to_euler() const noexcept;
+  [[nodiscard]] std::array<BasicAngle<T>, 3> to_euler() const noexcept;
 
   /**
    * @brief Returns the aerospace ZYX Euler angles of this unit quaternion.
@@ -311,7 +305,7 @@ class W_COMMON_API Quaternion
    * roll is zero and the yaw carries the whole rotation about the vertical.
    * @see from_yaw_pitch_roll
    */
-  [[nodiscard]] EulerAngles to_yaw_pitch_roll() const noexcept
+  [[nodiscard]] BasicEulerAngles<T> to_yaw_pitch_roll() const noexcept
   {
     auto const [roll, pitch, yaw] = this->to_euler<EulerOrder::ZYX>();
     return {roll, pitch, yaw};
@@ -323,7 +317,7 @@ class W_COMMON_API Quaternion
    * another order.
    */
   [[deprecated("use to_yaw_pitch_roll(), or to_euler<Order>() for another order")]]
-  [[nodiscard]] EulerAngles
+  [[nodiscard]] BasicEulerAngles<T>
     to_euler_angles() const noexcept
   {
     return this->to_yaw_pitch_roll();
@@ -333,7 +327,7 @@ class W_COMMON_API Quaternion
    * @brief Returns the components in `x, y, z, w` order, as Jolt, HLSL and glm store them.
    * @see from_xyzw
    */
-  [[nodiscard]] constexpr std::array<Real, 4> to_xyzw() const noexcept
+  [[nodiscard]] constexpr std::array<T, 4> to_xyzw() const noexcept
   {
     return {this->m_x, this->m_y, this->m_z, this->m_w};
   }
@@ -344,34 +338,20 @@ class W_COMMON_API Quaternion
    * @details @p omega_body is the angular velocity of the body relative to the reference frame,
    * in body axes, in radians per second. The result is per second.
    */
-  [[nodiscard]] constexpr Quaternion derivative(Vector3 omega_body) const noexcept;
-
-#ifdef W_COMMON_WITH_QT
-  /**
-   * @brief Converts to a Qt quaternion.
-   * @details The components are narrowed to `float`.
-   * @note Available only when wlib is built with `with_qt=True`.
-   */
-  [[nodiscard]] QQuaternion to_qquaternion() const noexcept;
-#endif
+  [[nodiscard]] constexpr BasicQuaternion<T> derivative(BasicVector3<T> omega_body) const noexcept;
 
   /**
    * @brief Returns the components as `(w, x, y, z)`.
    */
-  [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_string() const { return fmt::format("{}", *this); }
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-#endif
+  [[nodiscard]] static constexpr BasicQuaternion<T> identity() noexcept { return {}; }
 
-  [[nodiscard]] static constexpr Quaternion identity() noexcept { return {}; }
-
-  [[nodiscard]] static constexpr Quaternion from_wxyz(
-    Real const w,
-    Real const x,
-    Real const y,
-    Real const z
+  [[nodiscard]] static constexpr BasicQuaternion<T> from_wxyz(
+    T const w,
+    T const x,
+    T const y,
+    T const z
   ) noexcept
   {
     return {w, x, y, z};
@@ -382,11 +362,11 @@ class W_COMMON_API Quaternion
    * store them.
    * @see to_xyzw
    */
-  [[nodiscard]] static constexpr Quaternion from_xyzw(
-    Real const x,
-    Real const y,
-    Real const z,
-    Real const w
+  [[nodiscard]] static constexpr BasicQuaternion<T> from_xyzw(
+    T const x,
+    T const y,
+    T const z,
+    T const w
   ) noexcept
   {
     return {w, x, y, z};
@@ -397,7 +377,10 @@ class W_COMMON_API Quaternion
    * @details @p axis need not be a unit vector.
    * @throws NumericError if @p axis is zero or not finite.
    */
-  [[nodiscard]] static Quaternion from_axis_angle(Vector3 const axis, Angle const angle)
+  [[nodiscard]] static BasicQuaternion<T> from_axis_angle(
+    BasicVector3<T> const axis,
+    BasicAngle<T> const angle
+  )
   {
     auto const unit = axis.try_normalized();
     if(not unit.has_value())
@@ -417,7 +400,11 @@ class W_COMMON_API Quaternion
    * @see from_yaw_pitch_roll
    */
   template <EulerOrder Order>
-  [[nodiscard]] static Quaternion from_euler(Angle about_x, Angle about_y, Angle about_z) noexcept;
+  [[nodiscard]] static BasicQuaternion<T> from_euler(
+    BasicAngle<T> about_x,
+    BasicAngle<T> about_y,
+    BasicAngle<T> about_z
+  ) noexcept;
 
   /**
    * @brief Returns the attitude of the aerospace ZYX Euler angles.
@@ -427,7 +414,9 @@ class W_COMMON_API Quaternion
    * the right side. Same as `from_euler<EulerOrder::ZYX>(roll, pitch, yaw)`.
    * @see to_yaw_pitch_roll
    */
-  [[nodiscard]] static Quaternion from_yaw_pitch_roll(EulerAngles const& angles) noexcept
+  [[nodiscard]] static BasicQuaternion<T> from_yaw_pitch_roll(
+    BasicEulerAngles<T> const& angles
+  ) noexcept
   {
     return from_euler<EulerOrder::ZYX>(angles.roll(), angles.pitch(), angles.yaw());
   }
@@ -438,8 +427,8 @@ class W_COMMON_API Quaternion
    * another order.
    */
   [[deprecated("use from_yaw_pitch_roll(), or from_euler<Order>() for another order")]]
-  [[nodiscard]] static Quaternion
-    from_euler_angles(EulerAngles const& angles) noexcept
+  [[nodiscard]] static BasicQuaternion<T>
+    from_euler_angles(BasicEulerAngles<T> const& angles) noexcept
   {
     return from_yaw_pitch_roll(angles);
   }
@@ -451,7 +440,9 @@ class W_COMMON_API Quaternion
    * @pre @p matrix is a rotation matrix: orthonormal with determinant `+1`.
    * @see to_rotation_matrix
    */
-  [[nodiscard]] static Quaternion from_rotation_matrix(Matrix3x3 const& matrix) noexcept;
+  [[nodiscard]] static BasicQuaternion<T> from_rotation_matrix(
+    BasicMatrix3x3<T> const& matrix
+  ) noexcept;
 
   /**
    * @brief Returns the shortest rotation that turns the direction @p from into the direction
@@ -460,7 +451,7 @@ class W_COMMON_API Quaternion
    * rotation; the result is then the half turn about an axis perpendicular to @p from.
    * @throws NumericError if either vector is zero or not finite.
    */
-  [[nodiscard]] static Quaternion from_to(Vector3 from, Vector3 to);
+  [[nodiscard]] static BasicQuaternion<T> from_to(BasicVector3<T> from, BasicVector3<T> to);
 
   /**
    * @brief Returns the orientation whose forward axis points along @p forward and whose up axis
@@ -471,14 +462,14 @@ class W_COMMON_API Quaternion
    * the result is from_to() the forward axis.
    * @throws NumericError if @p forward is zero or not finite.
    */
-  [[nodiscard]] static Quaternion look_rotation(
-    Vector3 const forward,
-    Vector3 const up,
+  [[nodiscard]] static BasicQuaternion<T> look_rotation(
+    BasicVector3<T> const forward,
+    BasicVector3<T> const up,
     Handedness const handedness
   )
   {
-    auto const forward_axis = handedness == Handedness::Right ? -Vector3::unit_z()
-                                                              : Vector3::unit_z();
+    auto const forward_axis = handedness == Handedness::Right ? -BasicVector3<T>::unit_z()
+                                                              : BasicVector3<T>::unit_z();
     auto const direction = forward.try_normalized();
     if(not direction.has_value())
       throw NumericError("cannot look along {}", forward);
@@ -487,24 +478,19 @@ class W_COMMON_API Quaternion
     auto const x = up.cross(z).try_normalized();
     if(not x.has_value())
       return from_to(forward_axis, *direction);
-    return from_rotation_matrix(Matrix3x3::from_columns(*x, z.cross(*x), z));
+    return from_rotation_matrix(BasicMatrix3x3<T>::from_columns(*x, z.cross(*x), z));
   }
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Quaternion from_qquaternion(QQuaternion const& quaternion) noexcept;
-#endif
+  [[nodiscard]] constexpr bool operator==(BasicQuaternion<T> const&) const noexcept = default;
 
-  [[nodiscard]] constexpr bool operator==(Quaternion const&) const noexcept = default;
+  [[nodiscard]] constexpr BasicQuaternion<T> operator+() const noexcept { return *this; }
 
-  [[nodiscard]] constexpr Quaternion operator+() const noexcept { return *this; }
-
-  [[nodiscard]] constexpr Quaternion operator-() const noexcept
+  [[nodiscard]] constexpr BasicQuaternion<T> operator-() const noexcept
   {
     return {-this->m_w, -this->m_x, -this->m_y, -this->m_z};
   }
 
-  constexpr Quaternion& operator+=(Quaternion const& rhs) noexcept
+  constexpr BasicQuaternion<T>& operator+=(BasicQuaternion<T> const& rhs) noexcept
   {
     this->m_w += rhs.m_w;
     this->m_x += rhs.m_x;
@@ -513,7 +499,7 @@ class W_COMMON_API Quaternion
     return *this;
   }
 
-  constexpr Quaternion& operator-=(Quaternion const& rhs) noexcept
+  constexpr BasicQuaternion<T>& operator-=(BasicQuaternion<T> const& rhs) noexcept
   {
     this->m_w -= rhs.m_w;
     this->m_x -= rhs.m_x;
@@ -522,7 +508,7 @@ class W_COMMON_API Quaternion
     return *this;
   }
 
-  constexpr Quaternion& operator*=(Real const rhs) noexcept
+  constexpr BasicQuaternion<T>& operator*=(T const rhs) noexcept
   {
     this->m_w *= rhs;
     this->m_x *= rhs;
@@ -531,7 +517,7 @@ class W_COMMON_API Quaternion
     return *this;
   }
 
-  constexpr Quaternion& operator/=(Real const rhs) noexcept
+  constexpr BasicQuaternion<T>& operator/=(T const rhs) noexcept
   {
     this->m_w /= rhs;
     this->m_x /= rhs;
@@ -540,90 +526,127 @@ class W_COMMON_API Quaternion
     return *this;
   }
 
+  [[nodiscard]] friend constexpr BasicQuaternion<T> operator+(
+    BasicQuaternion<T> lhs,
+    BasicQuaternion<T> const& rhs
+  ) noexcept
+  {
+    lhs += rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicQuaternion<T> operator-(
+    BasicQuaternion<T> lhs,
+    BasicQuaternion<T> const& rhs
+  ) noexcept
+  {
+    lhs -= rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicQuaternion<T> operator*(
+    BasicQuaternion<T> lhs,
+    T const rhs
+  ) noexcept
+  {
+    lhs *= rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicQuaternion<T> operator*(
+    T const lhs,
+    BasicQuaternion<T> rhs
+  ) noexcept
+  {
+    rhs *= lhs;
+    return rhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicQuaternion<T> operator/(
+    BasicQuaternion<T> lhs,
+    T const rhs
+  ) noexcept
+  {
+    lhs /= rhs;
+    return lhs;
+  }
+
+  /**
+   * @brief Returns the Hamilton product `a ⊗ b`: the rotation `b` followed by `a`.
+   * @relates Quaternion
+   */
+  [[nodiscard]] friend constexpr BasicQuaternion<T> operator*(
+    BasicQuaternion<T> const& a,
+    BasicQuaternion<T> const& b
+  ) noexcept
+  {
+    return {
+      a.w() * b.w() - a.x() * b.x() - a.y() * b.y() - a.z() * b.z(),
+      a.w() * b.x() + a.x() * b.w() + a.y() * b.z() - a.z() * b.y(),
+      a.w() * b.y() - a.x() * b.z() + a.y() * b.w() + a.z() * b.x(),
+      a.w() * b.z() + a.x() * b.y() - a.y() * b.x() + a.z() * b.w()
+    };
+  }
+
  private:
-  Real m_w = 1.0;
-  Real m_x = 0.0;
-  Real m_y = 0.0;
-  Real m_z = 0.0;
+  T m_w = 1.0;
+  T m_x = 0.0;
+  T m_y = 0.0;
+  T m_z = 0.0;
 };
 
-[[nodiscard]] constexpr Quaternion operator+(Quaternion lhs, Quaternion const& rhs) noexcept
-{
-  lhs += rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Quaternion operator-(Quaternion lhs, Quaternion const& rhs) noexcept
-{
-  lhs -= rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Quaternion operator*(Quaternion lhs, Real const rhs) noexcept
-{
-  lhs *= rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Quaternion operator*(Real const lhs, Quaternion rhs) noexcept
-{
-  rhs *= lhs;
-  return rhs;
-}
-
-[[nodiscard]] constexpr Quaternion operator/(Quaternion lhs, Real const rhs) noexcept
-{
-  lhs /= rhs;
-  return lhs;
-}
-
 /**
- * @brief Returns the Hamilton product `a ⊗ b`: the rotation `b` followed by `a`.
- * @relates Quaternion
+ * @brief Quaternion in single precision, the default.
  */
-[[nodiscard]] constexpr Quaternion operator*(Quaternion const& a, Quaternion const& b) noexcept
+using Quaternion = BasicQuaternion<float>;
+
+template <std::floating_point T>
+constexpr BasicQuaternion<T> BasicQuaternion<T>::derivative(
+  BasicVector3<T> const omega_body
+) const noexcept
 {
-  return {
-    a.w() * b.w() - a.x() * b.x() - a.y() * b.y() - a.z() * b.z(),
-    a.w() * b.x() + a.x() * b.w() + a.y() * b.z() - a.z() * b.y(),
-    a.w() * b.y() - a.x() * b.z() + a.y() * b.w() + a.z() * b.x(),
-    a.w() * b.z() + a.x() * b.y() - a.y() * b.x() + a.z() * b.w()
-  };
+  return 0.5 * (*this * BasicQuaternion<T>(0.0, omega_body));
 }
 
-constexpr Quaternion Quaternion::derivative(Vector3 const omega_body) const noexcept
-{
-  return 0.5 * (*this * Quaternion(0.0, omega_body));
-}
-
-inline Quaternion Quaternion::nlerp(Quaternion const& other, Real const t) const noexcept
+template <std::floating_point T>
+inline BasicQuaternion<T> BasicQuaternion<T>::nlerp(
+  BasicQuaternion<T> const& other,
+  T const t
+) const noexcept
 {
   auto const target = this->dot(other) < 0 ? -other : other;
   auto const blended = *this * (1 - t) + target * t;
   return blended / blended.length();
 }
 
-inline Quaternion Quaternion::slerp(Quaternion const& other, Real const t) const noexcept
+template <std::floating_point T>
+inline BasicQuaternion<T> BasicQuaternion<T>::slerp(
+  BasicQuaternion<T> const& other,
+  T const t
+) const noexcept
 {
   auto const target = this->dot(other) < 0 ? -other : other;
   // half of angle_to(): the arc between the quaternions on the unit sphere
   auto const arc = this->angle_to(target).radians() / 2;
-  if(arc < 1e-3F)
+  if(arc < T {1e-3})
     return this->nlerp(target, t);
   auto const sin_arc = std::sin(arc);
   return (*this * std::sin((1 - t) * arc) + target * std::sin(t * arc)) / sin_arc;
 }
 
-inline Quaternion Quaternion::from_rotation_matrix(Matrix3x3 const& matrix) noexcept
+template <std::floating_point T>
+inline BasicQuaternion<T> BasicQuaternion<T>::from_rotation_matrix(
+  BasicMatrix3x3<T> const& matrix
+) noexcept
 {
-  auto const [m00, m01, m02, m10, m11, m12, m20, m21, m22] = std::bit_cast<std::array<Real, 9>>(
+  auto const [m00, m01, m02, m10, m11, m12, m20, m21, m22] = std::bit_cast<std::array<T, 9>>(
     matrix
   );
 
   // Shepperd's method: derive the largest of |w|, |x|, |y|, |z| from the diagonal, so the
   // divisor of the other three components is never small
   auto const trace = m00 + m11 + m22;
-  auto result = Quaternion();
+  auto result = BasicQuaternion<T>();
   if(trace > 0) {
     auto const s = 2 * std::sqrt(1 + trace);
     result = {s / 4, (m21 - m12) / s, (m02 - m20) / s, (m10 - m01) / s};
@@ -643,7 +666,11 @@ inline Quaternion Quaternion::from_rotation_matrix(Matrix3x3 const& matrix) noex
   return result / result.length();
 }
 
-inline Quaternion Quaternion::from_to(Vector3 const from, Vector3 const to)
+template <std::floating_point T>
+inline BasicQuaternion<T> BasicQuaternion<T>::from_to(
+  BasicVector3<T> const from,
+  BasicVector3<T> const to
+)
 {
   auto const u = from.try_normalized();
   auto const v = to.try_normalized();
@@ -654,13 +681,13 @@ inline Quaternion Quaternion::from_to(Vector3 const from, Vector3 const to)
   // note: [whs31 : 2026-10-26]
   // near the half turn the cross product vanishes, so the axis comes from a coordinate axis
   // instead; float resolves the remaining angle to about a milliradian
-  if(cos_angle < -1 + 1e-6F) {
-    auto axis = Vector3::unit_x().cross(*u);
-    if(axis.length_squared() < 1e-6F)
-      axis = Vector3::unit_y().cross(*u);
+  if(cos_angle < -1 + T {1e-6}) {
+    auto axis = BasicVector3<T>::unit_x().cross(*u);
+    if(axis.length_squared() < T {1e-6})
+      axis = BasicVector3<T>::unit_y().cross(*u);
     return {0.0, axis.normalized()};
   }
-  auto const q = Quaternion(1 + cos_angle, u->cross(*v));
+  auto const q = BasicQuaternion<T>(1 + cos_angle, u->cross(*v));
   return q / q.length();
 }
 
@@ -668,10 +695,11 @@ inline Quaternion Quaternion::from_to(Vector3 const from, Vector3 const to)
  * @brief Returns `a.nlerp(b, t)`.
  * @relates Quaternion
  */
-[[nodiscard]] inline Quaternion nlerp(
-  Quaternion const& a,
-  Quaternion const& b,
-  Real const t
+template <std::floating_point T>
+[[nodiscard]] inline BasicQuaternion<T> nlerp(
+  BasicQuaternion<T> const& a,
+  BasicQuaternion<T> const& b,
+  std::type_identity_t<T> const t
 ) noexcept
 {
   return a.nlerp(b, t);
@@ -681,10 +709,11 @@ inline Quaternion Quaternion::from_to(Vector3 const from, Vector3 const to)
  * @brief Returns `a.slerp(b, t)`.
  * @relates Quaternion
  */
-[[nodiscard]] inline Quaternion slerp(
-  Quaternion const& a,
-  Quaternion const& b,
-  Real const t
+template <std::floating_point T>
+[[nodiscard]] inline BasicQuaternion<T> slerp(
+  BasicQuaternion<T> const& a,
+  BasicQuaternion<T> const& b,
+  std::type_identity_t<T> const t
 ) noexcept
 {
   return a.slerp(b, t);
@@ -701,7 +730,7 @@ namespace _euler_impl  // NOLINT(*-identifier-naming)
     std::size_t first = 0;
     std::size_t second = 0;
     std::size_t third = 0;
-    Real sign = 1;
+    int sign = 1;
   };
 
   [[nodiscard]] constexpr Axes axes(EulerOrder const order) noexcept
@@ -719,35 +748,41 @@ namespace _euler_impl  // NOLINT(*-identifier-naming)
 
   /**
    * @brief Below this cosine of the middle angle, rounding noise of the quaternion outweighs the
-   * first and last terms, which scale with it; about the square root of the epsilon of a float.
+   * first and last terms, which scale with it: the square root of the epsilon of @p T.
    */
-  inline auto constexpr singular_cos = 3e-4F;
+  template <std::floating_point T>
+  [[nodiscard]] inline T singular_cos() noexcept
+  {
+    return std::sqrt(std::numeric_limits<T>::epsilon());
+  }
 }  // namespace _euler_impl
 
+template <std::floating_point T>
 template <EulerOrder Order>
-Quaternion Quaternion::from_euler(
-  Angle const about_x,
-  Angle const about_y,
-  Angle const about_z
+BasicQuaternion<T> BasicQuaternion<T>::from_euler(
+  BasicAngle<T> const about_x,
+  BasicAngle<T> const about_y,
+  BasicAngle<T> const about_z
 ) noexcept
 {
   auto constexpr axes = _euler_impl::axes(Order);
   auto const angles = std::array {about_x, about_y, about_z};
   auto const about = [&angles](std::size_t const axis) {
     auto const half = angles.at(axis) / 2;
-    auto vector = std::array<Real, 3> {};
+    auto vector = std::array<T, 3> {};
     vector.at(axis) = half.sin();
-    return Quaternion(half.cos(), std::bit_cast<Vector3>(vector));
+    return BasicQuaternion<T>(half.cos(), std::bit_cast<BasicVector3<T>>(vector));
   };
   return about(axes.first) * about(axes.second) * about(axes.third);
 }
 
+template <std::floating_point T>
 template <EulerOrder Order>
-std::array<Angle, 3> Quaternion::to_euler() const noexcept
+std::array<BasicAngle<T>, 3> BasicQuaternion<T>::to_euler() const noexcept
 {
   auto constexpr axes = _euler_impl::axes(Order);
   auto const [i, j, k, sign] = axes;
-  auto const elements = std::bit_cast<std::array<Real, 9>>(this->to_rotation_matrix());
+  auto const elements = std::bit_cast<std::array<T, 9>>(this->to_rotation_matrix());
   auto const m = [&elements](std::size_t const row, std::size_t const column) {
     return elements.at(3 * row + column);
   };
@@ -756,44 +791,48 @@ std::array<Angle, 3> Quaternion::to_euler() const noexcept
   // R[k][k] and R[j][k] carry a scaled by cos b
   auto const cos_middle = std::hypot(m(i, i), m(i, j));
   auto const middle = std::atan2(sign * m(i, k), cos_middle);
-  auto first = Real {0};
-  auto last = Real {0};
-  if(cos_middle < _euler_impl::singular_cos)
+  auto first = T {0};
+  auto last = T {0};
+  if(cos_middle < _euler_impl::singular_cos<T>())
     first = std::atan2(sign * m(k, j), m(j, j));
   else {
     first = std::atan2(-sign * m(j, k), m(k, k));
     last = std::atan2(-sign * m(i, j), m(i, i));
   }
 
-  auto result = std::array<Angle, 3> {};
-  result.at(i) = Angle::from_radians(first);
-  result.at(j) = Angle::from_radians(middle);
-  result.at(k) = Angle::from_radians(last);
+  auto result = std::array<BasicAngle<T>, 3> {};
+  result.at(i) = BasicAngle<T>::from_radians(first);
+  result.at(j) = BasicAngle<T>::from_radians(middle);
+  result.at(k) = BasicAngle<T>::from_radians(last);
   return result;
 }
 
-W_COMMON_API std::ostream& operator<<(std::ostream& os, Quaternion const& quaternion);
+template <std::floating_point T>
+std::ostream& operator<<(std::ostream& os, BasicQuaternion<T> const& quaternion)
+{
+  return os << quaternion.to_string();
+}
 
 static_assert(std::is_standard_layout_v<Quaternion>);
 static_assert(std::is_trivially_copyable_v<Quaternion>);
-static_assert(sizeof(Quaternion) == 4 * sizeof(Real));
+static_assert(sizeof(Quaternion) == 4 * sizeof(float));
+static_assert(sizeof(BasicQuaternion<double>) == 4 * sizeof(double));
 static_assert(
-  std::bit_cast<std::array<Real, 4>>(Quaternion(1.0, 2.0, 3.0, 4.0))
-    == std::array<Real, 4> {1, 2, 3, 4},
+  std::bit_cast<std::array<float, 4>>(Quaternion(1.0, 2.0, 3.0, 4.0))
+    == std::array<float, 4> {1, 2, 3, 4},
   "Quaternion must store w, x, y, z contiguously"
 );
 
 W_COMMON_NAMESPACE_END
 
-template <>
-struct std::hash<w::common::Quaternion>
+template <std::floating_point T>
+struct std::hash<w::common::BasicQuaternion<T>>
 {
-  [[nodiscard]] std::size_t operator()(w::common::Quaternion const& q) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::BasicQuaternion<T> const& q) const noexcept
   {
-    auto hash = std::hash<w::common::Real> {}(q.w());
+    auto hash = std::hash<T> {}(q.w());
     for(auto const value : {q.x(), q.y(), q.z()})
-      hash ^= std::hash<w::common::Real> {}(value) + 0x9e3779b97f4a7c15ull + (hash << 6U)
-            + (hash >> 2U);
+      hash ^= std::hash<T> {}(value) + 0x9e3779b97f4a7c15ull + (hash << 6U) + (hash >> 2U);
     return hash;
   }
 };
@@ -802,12 +841,13 @@ struct std::hash<w::common::Quaternion>
 /**
  * @brief Formats as `(w, x, y, z)`; the format spec, e.g. `{:.3f}`, applies to every component.
  */
-template <>
-struct fmt::formatter<w::common::Quaternion> : fmt::formatter<w::common::Real>
+template <std::floating_point T>
+struct fmt::formatter<w::common::BasicQuaternion<T>> : fmt::formatter<T>
 {
-  format_context::iterator format(w::common::Quaternion const& q, format_context& ctx) const
+  format_context::iterator format(w::common::BasicQuaternion<T> const& q, format_context& ctx) const
   {
-    return w::common::_format_impl::format_components<4>(*this, {q.w(), q.x(), q.y(), q.z()}, ctx);
+    return w::common::_format_impl::
+      format_components<4, T>(*this, {q.w(), q.x(), q.y(), q.z()}, ctx);
   }
 };
 #endif
@@ -816,15 +856,28 @@ W_COMMON_NAMESPACE_BEGIN
 
 // note: [whs31 : 2026-10-26]
 // defined after the formatter, which the error message needs
-inline Quaternion Quaternion::normalized() const
+template <std::floating_point T>
+inline BasicQuaternion<T> BasicQuaternion<T>::normalized() const
 {
   if(auto const result = this->try_normalized())
     return *result;
   throw NumericError("cannot normalize the quaternion {}", *this);
 }
 
-W_COMMON_NAMESPACE_END
+// note: [whs31 : 2026-10-26]
+// euler_angles.h only declares the quaternion, so the conversions are defined here
+template <std::floating_point T>
+inline BasicEulerAngles<T> BasicEulerAngles<T>::from_quaternion(
+  BasicQuaternion<T> const& attitude
+) noexcept
+{
+  return attitude.to_yaw_pitch_roll();
+}
 
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Quaternion)
-#endif
+template <std::floating_point T>
+inline BasicQuaternion<T> BasicEulerAngles<T>::to_quaternion() const noexcept
+{
+  return BasicQuaternion<T>::from_yaw_pitch_roll(*this);
+}
+
+W_COMMON_NAMESPACE_END

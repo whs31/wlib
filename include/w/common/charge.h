@@ -1,18 +1,13 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
 #include <w/common/constants.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -20,8 +15,6 @@ W_COMMON_NAMESPACE_BEGIN
  * @brief Charge value stored in `C`.
  * @details Charge is an electric charge stored in coulombs, with ampere-hour and
  * milliampere-hour conversions for battery capacities.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -36,17 +29,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Energy
  * @see Capacitance
  */
-class W_COMMON_API Charge : public QuantityBase<Charge>
+template <std::floating_point T>
+class BasicCharge : public QuantityBase<BasicCharge<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double coulombs READ as_coulombs CONSTANT FINAL)
-  Q_PROPERTY(double ampereHours READ as_ampere_hours CONSTANT FINAL)
-  Q_PROPERTY(double milliampereHours READ as_milliampere_hours CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicCharge, T>;
 
  public:
   /**
@@ -57,62 +43,79 @@ class W_COMMON_API Charge : public QuantityBase<Charge>
   /**
    * @brief Creates a zero charge.
    */
-  constexpr Charge() noexcept = default;
+  constexpr BasicCharge() noexcept = default;
 
   /**
    * @brief Creates a charge from coulombs.
    */
-  explicit constexpr Charge(Real const coulombs) noexcept
-    : QuantityBase(coulombs)
+  explicit constexpr BasicCharge(T const coulombs) noexcept
+    : Base(coulombs)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicCharge(BasicCharge<U> const other) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a charge from coulombs.
    */
-  [[nodiscard]] static constexpr Charge from_coulombs(Real const coulombs) noexcept
+  [[nodiscard]] static constexpr BasicCharge from_coulombs(T const coulombs) noexcept
   {
-    return Charge(coulombs);
+    return BasicCharge(coulombs);
   }
 
   /**
    * @brief Creates a charge from ampere-hours.
    */
-  [[nodiscard]] static constexpr Charge from_ampere_hours(Real const ampere_hours) noexcept
+  [[nodiscard]] static constexpr BasicCharge from_ampere_hours(T const ampere_hours) noexcept
   {
-    return Charge(ampere_hours * SECONDS_HOURS_FACTOR);
+    return BasicCharge(ampere_hours * static_cast<T>(SECONDS_HOURS_FACTOR));
   }
 
   /**
    * @brief Creates a charge from milliampere-hours.
    */
-  [[nodiscard]] static constexpr Charge from_milliampere_hours(
-    Real const milliampere_hours
+  [[nodiscard]] static constexpr BasicCharge from_milliampere_hours(
+    T const milliampere_hours
   ) noexcept
   {
-    return Charge(milliampere_hours * (SECONDS_HOURS_FACTOR / 1'000));
+    return BasicCharge(milliampere_hours * (static_cast<T>(SECONDS_HOURS_FACTOR) / 1'000));
   }
 
   /**
    * @brief Returns coulombs.
    */
-  [[nodiscard]] constexpr Real as_coulombs() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_coulombs() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns ampere-hours.
    */
-  [[nodiscard]] constexpr Real as_ampere_hours() const noexcept
+  [[nodiscard]] constexpr T as_ampere_hours() const noexcept
   {
-    return this->magnitude() / SECONDS_HOURS_FACTOR;
+    return this->magnitude() / static_cast<T>(SECONDS_HOURS_FACTOR);
   }
 
   /**
    * @brief Returns milliampere-hours.
    */
-  [[nodiscard]] constexpr Real as_milliampere_hours() const noexcept
+  [[nodiscard]] constexpr T as_milliampere_hours() const noexcept
   {
-    return this->magnitude() / (SECONDS_HOURS_FACTOR / 1'000);
+    return this->magnitude() / (static_cast<T>(SECONDS_HOURS_FACTOR) / 1'000);
   }
 };
+
+/**
+ * @brief Charge in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Charge = BasicCharge<float>;
 
 inline namespace literals
 {
@@ -158,7 +161,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Charge)
-#endif

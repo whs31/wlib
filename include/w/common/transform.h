@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+#include <ostream>
 #include <functional>
 #include <iosfwd>
 #include <optional>
@@ -8,7 +10,6 @@
 
 #include <fmt/format.h>
 
-#include <w/common/detail/export.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/math.h>
@@ -33,7 +34,7 @@ W_COMMON_NAMESPACE_BEGIN
  *
  * @par Layout
  * The storage is a Vector3 position, a Quaternion rotation in `w, x, y, z` order and a Vector3
- * scale, ten contiguous Real values, with no padding. The class is standard layout and trivially
+ * scale, ten contiguous @p T values, with no padding. The class is standard layout and trivially
  * copyable. The layout is part of the API and is checked by `static_assert`s in this header.
  *
  * @code {.cpp}
@@ -49,49 +50,76 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Matrix4x4
  * @see Quaternion
  */
-class W_COMMON_API Transform
+template <std::floating_point T>
+class BasicTransform
 {
  public:
   /**
    * @brief Creates the identity transform.
    */
-  constexpr Transform() noexcept = default;
+  constexpr BasicTransform() noexcept = default;
 
-  explicit constexpr Transform(
-    Vector3 const position,
-    Quaternion const rotation = {},
-    Vector3 const scale = Vector3::splat(1.0)
+  /**
+   * @brief Converts from another precision: implicitly when no value can lose digits, e.g. from
+   * `float` to `double`, and explicitly otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicTransform(
+    BasicTransform<U> const& other
+  ) noexcept
+    : BasicTransform(
+        BasicVector3<T>(other.position()),
+        BasicQuaternion<T>(other.rotation()),
+        BasicVector3<T>(other.scale())
+      )
+  {}
+
+  explicit constexpr BasicTransform(
+    BasicVector3<T> const position,
+    BasicQuaternion<T> const rotation = {},
+    BasicVector3<T> const scale = BasicVector3<T>::splat(1.0)
   ) noexcept
     : m_position(position)
     , m_rotation(rotation)
     , m_scale(scale)
   {}
 
-  [[nodiscard]] constexpr Vector3 position() const noexcept { return this->m_position; }
+  [[nodiscard]] constexpr BasicVector3<T> position() const noexcept { return this->m_position; }
 
-  [[nodiscard]] constexpr Quaternion rotation() const noexcept { return this->m_rotation; }
+  [[nodiscard]] constexpr BasicQuaternion<T> rotation() const noexcept { return this->m_rotation; }
 
-  [[nodiscard]] constexpr Vector3 scale() const noexcept { return this->m_scale; }
+  [[nodiscard]] constexpr BasicVector3<T> scale() const noexcept { return this->m_scale; }
 
-  constexpr void set_position(Vector3 const position) noexcept { this->m_position = position; }
-
-  constexpr void set_rotation(Quaternion const& rotation) noexcept { this->m_rotation = rotation; }
-
-  constexpr void set_scale(Vector3 const scale) noexcept { this->m_scale = scale; }
-
-  [[nodiscard]] constexpr Transform with_position(Vector3 const position) const noexcept
+  constexpr void set_position(BasicVector3<T> const position) noexcept
   {
-    return Transform(position, this->m_rotation, this->m_scale);
+    this->m_position = position;
   }
 
-  [[nodiscard]] constexpr Transform with_rotation(Quaternion const& rotation) const noexcept
+  constexpr void set_rotation(BasicQuaternion<T> const& rotation) noexcept
   {
-    return Transform(this->m_position, rotation, this->m_scale);
+    this->m_rotation = rotation;
   }
 
-  [[nodiscard]] constexpr Transform with_scale(Vector3 const scale) const noexcept
+  constexpr void set_scale(BasicVector3<T> const scale) noexcept { this->m_scale = scale; }
+
+  [[nodiscard]] constexpr BasicTransform<T> with_position(
+    BasicVector3<T> const position
+  ) const noexcept
   {
-    return Transform(this->m_position, this->m_rotation, scale);
+    return BasicTransform<T>(position, this->m_rotation, this->m_scale);
+  }
+
+  [[nodiscard]] constexpr BasicTransform<T> with_rotation(
+    BasicQuaternion<T> const& rotation
+  ) const noexcept
+  {
+    return BasicTransform<T>(this->m_position, rotation, this->m_scale);
+  }
+
+  [[nodiscard]] constexpr BasicTransform<T> with_scale(BasicVector3<T> const scale) const noexcept
+  {
+    return BasicTransform<T>(this->m_position, this->m_rotation, scale);
   }
 
   /**
@@ -107,21 +135,23 @@ class W_COMMON_API Transform
    * @brief Returns the matrix `T * R * S` of this transform.
    * @pre The rotation is a unit quaternion.
    */
-  [[nodiscard]] constexpr Matrix4x4 to_matrix() const noexcept
+  [[nodiscard]] constexpr BasicMatrix4x4<T> to_matrix() const noexcept
   {
     auto const rotation = this->m_rotation.to_rotation_matrix();
-    auto const linear = Matrix3x3::from_columns(
+    auto const linear = BasicMatrix3x3<T>::from_columns(
       rotation.column(0) * this->m_scale.x(),
       rotation.column(1) * this->m_scale.y(),
       rotation.column(2) * this->m_scale.z()
     );
-    return Matrix4x4::from_affine(linear, this->m_position);
+    return BasicMatrix4x4<T>::from_affine(linear, this->m_position);
   }
 
   /**
    * @brief Transforms the position @p point: scale, rotation, then translation.
    */
-  [[nodiscard]] constexpr Vector3 transform_point(Vector3 const point) const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> transform_point(
+    BasicVector3<T> const point
+  ) const noexcept
   {
     return this->m_position + this->transform_direction(point);
   }
@@ -129,7 +159,9 @@ class W_COMMON_API Transform
   /**
    * @brief Transforms the direction @p direction: scale and rotation, no translation.
    */
-  [[nodiscard]] constexpr Vector3 transform_direction(Vector3 const direction) const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> transform_direction(
+    BasicVector3<T> const direction
+  ) const noexcept
   {
     return this->m_rotation.rotate(this->m_scale.component_mul(direction));
   }
@@ -141,9 +173,9 @@ class W_COMMON_API Transform
    * .transform_point(p))` holds exactly when the scale of this transform is uniform or the
    * rotation of @p child is the identity; otherwise the shear the product would need is dropped.
    */
-  [[nodiscard]] constexpr Transform compose(Transform const& child) const noexcept
+  [[nodiscard]] constexpr BasicTransform<T> compose(BasicTransform<T> const& child) const noexcept
   {
-    return Transform(
+    return BasicTransform<T>(
       this->transform_point(child.m_position),
       this->m_rotation * child.m_rotation,
       this->m_scale.component_mul(child.m_scale)
@@ -156,30 +188,35 @@ class W_COMMON_API Transform
    * transform and this drops its shear, so invert to_matrix() instead.
    * @pre The rotation is a unit quaternion and no scale factor is zero.
    */
-  [[nodiscard]] constexpr Transform inverse() const noexcept
+  [[nodiscard]] constexpr BasicTransform<T> inverse() const noexcept
   {
     auto const rotation = this->m_rotation.conjugate();
-    auto const scale = Vector3::splat(1.0).component_div(this->m_scale);
-    return Transform(-scale.component_mul(rotation.rotate(this->m_position)), rotation, scale);
+    auto const scale = BasicVector3<T>::splat(1.0).component_div(this->m_scale);
+    return BasicTransform<
+      T>(-scale.component_mul(rotation.rotate(this->m_position)), rotation, scale);
   }
 
-  [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_string() const { return fmt::format("{}", *this); }
 
-  [[nodiscard]] static constexpr Transform identity() noexcept { return {}; }
+  [[nodiscard]] static constexpr BasicTransform<T> identity() noexcept { return {}; }
 
-  [[nodiscard]] static constexpr Transform from_position(Vector3 const position) noexcept
+  [[nodiscard]] static constexpr BasicTransform<T> from_position(
+    BasicVector3<T> const position
+  ) noexcept
   {
-    return Transform(position);
+    return BasicTransform<T>(position);
   }
 
-  [[nodiscard]] static constexpr Transform from_rotation(Quaternion const& rotation) noexcept
+  [[nodiscard]] static constexpr BasicTransform<T> from_rotation(
+    BasicQuaternion<T> const& rotation
+  ) noexcept
   {
-    return Transform(Vector3::zero(), rotation);
+    return BasicTransform<T>(BasicVector3<T>::zero(), rotation);
   }
 
-  [[nodiscard]] static constexpr Transform from_scale(Vector3 const scale) noexcept
+  [[nodiscard]] static constexpr BasicTransform<T> from_scale(BasicVector3<T> const scale) noexcept
   {
-    return Transform(Vector3::zero(), Quaternion::identity(), scale);
+    return BasicTransform<T>(BasicVector3<T>::zero(), BasicQuaternion<T>::identity(), scale);
   }
 
   /**
@@ -191,7 +228,9 @@ class W_COMMON_API Transform
    * scale. Returns `std::nullopt` if @p matrix is not affine (its last row is not
    * `(0, 0, 0, 1)`), not finite, or scales an axis to zero.
    */
-  [[nodiscard]] static std::optional<Transform> decompose(Matrix4x4 const& matrix) noexcept
+  [[nodiscard]] static std::optional<BasicTransform<T>> decompose(
+    BasicMatrix4x4<T> const& matrix
+  ) noexcept
   {
     if(not matrix.is_affine() or not matrix.is_finite())
       return std::nullopt;
@@ -218,34 +257,45 @@ class W_COMMON_API Transform
 
     // the orthonormal columns are a rotation unless the matrix mirrors, then flip x
     auto const mirrored = linear.determinant() < 0;
-    auto const sign = mirrored ? Real {-1} : Real {1};
-    return Transform(
+    auto const sign = mirrored ? T {-1} : T {1};
+    return BasicTransform<T>(
       matrix.translation(),
-      Quaternion::from_rotation_matrix(Matrix3x3::from_columns(unit_x * sign, unit_y, unit_z)),
+      BasicQuaternion<T>::from_rotation_matrix(
+        BasicMatrix3x3<T>::from_columns(unit_x * sign, unit_y, unit_z)
+      ),
       {scale_x * sign, scale_y, scale_z}
     );
   }
 
-  [[nodiscard]] constexpr bool operator==(Transform const&) const noexcept = default;
+  [[nodiscard]] constexpr bool operator==(BasicTransform<T> const&) const noexcept = default;
 
  private:
-  Vector3 m_position;
-  Quaternion m_rotation;
-  Vector3 m_scale = Vector3::splat(1.0);
+  BasicVector3<T> m_position;
+  BasicQuaternion<T> m_rotation;
+  BasicVector3<T> m_scale = BasicVector3<T>::splat(1.0);
 };
 
-W_COMMON_API std::ostream& operator<<(std::ostream& os, Transform const& transform);
+/**
+ * @brief Transform in single precision, the default.
+ */
+using Transform = BasicTransform<float>;
+
+template <std::floating_point T>
+std::ostream& operator<<(std::ostream& os, BasicTransform<T> const& transform)
+{
+  return os << transform.to_string();
+}
 
 static_assert(std::is_standard_layout_v<Transform>);
 static_assert(std::is_trivially_copyable_v<Transform>);
-static_assert(sizeof(Transform) == 10 * sizeof(Real));
+static_assert(sizeof(Transform) == 10 * sizeof(float));
 
 W_COMMON_NAMESPACE_END
 
-template <>
-struct std::hash<w::common::Transform>
+template <std::floating_point T>
+struct std::hash<w::common::BasicTransform<T>>
 {
-  [[nodiscard]] std::size_t operator()(w::common::Transform const& transform) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::BasicTransform<T> const& transform) const noexcept
   {
     return w::common::_hash_impl::
       combine(transform.position(), transform.rotation(), transform.scale());
@@ -257,26 +307,29 @@ struct std::hash<w::common::Transform>
  * @brief Formats as `{position (x, y, z), rotation (w, x, y, z), scale (x, y, z)}`; the format
  * spec, e.g. `{:.3f}`, applies to every component.
  */
-template <>
-struct fmt::formatter<w::common::Transform> : fmt::formatter<w::common::Real>
+template <std::floating_point T>
+struct fmt::formatter<w::common::BasicTransform<T>> : fmt::formatter<T>
 {
-  format_context::iterator format(w::common::Transform const& transform, format_context& ctx) const
+  format_context::iterator format(
+    w::common::BasicTransform<T> const& transform,
+    format_context& ctx
+  ) const
   {
     auto const position = transform.position();
     auto const rotation = transform.rotation();
     auto const scale = transform.scale();
     auto out = fmt::format_to(ctx.out(), "{{position ");
     ctx.advance_to(out);
-    out = w::common::_format_impl::format_components<
-      3>(*this, {position.x(), position.y(), position.z()}, ctx);
+    out = w::common::_format_impl::
+      format_components<3, T>(*this, {position.x(), position.y(), position.z()}, ctx);
     out = fmt::format_to(out, ", rotation ");
     ctx.advance_to(out);
-    out = w::common::_format_impl::format_components<
-      4>(*this, {rotation.w(), rotation.x(), rotation.y(), rotation.z()}, ctx);
+    out = w::common::_format_impl::
+      format_components<4, T>(*this, {rotation.w(), rotation.x(), rotation.y(), rotation.z()}, ctx);
     out = fmt::format_to(out, ", scale ");
     ctx.advance_to(out);
-    out = w::common::_format_impl::format_components<
-      3>(*this, {scale.x(), scale.y(), scale.z()}, ctx);
+    out = w::common::_format_impl::
+      format_components<3, T>(*this, {scale.x(), scale.y(), scale.z()}, ctx);
     *out++ = '}';
     return out;
   }

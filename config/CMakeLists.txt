@@ -6,7 +6,7 @@ add_library(w::lib::config ALIAS ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_NAME lib::config)
 
 # config.h.in tests the feature macros by their prefixed name, so they are set under that name.
-foreach(feature IN ITEMS QT GLAZE)
+foreach(feature IN ITEMS GLAZE)
   set(W_COMMON_WITH_${feature} ${WLIB_WITH_${feature}})
 endforeach()
 

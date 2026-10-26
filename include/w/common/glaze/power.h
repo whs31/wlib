@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,22 +10,24 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct PowerFields
   {
-    std::optional<Real> watts;
-    std::optional<Real> kilowatts;
+    std::optional<T> watts;
+    std::optional<T> kilowatts;
   };
 
-  inline auto constexpr power_reading = QuantityReading<Power, PowerFields, 2, 2> {
+  template <std::floating_point T>
+  inline auto constexpr power_reading = QuantityReading<BasicPower<T>, PowerFields<T>, 2, 2> {
     .fields =
       {
-        field_unit(&PowerFields::watts, &Power::from_watts),
-        field_unit(&PowerFields::kilowatts, &Power::from_kilowatts),
+        field_unit(&PowerFields<T>::watts, &BasicPower<T>::from_watts),
+        field_unit(&PowerFields<T>::kilowatts, &BasicPower<T>::from_kilowatts),
       },
     .literals =
       {
-        literal_unit("w", &Power::from_watts),
-        literal_unit("kw", &Power::from_kilowatts),
+        literal_unit("w", &BasicPower<T>::from_watts),
+        literal_unit("kw", &BasicPower<T>::from_kilowatts),
       },
     .unknown_suffix = "a power literal needs one of the unit suffixes w, kw",
   };
@@ -38,9 +41,9 @@ W_COMMON_NAMESPACE_END
  * a literal string, e.g. `"12.5w"`, with the suffix of a C++ literal: `w`, `kw`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Power>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicPower<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::power_reading>::value;
+    w::common::_glaze_impl::power_reading<T>>::value;
 };

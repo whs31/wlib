@@ -11,7 +11,6 @@ project(wlib
 )
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
-option(WLIB_WITH_QT "Enable Qt integration" OFF)
 option(WLIB_WITH_GLAZE "Build the glaze adapters (w::lib::glaze)" OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -24,9 +23,6 @@ find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
 if(WLIB_WITH_GLAZE)
   find_package(glaze REQUIRED)
-endif()
-if(WLIB_WITH_QT)
-  find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Positioning)
 endif()
 
 add_subdirectory(config)
@@ -42,9 +38,11 @@ if(WLIB_WITH_GLAZE)
   list(APPEND WLIB_INSTALL_TARGETS ${PROJECT_NAME}_glaze)
 endif()
 
+# The public headers use C++23, so the standard is a usage requirement: a consumer that includes
+# them compiles as C++23 too, whatever its own default.
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES
-  CXX_STANDARD 23
-  CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
   DEFINE_SYMBOL W_COMMON_LIBRARY
   EXPORT_NAME lib
@@ -61,7 +59,7 @@ generate_export_header(${PROJECT_NAME}
 )
 
 file(GLOB_RECURSE WLIB_PUBLIC_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/w/common/*.h")
-# The serialization adapters belong to their optional interface target, not to the core library.
+# The serialization adapters belong to their optional target, not to the core library.
 list(FILTER WLIB_PUBLIC_HEADERS EXCLUDE REGEX "/include/w/common/glaze/")
 file(GLOB WLIB_PRIVATE_SOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc"
@@ -104,20 +102,6 @@ if(WLIB_WITH_GLAZE)
   )
 endif()
 
-if(WLIB_WITH_QT)
-  target_link_libraries(${PROJECT_NAME} PUBLIC Qt6::Core Qt6::Gui Qt6::Network)
-  if(WLIB_WITH_GLAZE)
-    target_link_libraries(${PROJECT_NAME}_glaze INTERFACE Qt6::Positioning)
-  endif()
-  set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON)
-
-  qt_extract_metatypes(${PROJECT_NAME} OUTPUT_FILES WLIB_METATYPES_FILE)
-  install(
-    FILES ${WLIB_METATYPES_FILE}
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/metatypes
-  )
-endif()
-
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32)
 endif()
@@ -154,15 +138,6 @@ endif()
 install(
   FILES "${CMAKE_CURRENT_BINARY_DIR}/w/common/detail/export.h"
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/w/common/detail"
-)
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/WLibQtDependencies.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/WLibQtDependencies.cmake"
-  @ONLY
-)
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/WLibQtDependencies.cmake"
-  DESTINATION "cmake_modules"
 )
 install(EXPORT ${PROJECT_NAME}Targets
   FILE WLibTargets.cmake

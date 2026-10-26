@@ -17,12 +17,6 @@
 #include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qmetatype.h>
-#  include <qobjectdefs.h>
-#  include <qstring.h>
-#endif
-
 /**
  * @defgroup core_geodesy Geodesy
  * @ingroup core
@@ -102,35 +96,19 @@ struct UtmZone
  * pulkovo.utm_zone()->to_string();  // "36V"
  * @endcode
  *
- * Latitude and Longitude are always `double`, whatever the `precision` option; the altitude is a
- * Distance in that precision, which resolves it to a millimetre up to 16 km even in `float`.
+ * Latitude and Longitude are always `double`; the altitude is a `float` Distance, which resolves it
+ * to a millimetre up to 16 km.
  *
  * There is no `glz::meta` for it: glaze reflects the aggregate, and with the adapters of Latitude,
  * Longitude and Distance (`glaze/latitude.h`, `glaze/longitude.h`, `glaze/distance.h`) writes
  * `{"latitude": 59.771, "longitude": 30.326, "altitude_msl": {"meters": 70}}`, and in a text
  * format also reads coordinate strings, `"latitude": "59.771north"` or `"59°46'15.6\"N"`.
  * Code built on glaze reflection of aggregates keeps working with it.
- * @note Qt properties and metatype registration are available only when wlib is built with
- * `with_qt=True`; QML reads the plain numbers through `latitudeDegrees`, `longitudeDegrees` and
- * `altitudeMslMeters`.
  * @ingroup core_geodesy
  * @see LocalTangentPlane
  */
 struct W_COMMON_API GeodeticPosition
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-  Q_PROPERTY(Latitude latitude MEMBER latitude FINAL)
-  Q_PROPERTY(Longitude longitude MEMBER longitude FINAL)
-  Q_PROPERTY(Distance altitudeMsl MEMBER altitude_msl FINAL)
-  Q_PROPERTY(double latitudeDegrees READ latitude_degrees CONSTANT FINAL)
-  Q_PROPERTY(double longitudeDegrees READ longitude_degrees CONSTANT FINAL)
-  Q_PROPERTY(double altitudeMslMeters READ altitude_msl_meters CONSTANT FINAL)
-  Q_PROPERTY(bool isValid READ is_valid CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-
- public:
-#endif
   Latitude latitude;
   Longitude longitude;
   Distance altitude_msl;
@@ -218,11 +196,6 @@ struct W_COMMON_API GeodeticPosition
   /// @brief `<latitude>, <longitude>, <altitude> m MSL`, e.g. `59.771°N, 30.326°E, 70 m MSL`, at
   /// full precision.
   [[nodiscard]] std::string to_string() const;
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-#endif
 
   [[nodiscard]] constexpr bool operator==(GeodeticPosition const&) const noexcept = default;
 };
@@ -331,8 +304,4 @@ W_COMMON_NAMESPACE_END
 template <>
 struct fmt::formatter<w::common::GeodeticPosition> : fmt::ostream_formatter
 {};
-#endif
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::GeodeticPosition)
 #endif

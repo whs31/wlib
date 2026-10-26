@@ -14,41 +14,20 @@
 #include <w/common/detail/namespace.h>
 #include <w/common/version.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#  include <qstringview.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Semantic version requirement expression.
- * @note Qt properties, QString conversions, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  * @ingroup core_identifiers
  */
 class W_COMMON_API VersionRange
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-  Q_PROPERTY(bool any READ is_any CONSTANT FINAL)
-  Q_PROPERTY(bool any_with_prerelease READ is_any_with_prerelease CONSTANT FINAL)
-#endif
-
  public:
   VersionRange();
   explicit VersionRange(std::string_view expression);
 
-#ifdef W_COMMON_WITH_QT
-  Q_INVOKABLE
-#endif
   [[nodiscard]] bool contains(Version const& version) const noexcept;
-#ifdef W_COMMON_WITH_QT
-  Q_INVOKABLE
-#endif
+
   [[nodiscard]] bool satisfies(Version const& version) const noexcept
   {
     return this->contains(version);
@@ -62,17 +41,6 @@ class W_COMMON_API VersionRange
   [[nodiscard]] static VersionRange any();
   [[nodiscard]] static VersionRange any_with_prerelease();
   [[nodiscard]] static VersionRange parse(std::string_view expression);
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static VersionRange from_qstring(QStringView text);
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static VersionRange from_qstring(QString const& text);
-#endif
 
   [[nodiscard]] bool operator==(VersionRange const&) const noexcept = default;
 
@@ -123,8 +91,4 @@ struct std::hash<w::common::VersionRange>
 template <>
 struct fmt::formatter<w::common::VersionRange> : fmt::ostream_formatter
 {};
-#endif
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::VersionRange)
 #endif

@@ -20,14 +20,6 @@
 #include <w/common/detail/namespace.h>
 #include <w/common/error.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qhostaddress.h>
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#  include <qstringview.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 /**
@@ -44,12 +36,6 @@ class W_COMMON_API IpError final : public Error
 
   [[nodiscard]] static IpError invalid_v4_string(std::string_view text);
   [[nodiscard]] static IpError invalid_v6_string(std::string_view text);
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static IpError invalid_qhostaddress_v4();
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static IpError invalid_qhostaddress_v6();
-#endif
   [[nodiscard]] static IpError missing_colon(std::string_view text);
   [[nodiscard]] static IpError invalid_port(std::string_view text);
   [[nodiscard]] static IpError not_a_v4();
@@ -58,22 +44,10 @@ class W_COMMON_API IpError final : public Error
 
 /**
  * @brief IPv4 address stored as a big-endian/network-order integer.
- * @note Qt properties, conversions, and metatype registration are available
- * only when wlib is built with `with_qt=True`.
  * @ingroup core_networking
  */
 class W_COMMON_API Ipv4Addr
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-  Q_PROPERTY(std::uint32_t address READ address CONSTANT FINAL)
-  Q_PROPERTY(bool isLoopback READ is_loopback CONSTANT FINAL)
-  Q_PROPERTY(bool isPrivate READ is_private CONSTANT FINAL)
-  Q_PROPERTY(bool isUnspecified READ is_unspecified CONSTANT FINAL)
-  Q_PROPERTY(bool isMulticast READ is_multicast CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
-
  public:
   static Ipv4Addr const LOCALHOST;
   static Ipv4Addr const UNSPECIFIED;
@@ -99,15 +73,6 @@ class W_COMMON_API Ipv4Addr
   }
 
   [[nodiscard]] static Ipv4Addr parse(std::string_view text);
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Ipv4Addr from_qstring(QStringView text);
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Ipv4Addr from_qstring(QString const& text);
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Ipv4Addr from_qhostaddress(QHostAddress const& host);
-#endif
 
   [[nodiscard]] constexpr std::uint32_t address() const noexcept { return this->m_address; }
 
@@ -142,13 +107,6 @@ class W_COMMON_API Ipv4Addr
 
   [[nodiscard]] std::string to_string() const;
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QHostAddress to_qhostaddress() const;
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-#endif
-
   [[nodiscard]] constexpr bool operator==(Ipv4Addr const&) const noexcept = default;
   [[nodiscard]] constexpr std::strong_ordering operator<=>(Ipv4Addr const&) const noexcept =
     default;
@@ -159,20 +117,10 @@ class W_COMMON_API Ipv4Addr
 
 /**
  * @brief IPv6 address stored as sixteen network-order bytes.
- * @note Qt properties, conversions, and metatype registration are available
- * only when wlib is built with `with_qt=True`.
  * @ingroup core_networking
  */
 class W_COMMON_API Ipv6Addr
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-  Q_PROPERTY(bool isLoopback READ is_loopback CONSTANT FINAL)
-  Q_PROPERTY(bool isUnspecified READ is_unspecified CONSTANT FINAL)
-  Q_PROPERTY(bool isMulticast READ is_multicast CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
-
  public:
   static Ipv6Addr const LOCALHOST;
   static Ipv6Addr const UNSPECIFIED;
@@ -215,15 +163,6 @@ class W_COMMON_API Ipv6Addr
   }
 
   [[nodiscard]] static Ipv6Addr parse(std::string_view text);
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Ipv6Addr from_qstring(QStringView text);
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Ipv6Addr from_qstring(QString const& text);
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Ipv6Addr from_qhostaddress(QHostAddress const& host);
-#endif
 
   [[nodiscard]] constexpr std::array<std::uint8_t, 16> const& octets() const noexcept
   {
@@ -276,13 +215,6 @@ class W_COMMON_API Ipv6Addr
   }
 
   [[nodiscard]] std::string to_string() const;
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QHostAddress to_qhostaddress() const;
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-#endif
 
   [[nodiscard]] constexpr bool operator==(Ipv6Addr const&) const noexcept = default;
   [[nodiscard]] constexpr std::strong_ordering operator<=>(Ipv6Addr const&) const noexcept =
@@ -337,9 +269,4 @@ struct fmt::formatter<w::common::Ipv4Addr> : fmt::ostream_formatter
 template <>
 struct fmt::formatter<w::common::Ipv6Addr> : fmt::ostream_formatter
 {};
-#endif
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Ipv4Addr)
-Q_DECLARE_METATYPE(w::common::Ipv6Addr)
 #endif

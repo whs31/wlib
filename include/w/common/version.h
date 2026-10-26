@@ -17,13 +17,6 @@
 #include <w/common/detail/namespace.h>
 #include <w/common/error.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#  include <qstringview.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 class W_COMMON_API VersionError final : public Error
@@ -83,22 +76,10 @@ class W_COMMON_API BuildMetadata
 
 /**
  * @brief Semantic version value type.
- * @note Qt properties, QString conversions, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  * @ingroup core_identifiers
  */
 class W_COMMON_API Version
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-  Q_PROPERTY(std::uint64_t major READ major CONSTANT FINAL)
-  Q_PROPERTY(std::uint64_t minor READ minor CONSTANT FINAL)
-  Q_PROPERTY(std::uint64_t patch READ patch CONSTANT FINAL)
-  Q_PROPERTY(QString prerelease READ prerelease_qstring CONSTANT FINAL)
-  Q_PROPERTY(QString buildMetadata READ build_metadata_qstring CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
-
  public:
   Version() noexcept = default;
 
@@ -144,23 +125,6 @@ class W_COMMON_API Version
   }
 
   [[nodiscard]] static Version parse(std::string_view text);
-
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString prerelease_qstring() const;
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString build_metadata_qstring() const;
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Version from_qstring(QStringView text);
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] static Version from_qstring(QString const& text);
-#endif
 
   [[nodiscard]] std::strong_ordering cmp_precedence(Version const& other) const noexcept;
   [[nodiscard]] bool operator==(Version const&) const noexcept = default;
@@ -229,10 +193,4 @@ struct fmt::formatter<w::common::BuildMetadata> : fmt::ostream_formatter
 template <>
 struct fmt::formatter<w::common::Version> : fmt::ostream_formatter
 {};
-#endif
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Prerelease)
-Q_DECLARE_METATYPE(w::common::BuildMetadata)
-Q_DECLARE_METATYPE(w::common::Version)
 #endif

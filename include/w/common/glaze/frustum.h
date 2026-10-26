@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <array>
 
 #include <w/common/frustum.h>
@@ -11,13 +12,13 @@
  * far, each `[a, b, c, d]`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Frustum>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicFrustum<T>>
 {
   static auto constexpr value = glz::custom<
     [](
-      w::common::Frustum& frustum,
-      w::common::_glaze_impl::ExactArray<w::common::Plane, 6> const& planes
-    ) { frustum = w::common::Frustum(planes.values()); },
-    [](w::common::Frustum const& frustum) { return frustum.planes(); }>;
+      w::common::BasicFrustum<T>& frustum,
+      w::common::_glaze_impl::ExactArray<w::common::BasicPlane<T>, 6> const& planes
+    ) { frustum = w::common::BasicFrustum<T>(planes.values()); },
+    [](w::common::BasicFrustum<T> const& frustum) { return frustum.planes(); }>;
 };

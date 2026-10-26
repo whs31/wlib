@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cmath>
+#include <concepts>
+#include <type_traits>
 #include <utility>
 
 #include <w/common/angle.h>
@@ -14,6 +16,7 @@
 #include <w/common/quaternion.h>
 #include <w/common/vector2.h>
 #include <w/common/vector3.h>
+#include <w/common/vector4.h>
 
 /**
  * @file
@@ -41,11 +44,12 @@ W_COMMON_NAMESPACE_BEGIN
  * @param depth Whether the near plane maps to depth 0 or 1.
  * @ingroup core_math
  */
-[[nodiscard]] inline Matrix4x4 perspective(
-  Angle const fov_y,
-  Real const aspect,
-  Real const z_near,
-  Real const z_far,
+template <std::floating_point T>
+[[nodiscard]] inline BasicMatrix4x4<T> perspective(
+  BasicAngle<T> const fov_y,
+  std::type_identity_t<T> const aspect,
+  std::type_identity_t<T> const z_near,
+  std::type_identity_t<T> const z_far,
   Handedness const handedness,
   ClipDepth const depth = ClipDepth::Standard
 ) noexcept
@@ -56,8 +60,8 @@ W_COMMON_NAMESPACE_BEGIN
 
   // depth = (scale z + offset) / w in right-handed view space, where w = -z; the left-handed
   // projection flips the sign of z and w
-  auto scale = Real {0};
-  auto offset = Real {0};
+  auto scale = T {0};
+  auto offset = T {0};
   if(std::isinf(mapped_to_1)) {
     scale = -1;
     offset = -mapped_to_0;
@@ -70,8 +74,8 @@ W_COMMON_NAMESPACE_BEGIN
     scale = mapped_to_1 / (mapped_to_0 - mapped_to_1);
     offset = mapped_to_0 * mapped_to_1 / (mapped_to_0 - mapped_to_1);
   }
-  auto const forward = handedness == Handedness::Right ? Real {-1} : Real {1};
-  return Matrix4x4::from_rows(
+  auto const forward = handedness == Handedness::Right ? T {-1} : T {1};
+  return BasicMatrix4x4<T>::from_rows(
     {focal / aspect, 0.0, 0.0, 0.0},
     {0.0, focal, 0.0, 0.0},
     {0.0, 0.0, -forward * scale, offset},
@@ -86,28 +90,30 @@ W_COMMON_NAMESPACE_BEGIN
  * glm's `orthoRH_ZO` and `orthoLH_ZO`; reversing the depth is the same as swapping @p z_near and
  * @p z_far.
  * @pre `left != right`, `bottom != top`, and `z_near != z_far`, all finite.
+ * @tparam T Precision of the matrix: `float` unless given, e.g. `orthographic<double>(...)`.
  * @ingroup core_math
  */
-[[nodiscard]] constexpr Matrix4x4 orthographic(
-  Real const left,
-  Real const right,
-  Real const bottom,
-  Real const top,
-  Real const z_near,
-  Real const z_far,
+template <std::floating_point T = float>
+[[nodiscard]] constexpr BasicMatrix4x4<T> orthographic(
+  std::type_identity_t<T> const left,
+  std::type_identity_t<T> const right,
+  std::type_identity_t<T> const bottom,
+  std::type_identity_t<T> const top,
+  std::type_identity_t<T> const z_near,
+  std::type_identity_t<T> const z_far,
   Handedness const handedness,
   ClipDepth const depth = ClipDepth::Standard
 ) noexcept
 {
   auto const [mapped_to_0, mapped_to_1] = depth == ClipDepth::Standard ? std::pair(z_near, z_far)
                                                                        : std::pair(z_far, z_near);
-  auto const forward = handedness == Handedness::Right ? Real {-1} : Real {1};
+  auto const forward = handedness == Handedness::Right ? T {-1} : T {1};
   auto const range = mapped_to_1 - mapped_to_0;
-  return Matrix4x4::from_rows(
+  return BasicMatrix4x4<T>::from_rows(
     {2 / (right - left), 0.0, 0.0, -(right + left) / (right - left)},
     {0.0, 2 / (top - bottom), 0.0, -(top + bottom) / (top - bottom)},
     {0.0, 0.0, forward / range, -mapped_to_0 / range},
-    Vector4::unit_w()
+    BasicVector4<T>::unit_w()
   );
 }
 
@@ -123,10 +129,11 @@ W_COMMON_NAMESPACE_BEGIN
  * @see look_at_rh
  * @see look_at_lh
  */
-[[nodiscard]] inline Matrix4x4 look_at(
-  Vector3 const eye,
-  Vector3 const target,
-  Vector3 const up,
+template <std::floating_point T>
+[[nodiscard]] inline BasicMatrix4x4<T> look_at(
+  BasicVector3<T> const eye,
+  std::type_identity_t<BasicVector3<T>> const target,
+  std::type_identity_t<BasicVector3<T>> const up,
   Handedness const handedness
 )
 {
@@ -137,11 +144,11 @@ W_COMMON_NAMESPACE_BEGIN
   // the camera axes in world space are the columns of the camera rotation
   auto const z = handedness == Handedness::Right ? -*forward : *forward;
   auto const x = up.cross(z).try_normalized();
-  auto const camera = x.has_value()
-                      ? Matrix3x3::from_columns(*x, z.cross(*x), z)
-                      : Quaternion::look_rotation(*forward, up, handedness).to_rotation_matrix();
+  auto const camera = x.has_value() ? BasicMatrix3x3<T>::from_columns(*x, z.cross(*x), z)
+                                    : BasicQuaternion<T>::look_rotation(*forward, up, handedness)
+                                        .to_rotation_matrix();
   auto const world_to_view = camera.transposed();
-  return Matrix4x4::from_affine(world_to_view, -(world_to_view * eye));
+  return BasicMatrix4x4<T>::from_affine(world_to_view, -(world_to_view * eye));
 }
 
 /**
@@ -150,7 +157,12 @@ W_COMMON_NAMESPACE_BEGIN
  * @throws NumericError if @p target is @p eye or either is not finite.
  * @ingroup core_math
  */
-[[nodiscard]] inline Matrix4x4 look_at_rh(Vector3 const eye, Vector3 const target, Vector3 const up)
+template <std::floating_point T>
+[[nodiscard]] inline BasicMatrix4x4<T> look_at_rh(
+  BasicVector3<T> const eye,
+  std::type_identity_t<BasicVector3<T>> const target,
+  std::type_identity_t<BasicVector3<T>> const up
+)
 {
   return look_at(eye, target, up, Handedness::Right);
 }
@@ -161,7 +173,12 @@ W_COMMON_NAMESPACE_BEGIN
  * @throws NumericError if @p target is @p eye or either is not finite.
  * @ingroup core_math
  */
-[[nodiscard]] inline Matrix4x4 look_at_lh(Vector3 const eye, Vector3 const target, Vector3 const up)
+template <std::floating_point T>
+[[nodiscard]] inline BasicMatrix4x4<T> look_at_lh(
+  BasicVector3<T> const eye,
+  std::type_identity_t<BasicVector3<T>> const target,
+  std::type_identity_t<BasicVector3<T>> const up
+)
 {
   return look_at(eye, target, up, Handedness::Left);
 }
@@ -172,13 +189,14 @@ W_COMMON_NAMESPACE_BEGIN
  * @ingroup core_math
  * @see snap_to_texel
  */
-struct TexelSnap
+template <std::floating_point T>
+struct BasicTexelSnap
 {
   /**
    * @brief The camera position to render from, in world space: whole texels along the camera's
    * x and y axes.
    */
-  Vector3 position;
+  BasicVector3<T> position;
 
   /**
    * @brief How far the true camera is from the snapped one along its x (right) and y (up) axes,
@@ -187,10 +205,15 @@ struct TexelSnap
    * does not shimmer. Shifting the upscaled image by `-offset_texels` texels (screen x right, y
    * up; for a y-down screen, `(-x, +y)`) restores the smooth motion of the true camera.
    */
-  Vector2 offset_texels;
+  BasicVector2<T> offset_texels;
 
-  [[nodiscard]] constexpr bool operator==(TexelSnap const&) const noexcept = default;
+  [[nodiscard]] constexpr bool operator==(BasicTexelSnap const&) const noexcept = default;
 };
+
+/**
+ * @brief TexelSnap in single precision, the default.
+ */
+using TexelSnap = BasicTexelSnap<float>;
 
 /**
  * @brief Snaps the camera @p position to the texel grid of an orthographic, low-resolution render
@@ -204,15 +227,16 @@ struct TexelSnap
  * of its orthographic(); positive.
  * @ingroup core_math
  */
-[[nodiscard]] constexpr TexelSnap snap_to_texel(
-  Vector3 const position,
-  Quaternion const& orientation,
-  Real const texel_size
+template <std::floating_point T>
+[[nodiscard]] constexpr BasicTexelSnap<T> snap_to_texel(
+  BasicVector3<T> const position,
+  std::type_identity_t<BasicQuaternion<T>> const& orientation,
+  std::type_identity_t<T> const texel_size
 ) noexcept
 {
   auto const camera = orientation.inverse_rotate(position);
   auto const texels = camera.xy() / texel_size;
-  auto const snapped = Vector2(floor(texels.x() + Real {0.5}), floor(texels.y() + Real {0.5}));
+  auto const snapped = BasicVector2<T>(floor(texels.x() + T {0.5}), floor(texels.y() + T {0.5}));
   return {
     .position = orientation.rotate({snapped * texel_size, camera.z()}),
     .offset_texels = texels - snapped,

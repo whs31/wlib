@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,25 +10,27 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct ForceFields
   {
-    std::optional<Real> newtons;
-    std::optional<Real> kilonewtons;
-    std::optional<Real> kilograms_force;
+    std::optional<T> newtons;
+    std::optional<T> kilonewtons;
+    std::optional<T> kilograms_force;
   };
 
-  inline auto constexpr force_reading = QuantityReading<Force, ForceFields, 3, 3> {
+  template <std::floating_point T>
+  inline auto constexpr force_reading = QuantityReading<BasicForce<T>, ForceFields<T>, 3, 3> {
     .fields =
       {
-        field_unit(&ForceFields::newtons, &Force::from_newtons),
-        field_unit(&ForceFields::kilonewtons, &Force::from_kilonewtons),
-        field_unit(&ForceFields::kilograms_force, &Force::from_kilograms_force),
+        field_unit(&ForceFields<T>::newtons, &BasicForce<T>::from_newtons),
+        field_unit(&ForceFields<T>::kilonewtons, &BasicForce<T>::from_kilonewtons),
+        field_unit(&ForceFields<T>::kilograms_force, &BasicForce<T>::from_kilograms_force),
       },
     .literals =
       {
-        literal_unit("n", &Force::from_newtons),
-        literal_unit("kn", &Force::from_kilonewtons),
-        literal_unit("kgf", &Force::from_kilograms_force),
+        literal_unit("n", &BasicForce<T>::from_newtons),
+        literal_unit("kn", &BasicForce<T>::from_kilonewtons),
+        literal_unit("kgf", &BasicForce<T>::from_kilograms_force),
       },
     .unknown_suffix = "a force literal needs one of the unit suffixes n, kn, kgf",
   };
@@ -42,9 +45,9 @@ W_COMMON_NAMESPACE_END
  * `n`, `kn`, `kgf`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Force>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicForce<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::force_reading>::value;
+    w::common::_glaze_impl::force_reading<T>>::value;
 };

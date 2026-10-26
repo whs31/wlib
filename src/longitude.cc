@@ -26,10 +26,4 @@ std::string Longitude::to_dms_string(int const second_decimals) const
   return _sexagesimal_impl::format_dms(this->m_degrees, second_decimals, 'E', 'W', 180.0);
 }
 
-#ifdef W_COMMON_WITH_QT
-QString Longitude::to_qstring() const { return QString::fromStdString(this->to_string()); }
-
-QString Longitude::to_dms_qstring() const { return QString::fromStdString(this->to_dms_string()); }
-#endif
-
 W_COMMON_NAMESPACE_END

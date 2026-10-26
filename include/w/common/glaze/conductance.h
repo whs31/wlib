@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,23 +10,25 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct ConductanceFields
   {
-    std::optional<Real> siemens;
+    std::optional<T> siemens;
   };
 
+  template <std::floating_point T>
   inline auto constexpr conductance_reading = QuantityReading<
-    Conductance,
-    ConductanceFields,
+    BasicConductance<T>,
+    ConductanceFields<T>,
     1,
     1> {
     .fields =
       {
-        field_unit(&ConductanceFields::siemens, &Conductance::from_siemens),
+        field_unit(&ConductanceFields<T>::siemens, &BasicConductance<T>::from_siemens),
       },
     .literals =
       {
-        literal_unit("siemens", &Conductance::from_siemens),
+        literal_unit("siemens", &BasicConductance<T>::from_siemens),
       },
     .unknown_suffix = "a conductance literal needs one of the unit suffixes siemens",
   };
@@ -39,9 +42,9 @@ W_COMMON_NAMESPACE_END
  * a C++ literal: `siemens`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Conductance>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicConductance<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::conductance_reading>::value;
+    w::common::_glaze_impl::conductance_reading<T>>::value;
 };

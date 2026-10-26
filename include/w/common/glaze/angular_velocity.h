@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,35 +10,37 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct AngularVelocityFields
   {
-    std::optional<Real> radians_per_second;
-    std::optional<Real> degrees_per_second;
-    std::optional<Real> rpm;
+    std::optional<T> radians_per_second;
+    std::optional<T> degrees_per_second;
+    std::optional<T> rpm;
   };
 
+  template <std::floating_point T>
   inline auto constexpr angular_velocity_reading = QuantityReading<
-    AngularVelocity,
-    AngularVelocityFields,
+    BasicAngularVelocity<T>,
+    AngularVelocityFields<T>,
     3,
     3> {
     .fields =
       {
         field_unit(
-          &AngularVelocityFields::radians_per_second,
-          &AngularVelocity::from_radians_per_second
+          &AngularVelocityFields<T>::radians_per_second,
+          &BasicAngularVelocity<T>::from_radians_per_second
         ),
         field_unit(
-          &AngularVelocityFields::degrees_per_second,
-          &AngularVelocity::from_degrees_per_second
+          &AngularVelocityFields<T>::degrees_per_second,
+          &BasicAngularVelocity<T>::from_degrees_per_second
         ),
-        field_unit(&AngularVelocityFields::rpm, &AngularVelocity::from_rpm),
+        field_unit(&AngularVelocityFields<T>::rpm, &BasicAngularVelocity<T>::from_rpm),
       },
     .literals =
       {
-        literal_unit("rad_per_s", &AngularVelocity::from_radians_per_second),
-        literal_unit("deg_per_s", &AngularVelocity::from_degrees_per_second),
-        literal_unit("rpm", &AngularVelocity::from_rpm),
+        literal_unit("rad_per_s", &BasicAngularVelocity<T>::from_radians_per_second),
+        literal_unit("deg_per_s", &BasicAngularVelocity<T>::from_degrees_per_second),
+        literal_unit("rpm", &BasicAngularVelocity<T>::from_rpm),
       },
     .unknown_suffix =
       "a angular velocity literal needs one of the unit suffixes rad_per_s, deg_per_s, rpm",
@@ -53,9 +56,9 @@ W_COMMON_NAMESPACE_END
  * `rad_per_s`, `deg_per_s`, `rpm`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::AngularVelocity>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicAngularVelocity<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::angular_velocity_reading>::value;
+    w::common::_glaze_impl::angular_velocity_reading<T>>::value;
 };

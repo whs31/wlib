@@ -9,11 +9,6 @@
 #include <string>
 #include <system_error>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qstring.h>
-#  include <qstringview.h>
-#endif
-
 #include <w/common/char_utils.h>
 
 W_COMMON_NAMESPACE_BEGIN
@@ -567,20 +562,6 @@ VersionRange VersionRange::parse(std::string_view const expression)
 {
   return VersionRange(expression);
 }
-
-#ifdef W_COMMON_WITH_QT
-QString VersionRange::to_qstring() const { return QString::fromStdString(this->to_string()); }
-
-VersionRange VersionRange::from_qstring(QStringView const text)
-{
-  return VersionRange(text.toString().toStdString());
-}
-
-VersionRange VersionRange::from_qstring(QString const& text)
-{
-  return from_qstring(QStringView {text});
-}
-#endif
 
 std::ostream& operator<<(std::ostream& stream, VersionRange const& range)
 {

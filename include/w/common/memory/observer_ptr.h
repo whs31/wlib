@@ -13,10 +13,6 @@
 #include <w/common/detail/namespace.h>
 #include <w/common/memory/null_pointer_error.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qmetatype.h>
-#endif
-
 // NOLINTBEGIN(*-explicit-constructor)
 W_COMMON_NAMESPACE_BEGIN
 
@@ -33,10 +29,9 @@ W_COMMON_NAMESPACE_BEGIN
  * readers.
  *
  * @remarks This is a reimplementation of the LF TSv2 `std::observer_ptr` type.
- * @note `observer_ptr<T>` is declared as a Qt metatype template (if Qt is available), so registered
- * instantiations can be used in `QVariant`, `Q_PROPERTY`, signal and slot APIs.
- * @note Qt metatype registration is available only when wlib is built with
- * `with_qt=True`.
+ * @note With the wlib_qt package, including `w/common/qt/metatype.h` declares `observer_ptr<T>` a
+ * Qt metatype template, so its instantiations can be used in `QVariant`, `Q_PROPERTY`, signal and
+ * slot APIs.
  *
  * @code {.cpp}
  * using namespace w;
@@ -383,7 +378,3 @@ template <typename To, typename From>
 
 W_COMMON_NAMESPACE_END
 // NOLINTEND(*-explicit-constructor)
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE_TEMPLATE_1ARG(w::common::observer_ptr)
-#endif

@@ -8,11 +8,6 @@
 #include <random>
 #include <vector>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qstring.h>
-#  include <qstringview.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 // Digest rounds operate on fixed-size blocks with indices defined by MD5/SHA-1.
@@ -405,17 +400,6 @@ Uuid Uuid::now_v7()
     std::uint64_t {0x8000000000000000} | ((counter & 0x3fffffffU) << 32U) | random
   );
 }
-
-#ifdef W_COMMON_WITH_QT
-QString Uuid::to_qstring(Format const format) const
-{
-  return QString::fromStdString(this->to_string(format));
-}
-
-Uuid Uuid::from_qstring(QStringView const text) { return Uuid(text.toString().toStdString()); }
-
-Uuid Uuid::from_qstring(QString const& text) { return from_qstring(QStringView {text}); }
-#endif
 
 int uuid_stream_format_index()
 {

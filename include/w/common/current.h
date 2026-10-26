@@ -1,25 +1,18 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Current value stored in `A`.
  * @details Current is a small value type with ampere and milliampere conversions.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -33,16 +26,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Charge
  * @see Power
  */
-class W_COMMON_API Current : public QuantityBase<Current>
+template <std::floating_point T>
+class BasicCurrent : public QuantityBase<BasicCurrent<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double amperes READ as_amperes CONSTANT FINAL)
-  Q_PROPERTY(double milliamperes READ as_milliamperes CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicCurrent, T>;
 
  public:
   /**
@@ -53,44 +40,60 @@ class W_COMMON_API Current : public QuantityBase<Current>
   /**
    * @brief Creates a zero current.
    */
-  constexpr Current() noexcept = default;
+  constexpr BasicCurrent() noexcept = default;
 
   /**
    * @brief Creates a current from amperes.
    */
-  explicit constexpr Current(Real const amperes) noexcept
-    : QuantityBase(amperes)
+  explicit constexpr BasicCurrent(T const amperes) noexcept
+    : Base(amperes)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicCurrent(
+    BasicCurrent<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a current from amperes.
    */
-  [[nodiscard]] static constexpr Current from_amperes(Real const amperes) noexcept
+  [[nodiscard]] static constexpr BasicCurrent from_amperes(T const amperes) noexcept
   {
-    return Current(amperes);
+    return BasicCurrent(amperes);
   }
 
   /**
    * @brief Creates a current from milliamperes.
    */
-  [[nodiscard]] static constexpr Current from_milliamperes(Real const milliamperes) noexcept
+  [[nodiscard]] static constexpr BasicCurrent from_milliamperes(T const milliamperes) noexcept
   {
-    return Current(milliamperes / 1'000);
+    return BasicCurrent(milliamperes / 1'000);
   }
 
   /**
    * @brief Returns amperes.
    */
-  [[nodiscard]] constexpr Real as_amperes() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_amperes() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns milliamperes.
    */
-  [[nodiscard]] constexpr Real as_milliamperes() const noexcept
-  {
-    return this->magnitude() * 1'000;
-  }
+  [[nodiscard]] constexpr T as_milliamperes() const noexcept { return this->magnitude() * 1'000; }
 };
+
+/**
+ * @brief Current in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Current = BasicCurrent<float>;
 
 inline namespace literals
 {
@@ -136,7 +139,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Current)
-#endif

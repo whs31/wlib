@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,26 +10,28 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct CapacitanceFields
   {
-    std::optional<Real> farads;
-    std::optional<Real> microfarads;
+    std::optional<T> farads;
+    std::optional<T> microfarads;
   };
 
+  template <std::floating_point T>
   inline auto constexpr capacitance_reading = QuantityReading<
-    Capacitance,
-    CapacitanceFields,
+    BasicCapacitance<T>,
+    CapacitanceFields<T>,
     2,
     2> {
     .fields =
       {
-        field_unit(&CapacitanceFields::farads, &Capacitance::from_farads),
-        field_unit(&CapacitanceFields::microfarads, &Capacitance::from_microfarads),
+        field_unit(&CapacitanceFields<T>::farads, &BasicCapacitance<T>::from_farads),
+        field_unit(&CapacitanceFields<T>::microfarads, &BasicCapacitance<T>::from_microfarads),
       },
     .literals =
       {
-        literal_unit("f", &Capacitance::from_farads),
-        literal_unit("uf", &Capacitance::from_microfarads),
+        literal_unit("f", &BasicCapacitance<T>::from_farads),
+        literal_unit("uf", &BasicCapacitance<T>::from_microfarads),
       },
     .unknown_suffix = "a capacitance literal needs one of the unit suffixes f, uf",
   };
@@ -42,9 +45,9 @@ W_COMMON_NAMESPACE_END
  * reads a literal string, e.g. `"12.5f"`, with the suffix of a C++ literal: `f`, `uf`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Capacitance>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicCapacitance<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::capacitance_reading>::value;
+    w::common::_glaze_impl::capacitance_reading<T>>::value;
 };

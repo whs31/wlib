@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,31 +10,40 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct PressureFields
   {
-    std::optional<Real> pascals;
-    std::optional<Real> hectopascals;
-    std::optional<Real> kilopascals;
-    std::optional<Real> millibars;
-    std::optional<Real> inches_of_mercury;
+    std::optional<T> pascals;
+    std::optional<T> hectopascals;
+    std::optional<T> kilopascals;
+    std::optional<T> millibars;
+    std::optional<T> inches_of_mercury;
   };
 
-  inline auto constexpr pressure_reading = QuantityReading<Pressure, PressureFields, 5, 5> {
+  template <std::floating_point T>
+  inline auto constexpr pressure_reading = QuantityReading<
+    BasicPressure<T>,
+    PressureFields<T>,
+    5,
+    5> {
     .fields =
       {
-        field_unit(&PressureFields::pascals, &Pressure::from_pascals),
-        field_unit(&PressureFields::hectopascals, &Pressure::from_hectopascals),
-        field_unit(&PressureFields::kilopascals, &Pressure::from_kilopascals),
-        field_unit(&PressureFields::millibars, &Pressure::from_millibars),
-        field_unit(&PressureFields::inches_of_mercury, &Pressure::from_inches_of_mercury),
+        field_unit(&PressureFields<T>::pascals, &BasicPressure<T>::from_pascals),
+        field_unit(&PressureFields<T>::hectopascals, &BasicPressure<T>::from_hectopascals),
+        field_unit(&PressureFields<T>::kilopascals, &BasicPressure<T>::from_kilopascals),
+        field_unit(&PressureFields<T>::millibars, &BasicPressure<T>::from_millibars),
+        field_unit(
+          &PressureFields<T>::inches_of_mercury,
+          &BasicPressure<T>::from_inches_of_mercury
+        ),
       },
     .literals =
       {
-        literal_unit("pa", &Pressure::from_pascals),
-        literal_unit("hpa", &Pressure::from_hectopascals),
-        literal_unit("kpa", &Pressure::from_kilopascals),
-        literal_unit("mbar", &Pressure::from_millibars),
-        literal_unit("inhg", &Pressure::from_inches_of_mercury),
+        literal_unit("pa", &BasicPressure<T>::from_pascals),
+        literal_unit("hpa", &BasicPressure<T>::from_hectopascals),
+        literal_unit("kpa", &BasicPressure<T>::from_kilopascals),
+        literal_unit("mbar", &BasicPressure<T>::from_millibars),
+        literal_unit("inhg", &BasicPressure<T>::from_inches_of_mercury),
       },
     .unknown_suffix = "a pressure literal needs one of the unit suffixes pa, hpa, kpa, mbar, inhg",
   };
@@ -48,9 +58,9 @@ W_COMMON_NAMESPACE_END
  * the suffix of a C++ literal: `pa`, `hpa`, `kpa`, `mbar`, `inhg`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Pressure>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicPressure<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::pressure_reading>::value;
+    w::common::_glaze_impl::pressure_reading<T>>::value;
 };

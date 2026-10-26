@@ -1,20 +1,15 @@
 #pragma once
 
+#include <concepts>
 #include <chrono>
 #include <string_view>
 
 #include <w/common/config.h>
 #include <w/common/constants.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
 #include <w/common/velocity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -23,8 +18,6 @@ W_COMMON_NAMESPACE_BEGIN
  * @details Acceleration is a small value type with meters-per-second-squared and standard
  * gravity (g₀ = 9.80665 m/s²) conversions. It relates to Velocity through `std::chrono`
  * durations.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -40,16 +33,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Velocity
  * @see Force
  */
-class W_COMMON_API Acceleration : public QuantityBase<Acceleration>
+template <std::floating_point T>
+class BasicAcceleration : public QuantityBase<BasicAcceleration<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double metersPerSecondSquared READ as_mps2 CONSTANT FINAL)
-  Q_PROPERTY(double standardGravity READ as_standard_gravity CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicAcceleration, T>;
 
  public:
   /**
@@ -60,59 +47,80 @@ class W_COMMON_API Acceleration : public QuantityBase<Acceleration>
   /**
    * @brief Creates a zero acceleration.
    */
-  constexpr Acceleration() noexcept = default;
+  constexpr BasicAcceleration() noexcept = default;
 
   /**
    * @brief Creates an acceleration from meters per second squared.
    */
-  explicit constexpr Acceleration(Real const mps2) noexcept
-    : QuantityBase(mps2)
+  explicit constexpr BasicAcceleration(T const mps2) noexcept
+    : Base(mps2)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicAcceleration(
+    BasicAcceleration<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates an acceleration from meters per second squared.
    */
-  [[nodiscard]] static constexpr Acceleration from_mps2(Real const mps2) noexcept
+  [[nodiscard]] static constexpr BasicAcceleration from_mps2(T const mps2) noexcept
   {
-    return Acceleration(mps2);
+    return BasicAcceleration(mps2);
   }
 
   /**
    * @brief Creates an acceleration from multiples of standard gravity.
    */
-  [[nodiscard]] static constexpr Acceleration from_standard_gravity(
-    Real const standard_gravity
+  [[nodiscard]] static constexpr BasicAcceleration from_standard_gravity(
+    T const standard_gravity
   ) noexcept
   {
-    return Acceleration(standard_gravity * STANDARD_GRAVITY);
+    return BasicAcceleration(standard_gravity * static_cast<T>(STANDARD_GRAVITY));
   }
 
   /**
    * @brief Returns meters per second squared.
    */
-  [[nodiscard]] constexpr Real as_mps2() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_mps2() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns multiples of standard gravity.
    */
-  [[nodiscard]] constexpr Real as_standard_gravity() const noexcept
+  [[nodiscard]] constexpr T as_standard_gravity() const noexcept
   {
-    return this->magnitude() / STANDARD_GRAVITY;
+    return this->magnitude() / static_cast<T>(STANDARD_GRAVITY);
   }
 };
+
+/**
+ * @brief Acceleration in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Acceleration = BasicAcceleration<float>;
 
 /**
  * @brief Returns the average acceleration that changes a velocity by @p delta in @p time.
  * @ingroup core_measurements
  * @relates Acceleration
  */
-template <typename Rep, typename Period>
-[[nodiscard]] constexpr Acceleration operator/(
-  Velocity const delta,
+template <std::floating_point T, typename Rep, typename Period>
+[[nodiscard]] constexpr BasicAcceleration<T> operator/(
+  BasicVelocity<T> const delta,
   std::chrono::duration<Rep, Period> const time
 ) noexcept
 {
-  return Acceleration::from_mps2(delta.as_mps() / std::chrono::duration<Real>(time).count());
+  return BasicAcceleration<T>::from_mps2(
+    static_cast<T>(delta.as_mps() / std::chrono::duration<double>(time).count())
+  );
 }
 
 /**
@@ -120,13 +128,15 @@ template <typename Rep, typename Period>
  * @ingroup core_measurements
  * @relates Acceleration
  */
-template <typename Rep, typename Period>
-[[nodiscard]] constexpr Velocity operator*(
-  Acceleration const rate,
+template <std::floating_point T, typename Rep, typename Period>
+[[nodiscard]] constexpr BasicVelocity<T> operator*(
+  BasicAcceleration<T> const rate,
   std::chrono::duration<Rep, Period> const time
 ) noexcept
 {
-  return Velocity::from_mps(rate.as_mps2() * std::chrono::duration<Real>(time).count());
+  return BasicVelocity<T>::from_mps(
+    static_cast<T>(rate.as_mps2() * std::chrono::duration<double>(time).count())
+  );
 }
 
 /**
@@ -134,10 +144,10 @@ template <typename Rep, typename Period>
  * @ingroup core_measurements
  * @relates Acceleration
  */
-template <typename Rep, typename Period>
-[[nodiscard]] constexpr Velocity operator*(
+template <std::floating_point T, typename Rep, typename Period>
+[[nodiscard]] constexpr BasicVelocity<T> operator*(
   std::chrono::duration<Rep, Period> const time,
-  Acceleration const rate
+  BasicAcceleration<T> const rate
 ) noexcept
 {
   return rate * time;
@@ -187,7 +197,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Acceleration)
-#endif

@@ -1,25 +1,18 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Mass value stored in `kg`.
  * @details Mass is a small value type with kilogram and gram conversions.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -33,16 +26,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Density
  * @see MomentOfInertia
  */
-class W_COMMON_API Mass : public QuantityBase<Mass>
+template <std::floating_point T>
+class BasicMass : public QuantityBase<BasicMass<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double kilograms READ as_kilograms CONSTANT FINAL)
-  Q_PROPERTY(double grams READ as_grams CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicMass, T>;
 
  public:
   /**
@@ -53,41 +40,58 @@ class W_COMMON_API Mass : public QuantityBase<Mass>
   /**
    * @brief Creates a zero mass.
    */
-  constexpr Mass() noexcept = default;
+  constexpr BasicMass() noexcept = default;
 
   /**
    * @brief Creates a mass from kilograms.
    */
-  explicit constexpr Mass(Real const kilograms) noexcept
-    : QuantityBase(kilograms)
+  explicit constexpr BasicMass(T const kilograms) noexcept
+    : Base(kilograms)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicMass(BasicMass<U> const other) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a mass from kilograms.
    */
-  [[nodiscard]] static constexpr Mass from_kilograms(Real const kilograms) noexcept
+  [[nodiscard]] static constexpr BasicMass from_kilograms(T const kilograms) noexcept
   {
-    return Mass(kilograms);
+    return BasicMass(kilograms);
   }
 
   /**
    * @brief Creates a mass from grams.
    */
-  [[nodiscard]] static constexpr Mass from_grams(Real const grams) noexcept
+  [[nodiscard]] static constexpr BasicMass from_grams(T const grams) noexcept
   {
-    return Mass(grams / 1'000);
+    return BasicMass(grams / 1'000);
   }
 
   /**
    * @brief Returns kilograms.
    */
-  [[nodiscard]] constexpr Real as_kilograms() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_kilograms() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns grams.
    */
-  [[nodiscard]] constexpr Real as_grams() const noexcept { return this->magnitude() * 1'000; }
+  [[nodiscard]] constexpr T as_grams() const noexcept { return this->magnitude() * 1'000; }
 };
+
+/**
+ * @brief Mass in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Mass = BasicMass<float>;
 
 inline namespace literals
 {
@@ -133,7 +137,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Mass)
-#endif

@@ -153,29 +153,29 @@ TEST_CASE("Quantity glaze adapters read literal strings in text formats", "[glaz
   REQUIRE(write(read<Frequency>(R"("1khz")")) == R"({"hertz":1000})");
 
   using namespace w::common::_glaze_impl;
-  check_literals<Acceleration, acceleration_reading>();
-  check_literals<Angle, angle_reading>();
-  check_literals<AngularAcceleration, angular_acceleration_reading>();
-  check_literals<AngularVelocity, angular_velocity_reading>();
-  check_literals<Capacitance, capacitance_reading>();
-  check_literals<Charge, charge_reading>();
-  check_literals<Conductance, conductance_reading>();
-  check_literals<Current, current_reading>();
-  check_literals<Density, density_reading>();
-  check_literals<Distance, distance_reading>();
-  check_literals<Energy, energy_reading>();
-  check_literals<Force, force_reading>();
-  check_literals<Frequency, frequency_reading>();
-  check_literals<MagneticFluxDensity, magnetic_flux_density_reading>();
-  check_literals<Mass, mass_reading>();
-  check_literals<MomentOfInertia, moment_of_inertia_reading>();
-  check_literals<Power, power_reading>();
-  check_literals<Pressure, pressure_reading>();
-  check_literals<Resistance, resistance_reading>();
-  check_literals<Temperature, temperature_reading>();
-  check_literals<Torque, torque_reading>();
-  check_literals<Velocity, velocity_reading>();
-  check_literals<Voltage, voltage_reading>();
+  check_literals<Acceleration, acceleration_reading<float>>();
+  check_literals<Angle, angle_reading<float>>();
+  check_literals<AngularAcceleration, angular_acceleration_reading<float>>();
+  check_literals<AngularVelocity, angular_velocity_reading<float>>();
+  check_literals<Capacitance, capacitance_reading<float>>();
+  check_literals<Charge, charge_reading<float>>();
+  check_literals<Conductance, conductance_reading<float>>();
+  check_literals<Current, current_reading<float>>();
+  check_literals<Density, density_reading<float>>();
+  check_literals<Distance, distance_reading<float>>();
+  check_literals<Energy, energy_reading<float>>();
+  check_literals<Force, force_reading<float>>();
+  check_literals<Frequency, frequency_reading<float>>();
+  check_literals<MagneticFluxDensity, magnetic_flux_density_reading<float>>();
+  check_literals<Mass, mass_reading<float>>();
+  check_literals<MomentOfInertia, moment_of_inertia_reading<float>>();
+  check_literals<Power, power_reading<float>>();
+  check_literals<Pressure, pressure_reading<float>>();
+  check_literals<Resistance, resistance_reading<float>>();
+  check_literals<Temperature, temperature_reading<float>>();
+  check_literals<Torque, torque_reading<float>>();
+  check_literals<Velocity, velocity_reading<float>>();
+  check_literals<Voltage, voltage_reading<float>>();
 }
 
 TEST_CASE("Quantity glaze adapters reject malformed literal strings", "[glaze][literal]")

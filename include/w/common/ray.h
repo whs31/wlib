@@ -1,5 +1,8 @@
 #pragma once
 
+#include <concepts>
+#include <ostream>
+#include <limits>
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -13,7 +16,6 @@
 
 #include <w/common/aabb.h>
 #include <w/common/clip_space.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
@@ -36,14 +38,20 @@ W_COMMON_NAMESPACE_BEGIN
  * @ingroup core_math
  * @see Ray::intersect_triangle
  */
-struct TriangleHit
+template <std::floating_point T>
+struct BasicTriangleHit
 {
-  Real t = 0.0;
-  Real u = 0.0;
-  Real v = 0.0;
+  T t = 0.0;
+  T u = 0.0;
+  T v = 0.0;
 
-  [[nodiscard]] constexpr bool operator==(TriangleHit const&) const noexcept = default;
+  [[nodiscard]] constexpr bool operator==(BasicTriangleHit<T> const&) const noexcept = default;
 };
+
+/**
+ * @brief TriangleHit in single precision, the default.
+ */
+using TriangleHit = BasicTriangleHit<float>;
 
 /**
  * @brief Half-line `origin + t * direction` for `t ≥ 0`, e.g. a picking ray under the cursor.
@@ -55,26 +63,37 @@ struct TriangleHit
  * that contains the origin is met at `t = 0`.
  *
  * @par Layout
- * The storage is the Vector3 origin and the Vector3 direction, six contiguous Real values. The
+ * The storage is the Vector3 origin and the Vector3 direction, six contiguous @p T values. The
  * class is standard layout and trivially copyable.
  * @ingroup core_math
  * @see Plane
  * @see AABB
  * @see Sphere
  */
-class W_COMMON_API Ray
+template <std::floating_point T>
+class BasicRay
 {
  public:
-  constexpr Ray() noexcept = default;
+  constexpr BasicRay() noexcept = default;
 
-  constexpr Ray(Vector3 const origin, Vector3 const direction) noexcept
+  /**
+   * @brief Converts from another precision: implicitly when no value can lose digits, e.g. from
+   * `float` to `double`, and explicitly otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicRay(BasicRay<U> const& other) noexcept
+    : BasicRay(BasicVector3<T>(other.origin()), BasicVector3<T>(other.direction()))
+  {}
+
+  constexpr BasicRay(BasicVector3<T> const origin, BasicVector3<T> const direction) noexcept
     : m_origin(origin)
     , m_direction(direction)
   {}
 
-  [[nodiscard]] constexpr Vector3 origin() const noexcept { return this->m_origin; }
+  [[nodiscard]] constexpr BasicVector3<T> origin() const noexcept { return this->m_origin; }
 
-  [[nodiscard]] constexpr Vector3 direction() const noexcept { return this->m_direction; }
+  [[nodiscard]] constexpr BasicVector3<T> direction() const noexcept { return this->m_direction; }
 
   /**
    * @brief Checks whether every component is neither infinite nor NaN.
@@ -87,7 +106,7 @@ class W_COMMON_API Ray
   /**
    * @brief Returns `origin + t * direction`.
    */
-  [[nodiscard]] constexpr Vector3 point_at(Real const t) const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> point_at(T const t) const noexcept
   {
     return this->m_origin + this->m_direction * t;
   }
@@ -96,7 +115,7 @@ class W_COMMON_API Ray
    * @brief Returns where the ray crosses @p plane, from either side.
    * @details A ray parallel to the plane misses it, even one lying in it.
    */
-  [[nodiscard]] constexpr std::optional<Real> intersect(Plane const& plane) const noexcept
+  [[nodiscard]] constexpr std::optional<T> intersect(BasicPlane<T> const& plane) const noexcept
   {
     auto const approach = plane.normal().dot(this->m_direction);
     if(approach == 0)
@@ -110,14 +129,14 @@ class W_COMMON_API Ray
   /**
    * @brief Returns where the ray enters @p sphere, or 0 if it starts inside.
    */
-  [[nodiscard]] std::optional<Real> intersect(Sphere const& sphere) const noexcept
+  [[nodiscard]] std::optional<T> intersect(BasicSphere<T> const& sphere) const noexcept
   {
     auto const offset = this->m_origin - sphere.center();
     auto const a = this->m_direction.length_squared();
     auto const half_b = offset.dot(this->m_direction);
     auto const c = offset.length_squared() - sphere.radius() * sphere.radius();
     if(c <= 0)
-      return Real {0};
+      return T {0};
     auto const discriminant = half_b * half_b - a * c;
     if(half_b > 0 or discriminant < 0 or a == 0)
       return std::nullopt;
@@ -128,22 +147,21 @@ class W_COMMON_API Ray
    * @brief Returns where the ray enters @p box, or 0 if it starts inside: the slab method.
    * @details A ray along a face counts as meeting the box. The empty box is never met.
    */
-  [[nodiscard]] constexpr std::optional<Real> intersect(AABB const& box) const noexcept
+  [[nodiscard]] constexpr std::optional<T> intersect(BasicAABB<T> const& box) const noexcept
   {
-    auto enter = Real {0};
-    auto exit = Inf;
-    auto const slab =
-      [&enter, &exit](Real const origin, Real const direction, Real const min, Real const max) {
-        if(direction == 0)
-          return origin >= min and origin <= max;
-        auto near_t = (min - origin) / direction;
-        auto far_t = (max - origin) / direction;
-        if(near_t > far_t)
-          std::swap(near_t, far_t);
-        enter = std::max(enter, near_t);
-        exit = std::min(exit, far_t);
-        return enter <= exit;
-      };
+    auto enter = T {0};
+    auto exit = std::numeric_limits<T>::infinity();
+    auto const slab = [&enter, &exit](T const origin, T const direction, T const min, T const max) {
+      if(direction == 0)
+        return origin >= min and origin <= max;
+      auto near_t = (min - origin) / direction;
+      auto far_t = (max - origin) / direction;
+      if(near_t > far_t)
+        std::swap(near_t, far_t);
+      enter = std::max(enter, near_t);
+      exit = std::min(exit, far_t);
+      return enter <= exit;
+    };
     auto const o = this->m_origin;
     auto const d = this->m_direction;
     auto const min = box.min();
@@ -161,10 +179,10 @@ class W_COMMON_API Ray
    * Möller–Trumbore method.
    * @details Hits on an edge count. A ray in the plane of the triangle misses it.
    */
-  [[nodiscard]] constexpr std::optional<TriangleHit> intersect_triangle(
-    Vector3 const a,
-    Vector3 const b,
-    Vector3 const c
+  [[nodiscard]] constexpr std::optional<BasicTriangleHit<T>> intersect_triangle(
+    BasicVector3<T> const a,
+    BasicVector3<T> const b,
+    BasicVector3<T> const c
   ) const noexcept
   {
     auto const edge_b = b - a;
@@ -186,17 +204,20 @@ class W_COMMON_API Ray
     auto const t = edge_c.dot(q) * inverse_det;
     if(t < 0)
       return std::nullopt;
-    return TriangleHit {.t = t, .u = u, .v = v};
+    return BasicTriangleHit<T> {.t = t, .u = u, .v = v};
   }
 
-  [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_string() const { return fmt::format("{}", *this); }
 
   /**
    * @brief Returns the ray from @p origin through @p target, with a unit direction.
    * @details Coincident points give a zero direction, which meets only shapes containing
    * @p origin.
    */
-  [[nodiscard]] static Ray through(Vector3 const origin, Vector3 const target) noexcept
+  [[nodiscard]] static BasicRay<T> through(
+    BasicVector3<T> const origin,
+    BasicVector3<T> const target
+  ) noexcept
   {
     return {origin, (target - origin).normalized()};
   }
@@ -209,39 +230,49 @@ class W_COMMON_API Ray
    * `projection * view`. Works for perspective() and orthographic(), with a finite or infinite
    * far plane, as long as @p depth is the ClipDepth of the projection.
    */
-  [[nodiscard]] static Ray from_ndc(
-    Vector2 const ndc,
-    Matrix4x4 const& inverse_view_projection,
+  [[nodiscard]] static BasicRay<T> from_ndc(
+    BasicVector2<T> const ndc,
+    BasicMatrix4x4<T> const& inverse_view_projection,
     ClipDepth const depth = ClipDepth::Standard
   ) noexcept
   {
     // the far plane may be at infinity, so the second point is halfway in depth rather than on it
-    auto const near_depth = depth == ClipDepth::Standard ? Real {0} : Real {1};
-    auto const unproject = [&](Real const z) {
-      return (inverse_view_projection * Vector4(ndc.x(), ndc.y(), z, 1.0)).perspective_divided();
+    auto const near_depth = depth == ClipDepth::Standard ? T {0} : T {1};
+    auto const unproject = [&](T const z) {
+      return (inverse_view_projection * BasicVector4<T>(ndc.x(), ndc.y(), z, 1.0))
+        .perspective_divided();
     };
     return through(unproject(near_depth), unproject(0.5));
   }
 
-  [[nodiscard]] constexpr bool operator==(Ray const&) const noexcept = default;
+  [[nodiscard]] constexpr bool operator==(BasicRay<T> const&) const noexcept = default;
 
  private:
-  Vector3 m_origin;
-  Vector3 m_direction;
+  BasicVector3<T> m_origin;
+  BasicVector3<T> m_direction;
 };
 
-W_COMMON_API std::ostream& operator<<(std::ostream& os, Ray const& ray);
+/**
+ * @brief Ray in single precision, the default.
+ */
+using Ray = BasicRay<float>;
+
+template <std::floating_point T>
+std::ostream& operator<<(std::ostream& os, BasicRay<T> const& ray)
+{
+  return os << ray.to_string();
+}
 
 static_assert(std::is_standard_layout_v<Ray>);
 static_assert(std::is_trivially_copyable_v<Ray>);
-static_assert(sizeof(Ray) == 6 * sizeof(Real));
+static_assert(sizeof(Ray) == 6 * sizeof(float));
 
 W_COMMON_NAMESPACE_END
 
-template <>
-struct std::hash<w::common::Ray>
+template <std::floating_point T>
+struct std::hash<w::common::BasicRay<T>>
 {
-  [[nodiscard]] std::size_t operator()(w::common::Ray const& ray) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::BasicRay<T> const& ray) const noexcept
   {
     return w::common::_hash_impl::combine(ray.origin(), ray.direction());
   }
@@ -252,21 +283,21 @@ struct std::hash<w::common::Ray>
  * @brief Formats as `{origin (x, y, z), direction (x, y, z)}`; the format spec, e.g. `{:.3f}`,
  * applies to every component.
  */
-template <>
-struct fmt::formatter<w::common::Ray> : fmt::formatter<w::common::Real>
+template <std::floating_point T>
+struct fmt::formatter<w::common::BasicRay<T>> : fmt::formatter<T>
 {
-  format_context::iterator format(w::common::Ray const& ray, format_context& ctx) const
+  format_context::iterator format(w::common::BasicRay<T> const& ray, format_context& ctx) const
   {
     auto const origin = ray.origin();
     auto const direction = ray.direction();
     auto out = fmt::format_to(ctx.out(), "{{origin ");
     ctx.advance_to(out);
-    out = w::common::_format_impl::format_components<
-      3>(*this, {origin.x(), origin.y(), origin.z()}, ctx);
+    out = w::common::_format_impl::
+      format_components<3, T>(*this, {origin.x(), origin.y(), origin.z()}, ctx);
     out = fmt::format_to(out, ", direction ");
     ctx.advance_to(out);
-    out = w::common::_format_impl::format_components<
-      3>(*this, {direction.x(), direction.y(), direction.z()}, ctx);
+    out = w::common::_format_impl::
+      format_components<3, T>(*this, {direction.x(), direction.y(), direction.z()}, ctx);
     *out++ = '}';
     return out;
   }

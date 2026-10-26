@@ -1,18 +1,13 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
 #include <w/common/constants.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -27,8 +22,6 @@ W_COMMON_NAMESPACE_BEGIN
  *
  * Negation is deleted, so a negative Celsius or Fahrenheit literal such as `-5_degc`, which C++
  * parses as `-(5_degc)`, does not compile. Write `Temperature::from_celsius(-5.0)` instead.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -42,17 +35,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Pressure
  * @see Density
  */
-class W_COMMON_API Temperature : public QuantityBase<Temperature>
+template <std::floating_point T>
+class BasicTemperature : public QuantityBase<BasicTemperature<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double kelvin READ as_kelvin CONSTANT FINAL)
-  Q_PROPERTY(double celsius READ as_celsius CONSTANT FINAL)
-  Q_PROPERTY(double fahrenheit READ as_fahrenheit CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicTemperature, T>;
 
  public:
   /**
@@ -63,58 +49,71 @@ class W_COMMON_API Temperature : public QuantityBase<Temperature>
   /**
    * @brief Creates a zero temperature.
    */
-  constexpr Temperature() noexcept = default;
+  constexpr BasicTemperature() noexcept = default;
 
   /**
    * @brief Creates a temperature from kelvin.
    */
-  explicit constexpr Temperature(Real const kelvin) noexcept
-    : QuantityBase(kelvin)
+  explicit constexpr BasicTemperature(T const kelvin) noexcept
+    : Base(kelvin)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicTemperature(
+    BasicTemperature<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a temperature from kelvin.
    */
-  [[nodiscard]] static constexpr Temperature from_kelvin(Real const kelvin) noexcept
+  [[nodiscard]] static constexpr BasicTemperature from_kelvin(T const kelvin) noexcept
   {
-    return Temperature(kelvin);
+    return BasicTemperature(kelvin);
   }
 
   /**
    * @brief Creates a temperature from degrees Celsius.
    */
-  [[nodiscard]] static constexpr Temperature from_celsius(Real const celsius) noexcept
+  [[nodiscard]] static constexpr BasicTemperature from_celsius(T const celsius) noexcept
   {
-    return Temperature(celsius + CELSIUS_ZERO_KELVIN);
+    return BasicTemperature(celsius + static_cast<T>(CELSIUS_ZERO_KELVIN));
   }
 
   /**
    * @brief Creates a temperature from degrees Fahrenheit.
    */
-  [[nodiscard]] static constexpr Temperature from_fahrenheit(Real const fahrenheit) noexcept
+  [[nodiscard]] static constexpr BasicTemperature from_fahrenheit(T const fahrenheit) noexcept
   {
-    return Temperature(((fahrenheit - 32) * 5 / 9) + CELSIUS_ZERO_KELVIN);
+    return BasicTemperature(((fahrenheit - 32) * 5 / 9) + static_cast<T>(CELSIUS_ZERO_KELVIN));
   }
 
   /**
    * @brief Returns kelvin.
    */
-  [[nodiscard]] constexpr Real as_kelvin() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_kelvin() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns degrees Celsius.
    */
-  [[nodiscard]] constexpr Real as_celsius() const noexcept
+  [[nodiscard]] constexpr T as_celsius() const noexcept
   {
-    return this->magnitude() - CELSIUS_ZERO_KELVIN;
+    return this->magnitude() - static_cast<T>(CELSIUS_ZERO_KELVIN);
   }
 
   /**
    * @brief Returns degrees Fahrenheit.
    */
-  [[nodiscard]] constexpr Real as_fahrenheit() const noexcept
+  [[nodiscard]] constexpr T as_fahrenheit() const noexcept
   {
-    return ((this->magnitude() - CELSIUS_ZERO_KELVIN) * 9 / 5) + 32;
+    return ((this->magnitude() - static_cast<T>(CELSIUS_ZERO_KELVIN)) * 9 / 5) + 32;
   }
 
   /**
@@ -122,8 +121,14 @@ class W_COMMON_API Temperature : public QuantityBase<Temperature>
    * @details It also rejects literals such as `-5_degc`, which C++ parses as `-(5_degc)`.
    */
   // NOLINTNEXTLINE(bugprone-derived-method-shadowing-base-method)
-  Temperature operator-() const = delete;
+  BasicTemperature operator-() const = delete;
 };
+
+/**
+ * @brief Temperature in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Temperature = BasicTemperature<float>;
 
 inline namespace literals
 {
@@ -189,7 +194,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Temperature)
-#endif

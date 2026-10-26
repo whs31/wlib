@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <array>
 #include <cstddef>
 
@@ -10,8 +11,10 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
-  using Matrix3x3Rows = std::array<std::array<Real, 3>, 3>;
-  using Matrix3x3Input = ExactArray<ExactArray<Real, 3>, 3>;
+  template <std::floating_point T>
+  using Matrix3x3Rows = std::array<std::array<T, 3>, 3>;
+  template <std::floating_point T>
+  using Matrix3x3Input = ExactArray<ExactArray<T, 3>, 3>;
 }  // namespace _glaze_impl
 
 W_COMMON_NAMESPACE_END
@@ -21,19 +24,22 @@ W_COMMON_NAMESPACE_END
  * 1]]`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Matrix3x3>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicMatrix3x3<T>>
 {
   static auto constexpr value = glz::custom<
-    [](w::common::Matrix3x3& matrix, w::common::_glaze_impl::Matrix3x3Input const& rows) {
+    [](
+      w::common::BasicMatrix3x3<T>& matrix,
+      w::common::_glaze_impl::Matrix3x3Input<T> const& rows
+    ) {
       auto const row = [&rows](std::size_t const index) {
         auto const [x, y, z] = rows.values().at(index).values();
-        return w::common::Vector3(x, y, z);
+        return w::common::BasicVector3<T>(x, y, z);
       };
-      matrix = w::common::Matrix3x3::from_rows(row(0), row(1), row(2));
+      matrix = w::common::BasicMatrix3x3<T>::from_rows(row(0), row(1), row(2));
     },
-    [](w::common::Matrix3x3 const& matrix) {
-      auto rows = w::common::_glaze_impl::Matrix3x3Rows {};
+    [](w::common::BasicMatrix3x3<T> const& matrix) {
+      auto rows = w::common::_glaze_impl::Matrix3x3Rows<T> {};
       for(auto index = std::size_t {0}; index < rows.size(); ++index) {
         auto const row = matrix.row(index);
         rows.at(index) = {row.x(), row.y(), row.z()};

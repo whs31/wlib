@@ -1,25 +1,18 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Voltage value stored in `V`.
  * @details Voltage is a small value type with volt and millivolt conversions.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -34,16 +27,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Resistance
  * @see Power
  */
-class W_COMMON_API Voltage : public QuantityBase<Voltage>
+template <std::floating_point T>
+class BasicVoltage : public QuantityBase<BasicVoltage<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double volts READ as_volts CONSTANT FINAL)
-  Q_PROPERTY(double millivolts READ as_millivolts CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicVoltage, T>;
 
  public:
   /**
@@ -54,41 +41,60 @@ class W_COMMON_API Voltage : public QuantityBase<Voltage>
   /**
    * @brief Creates a zero voltage.
    */
-  constexpr Voltage() noexcept = default;
+  constexpr BasicVoltage() noexcept = default;
 
   /**
    * @brief Creates a voltage from volts.
    */
-  explicit constexpr Voltage(Real const volts) noexcept
-    : QuantityBase(volts)
+  explicit constexpr BasicVoltage(T const volts) noexcept
+    : Base(volts)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicVoltage(
+    BasicVoltage<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a voltage from volts.
    */
-  [[nodiscard]] static constexpr Voltage from_volts(Real const volts) noexcept
+  [[nodiscard]] static constexpr BasicVoltage from_volts(T const volts) noexcept
   {
-    return Voltage(volts);
+    return BasicVoltage(volts);
   }
 
   /**
    * @brief Creates a voltage from millivolts.
    */
-  [[nodiscard]] static constexpr Voltage from_millivolts(Real const millivolts) noexcept
+  [[nodiscard]] static constexpr BasicVoltage from_millivolts(T const millivolts) noexcept
   {
-    return Voltage(millivolts / 1'000);
+    return BasicVoltage(millivolts / 1'000);
   }
 
   /**
    * @brief Returns volts.
    */
-  [[nodiscard]] constexpr Real as_volts() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_volts() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns millivolts.
    */
-  [[nodiscard]] constexpr Real as_millivolts() const noexcept { return this->magnitude() * 1'000; }
+  [[nodiscard]] constexpr T as_millivolts() const noexcept { return this->magnitude() * 1'000; }
 };
+
+/**
+ * @brief Voltage in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Voltage = BasicVoltage<float>;
 
 inline namespace literals
 {
@@ -134,7 +140,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Voltage)
-#endif

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,31 +10,42 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct MagneticFluxDensityFields
   {
-    std::optional<Real> teslas;
-    std::optional<Real> gauss;
-    std::optional<Real> microteslas;
-    std::optional<Real> nanoteslas;
+    std::optional<T> teslas;
+    std::optional<T> gauss;
+    std::optional<T> microteslas;
+    std::optional<T> nanoteslas;
   };
 
+  template <std::floating_point T>
   inline auto constexpr magnetic_flux_density_reading = QuantityReading<
-    MagneticFluxDensity,
-    MagneticFluxDensityFields,
+    BasicMagneticFluxDensity<T>,
+    MagneticFluxDensityFields<T>,
     4,
     3> {
     .fields =
       {
-        field_unit(&MagneticFluxDensityFields::teslas, &MagneticFluxDensity::from_teslas),
-        field_unit(&MagneticFluxDensityFields::gauss, &MagneticFluxDensity::from_gauss),
-        field_unit(&MagneticFluxDensityFields::microteslas, &MagneticFluxDensity::from_microteslas),
-        field_unit(&MagneticFluxDensityFields::nanoteslas, &MagneticFluxDensity::from_nanoteslas),
+        field_unit(
+          &MagneticFluxDensityFields<T>::teslas,
+          &BasicMagneticFluxDensity<T>::from_teslas
+        ),
+        field_unit(&MagneticFluxDensityFields<T>::gauss, &BasicMagneticFluxDensity<T>::from_gauss),
+        field_unit(
+          &MagneticFluxDensityFields<T>::microteslas,
+          &BasicMagneticFluxDensity<T>::from_microteslas
+        ),
+        field_unit(
+          &MagneticFluxDensityFields<T>::nanoteslas,
+          &BasicMagneticFluxDensity<T>::from_nanoteslas
+        ),
       },
     .literals =
       {
-        literal_unit("gauss", &MagneticFluxDensity::from_gauss),
-        literal_unit("ut", &MagneticFluxDensity::from_microteslas),
-        literal_unit("nt", &MagneticFluxDensity::from_nanoteslas),
+        literal_unit("gauss", &BasicMagneticFluxDensity<T>::from_gauss),
+        literal_unit("ut", &BasicMagneticFluxDensity<T>::from_microteslas),
+        literal_unit("nt", &BasicMagneticFluxDensity<T>::from_nanoteslas),
       },
     .unknown_suffix =
       "a magnetic flux density literal needs one of the unit suffixes gauss, ut, "
@@ -50,9 +62,9 @@ W_COMMON_NAMESPACE_END
  * C++ literal: `gauss`, `ut`, `nt`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::MagneticFluxDensity>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicMagneticFluxDensity<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::magnetic_flux_density_reading>::value;
+    w::common::_glaze_impl::magnetic_flux_density_reading<T>>::value;
 };

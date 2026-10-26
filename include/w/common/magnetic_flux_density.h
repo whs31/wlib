@@ -1,18 +1,13 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
 #include <w/common/constants.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -20,8 +15,6 @@ W_COMMON_NAMESPACE_BEGIN
  * @brief Magnetic flux density value stored in `T`.
  * @details MagneticFluxDensity is a scalar magnetic field strength stored in teslas, with
  * gauss, microtesla and nanotesla conversions.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -34,18 +27,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see QuantityBase
  * @see Current
  */
-class W_COMMON_API MagneticFluxDensity : public QuantityBase<MagneticFluxDensity>
+template <std::floating_point T>
+class BasicMagneticFluxDensity : public QuantityBase<BasicMagneticFluxDensity<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double teslas READ as_teslas CONSTANT FINAL)
-  Q_PROPERTY(double gauss READ as_gauss CONSTANT FINAL)
-  Q_PROPERTY(double microteslas READ as_microteslas CONSTANT FINAL)
-  Q_PROPERTY(double nanoteslas READ as_nanoteslas CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicMagneticFluxDensity, T>;
 
  public:
   /**
@@ -56,66 +41,81 @@ class W_COMMON_API MagneticFluxDensity : public QuantityBase<MagneticFluxDensity
   /**
    * @brief Creates a zero magnetic flux density.
    */
-  constexpr MagneticFluxDensity() noexcept = default;
+  constexpr BasicMagneticFluxDensity() noexcept = default;
 
   /**
    * @brief Creates a magnetic flux density from teslas.
    */
-  explicit constexpr MagneticFluxDensity(Real const teslas) noexcept
-    : QuantityBase(teslas)
+  explicit constexpr BasicMagneticFluxDensity(T const teslas) noexcept
+    : Base(teslas)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicMagneticFluxDensity(
+    BasicMagneticFluxDensity<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a magnetic flux density from teslas.
    */
-  [[nodiscard]] static constexpr MagneticFluxDensity from_teslas(Real const teslas) noexcept
+  [[nodiscard]] static constexpr BasicMagneticFluxDensity from_teslas(T const teslas) noexcept
   {
-    return MagneticFluxDensity(teslas);
+    return BasicMagneticFluxDensity(teslas);
   }
 
   /**
    * @brief Creates a magnetic flux density from gauss.
    */
-  [[nodiscard]] static constexpr MagneticFluxDensity from_gauss(Real const gauss) noexcept
+  [[nodiscard]] static constexpr BasicMagneticFluxDensity from_gauss(T const gauss) noexcept
   {
-    return MagneticFluxDensity(gauss / TESLA_GAUSS_FACTOR);
+    return BasicMagneticFluxDensity(gauss / static_cast<T>(TESLA_GAUSS_FACTOR));
   }
 
   /**
    * @brief Creates a magnetic flux density from microteslas.
    */
-  [[nodiscard]] static constexpr MagneticFluxDensity from_microteslas(
-    Real const microteslas
+  [[nodiscard]] static constexpr BasicMagneticFluxDensity from_microteslas(
+    T const microteslas
   ) noexcept
   {
-    return MagneticFluxDensity(microteslas / 1'000'000);
+    return BasicMagneticFluxDensity(microteslas / 1'000'000);
   }
 
   /**
    * @brief Creates a magnetic flux density from nanoteslas.
    */
-  [[nodiscard]] static constexpr MagneticFluxDensity from_nanoteslas(Real const nanoteslas) noexcept
+  [[nodiscard]] static constexpr BasicMagneticFluxDensity from_nanoteslas(
+    T const nanoteslas
+  ) noexcept
   {
-    return MagneticFluxDensity(nanoteslas / 1'000'000'000);
+    return BasicMagneticFluxDensity(nanoteslas / 1'000'000'000);
   }
 
   /**
    * @brief Returns teslas.
    */
-  [[nodiscard]] constexpr Real as_teslas() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_teslas() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns gauss.
    */
-  [[nodiscard]] constexpr Real as_gauss() const noexcept
+  [[nodiscard]] constexpr T as_gauss() const noexcept
   {
-    return this->magnitude() * TESLA_GAUSS_FACTOR;
+    return this->magnitude() * static_cast<T>(TESLA_GAUSS_FACTOR);
   }
 
   /**
    * @brief Returns microteslas.
    */
-  [[nodiscard]] constexpr Real as_microteslas() const noexcept
+  [[nodiscard]] constexpr T as_microteslas() const noexcept
   {
     return this->magnitude() * 1'000'000;
   }
@@ -123,11 +123,17 @@ class W_COMMON_API MagneticFluxDensity : public QuantityBase<MagneticFluxDensity
   /**
    * @brief Returns nanoteslas.
    */
-  [[nodiscard]] constexpr Real as_nanoteslas() const noexcept
+  [[nodiscard]] constexpr T as_nanoteslas() const noexcept
   {
     return this->magnitude() * 1'000'000'000;
   }
 };
+
+/**
+ * @brief MagneticFluxDensity in single precision, the default.
+ * @ingroup core_measurements
+ */
+using MagneticFluxDensity = BasicMagneticFluxDensity<float>;
 
 inline namespace literals
 {
@@ -195,7 +201,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::MagneticFluxDensity)
-#endif

@@ -1,6 +1,5 @@
 #include <w/common/log.h>
 
-#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstdlib>
@@ -9,10 +8,6 @@
 #include <optional>
 #include <sstream>
 #include <string>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qdebug.h>
-#endif
 
 #include <catch2/catch_test_macros.hpp>
 #include <spdlog/sinks/callback_sink.h>
@@ -349,57 +344,3 @@ TEST_CASE("create_logger creates rotating file sink folders", "[log]")
   REQUIRE(std::filesystem::exists(folder / filename));
   std::filesystem::remove_all(folder);
 }
-
-#ifdef W_COMMON_WITH_QT
-TEST_CASE("Qt message handler owns its target logger name", "[log][qt]")
-{
-  auto const name = std::string {"wlib_log_test_qt_owned_name"};
-  auto const drop = ScopedSpdlogDrop(name);
-  auto callback_count = std::atomic_int {0};
-  auto config = stdout_config(name);
-  config.on_warn_or_error = [&](auto const&) { ++callback_count; };
-  auto const logger = create_logger(config);
-  static_cast<void>(logger);
-
-  auto mutable_name = name;
-  install_qt_logger(mutable_name.c_str());
-  std::ranges::fill(mutable_name, 'x');
-  qWarning("bridged Qt warning");
-  uninstall_qt_logger();
-
-  REQUIRE(callback_count == 1);
-}
-
-TEST_CASE("Qt logger installation is idempotent and validates its target", "[log][qt]")
-{
-  auto const name = std::string {"wlib_log_test_qt_idempotent"};
-  auto const drop = ScopedSpdlogDrop(name);
-  auto const logger = create_logger(stdout_config(name));
-  static_cast<void>(logger);
-
-  install_qt_logger(name.c_str());
-  install_qt_logger(name.c_str());
-  uninstall_qt_logger();
-  uninstall_qt_logger();
-
-  REQUIRE_THROWS_AS(install_qt_logger(nullptr), LogError);
-  REQUIRE_THROWS_AS(install_qt_logger(""), LogError);
-}
-
-TEST_CASE("Logging shutdown uninstalls the Qt message handler", "[log][qt]")
-{
-  auto const name = std::string {"wlib_log_test_qt_shutdown"};
-  auto callback_count = std::atomic_int {0};
-  auto config = stdout_config(name);
-  config.on_warn_or_error = [&](auto const&) { ++callback_count; };
-  auto const logger = create_logger(config);
-  static_cast<void>(logger);
-
-  install_qt_logger(name.c_str());
-  shutdown_log();
-  qWarning("warning after shutdown");
-  spdlog::set_default_logger(std::make_shared<spdlog::logger>(""));
-
-  REQUIRE(callback_count == 0);
-}
-#endif

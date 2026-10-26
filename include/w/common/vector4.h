@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+#include <ostream>
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -13,7 +15,6 @@
 
 #include <fmt/format.h>
 
-#include <w/common/detail/export.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
@@ -24,13 +25,13 @@
 W_COMMON_NAMESPACE_BEGIN
 
 /**
- * @brief Four-dimensional vector backed by Real values, mostly a homogeneous point or direction.
+ * @brief Four-dimensional vector backed by @p T values, mostly a homogeneous point or direction.
  * @details A position is `(x, y, z, 1)` and a direction is `(x, y, z, 0)`, so a Matrix4x4
  * translates the first and not the second; from_point() and from_direction() spell the choice out.
  *
  * @par Layout
- * The storage is exactly four contiguous Real values in `x, y, z, w` order: 16 bytes, with no
- * padding, so it bit-casts to `std::array<Real, 4>` and to an HLSL `float4`. The class is standard
+ * The storage is exactly four contiguous @p T values in `x, y, z, w` order: 16 bytes, with no
+ * padding, so it bit-casts to `std::array<T, 4>` and to an HLSL `float4`. The class is standard
  * layout and trivially copyable. The layout is part of the API and is checked by `static_assert`s
  * in this header.
  *
@@ -38,72 +39,93 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Vector3
  * @see Matrix4x4
  */
-class W_COMMON_API Vector4
+template <std::floating_point T>
+class BasicVector4
 {
  public:
-  constexpr Vector4() noexcept = default;
+  constexpr BasicVector4() noexcept = default;
 
-  constexpr Vector4(Real const x, Real const y, Real const z, Real const w) noexcept
+  /**
+   * @brief Converts from another precision: implicitly when no value can lose digits, e.g. from
+   * `float` to `double`, and explicitly otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicVector4(
+    BasicVector4<U> const& other
+  ) noexcept
+    : BasicVector4(
+        static_cast<T>(other.x()),
+        static_cast<T>(other.y()),
+        static_cast<T>(other.z()),
+        static_cast<T>(other.w())
+      )
+  {}
+
+  constexpr BasicVector4(T const x, T const y, T const z, T const w) noexcept
     : m_x(x)
     , m_y(y)
     , m_z(z)
     , m_w(w)
   {}
 
-  constexpr Vector4(Vector3 const xyz, Real const w) noexcept
+  constexpr BasicVector4(BasicVector3<T> const xyz, T const w) noexcept
     : m_x(xyz.x())
     , m_y(xyz.y())
     , m_z(xyz.z())
     , m_w(w)
   {}
 
-  [[nodiscard]] constexpr Real x() const noexcept { return this->m_x; }
+  [[nodiscard]] constexpr T x() const noexcept { return this->m_x; }
 
-  [[nodiscard]] constexpr Real y() const noexcept { return this->m_y; }
+  [[nodiscard]] constexpr T y() const noexcept { return this->m_y; }
 
-  [[nodiscard]] constexpr Real z() const noexcept { return this->m_z; }
+  [[nodiscard]] constexpr T z() const noexcept { return this->m_z; }
 
-  [[nodiscard]] constexpr Real w() const noexcept { return this->m_w; }
+  [[nodiscard]] constexpr T w() const noexcept { return this->m_w; }
 
   /**
    * @brief Returns `(x, y, z)`, dropping `w` without dividing by it.
    * @see perspective_divided
    */
-  [[nodiscard]] constexpr Vector3 xyz() const noexcept { return {this->m_x, this->m_y, this->m_z}; }
+  [[nodiscard]] constexpr BasicVector3<T> xyz() const noexcept
+  {
+    return {this->m_x, this->m_y, this->m_z};
+  }
 
   /**
    * @brief Returns `(x, y, z) / w`, the Cartesian point of a homogeneous point.
    * @details A `w` of zero gives infinite or NaN components.
    */
-  [[nodiscard]] constexpr Vector3 perspective_divided() const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> perspective_divided() const noexcept
   {
     return this->xyz() / this->m_w;
   }
 
-  constexpr void set_x(Real const x) noexcept { this->m_x = x; }
+  constexpr void set_x(T const x) noexcept { this->m_x = x; }
 
-  constexpr void set_y(Real const y) noexcept { this->m_y = y; }
+  constexpr void set_y(T const y) noexcept { this->m_y = y; }
 
-  constexpr void set_z(Real const z) noexcept { this->m_z = z; }
+  constexpr void set_z(T const z) noexcept { this->m_z = z; }
 
-  constexpr void set_w(Real const w) noexcept { this->m_w = w; }
+  constexpr void set_w(T const w) noexcept { this->m_w = w; }
 
-  [[nodiscard]] constexpr Vector4 with_x(Real const x) const noexcept
+  [[nodiscard]] constexpr BasicVector4<T> with_x(T const x) const noexcept
   {
     return {x, this->m_y, this->m_z, this->m_w};
   }
 
-  [[nodiscard]] constexpr Vector4 with_y(Real const y) const noexcept
+  [[nodiscard]] constexpr BasicVector4<T> with_y(T const y) const noexcept
   {
     return {this->m_x, y, this->m_z, this->m_w};
   }
 
-  [[nodiscard]] constexpr Vector4 with_z(Real const z) const noexcept
+  [[nodiscard]] constexpr BasicVector4<T> with_z(T const z) const noexcept
   {
     return {this->m_x, this->m_y, z, this->m_w};
   }
 
-  [[nodiscard]] constexpr Vector4 with_w(Real const w) const noexcept
+  [[nodiscard]] constexpr BasicVector4<T> with_w(T const w) const noexcept
   {
     return {this->m_x, this->m_y, this->m_z, w};
   }
@@ -117,24 +139,24 @@ class W_COMMON_API Vector4
        and common::is_finite(this->m_z) and common::is_finite(this->m_w);
   }
 
-  [[nodiscard]] constexpr Real dot(Vector4 const& other) const noexcept
+  [[nodiscard]] constexpr T dot(BasicVector4<T> const& other) const noexcept
   {
     return this->m_x * other.m_x + this->m_y * other.m_y + this->m_z * other.m_z
          + this->m_w * other.m_w;
   }
 
-  [[nodiscard]] constexpr Real length_squared() const noexcept { return this->dot(*this); }
+  [[nodiscard]] constexpr T length_squared() const noexcept { return this->dot(*this); }
 
-  [[nodiscard]] Real length() const noexcept { return std::sqrt(this->length_squared()); }
+  [[nodiscard]] T length() const noexcept { return std::sqrt(this->length_squared()); }
 
   /**
    * @brief Returns the unit vector in the same direction.
    * @details Returns the zero vector when the length is approximately zero.
    * @see try_normalized
    */
-  [[nodiscard]] Vector4 normalized() const noexcept
+  [[nodiscard]] BasicVector4<T> normalized() const noexcept
   {
-    return this->try_normalized().value_or(Vector4());
+    return this->try_normalized().value_or(BasicVector4<T>());
   }
 
   /**
@@ -142,7 +164,7 @@ class W_COMMON_API Vector4
    * approximately zero or not finite.
    * @see normalized
    */
-  [[nodiscard]] std::optional<Vector4> try_normalized() const noexcept
+  [[nodiscard]] std::optional<BasicVector4<T>> try_normalized() const noexcept
   {
     auto const len = this->length();
     if(is_null(len) or not common::is_finite(len))
@@ -156,7 +178,7 @@ class W_COMMON_API Vector4
   /**
    * @brief Returns the component-wise product.
    */
-  [[nodiscard]] constexpr Vector4 component_mul(Vector4 const& other) const noexcept
+  [[nodiscard]] constexpr BasicVector4<T> component_mul(BasicVector4<T> const& other) const noexcept
   {
     return {
       this->m_x * other.m_x,
@@ -169,7 +191,7 @@ class W_COMMON_API Vector4
   /**
    * @brief Returns the component-wise minimum.
    */
-  [[nodiscard]] constexpr Vector4 min(Vector4 const& other) const noexcept
+  [[nodiscard]] constexpr BasicVector4<T> min(BasicVector4<T> const& other) const noexcept
   {
     return {
       std::min(this->m_x, other.m_x),
@@ -182,7 +204,7 @@ class W_COMMON_API Vector4
   /**
    * @brief Returns the component-wise maximum.
    */
-  [[nodiscard]] constexpr Vector4 max(Vector4 const& other) const noexcept
+  [[nodiscard]] constexpr BasicVector4<T> max(BasicVector4<T> const& other) const noexcept
   {
     return {
       std::max(this->m_x, other.m_x),
@@ -195,7 +217,10 @@ class W_COMMON_API Vector4
   /**
    * @brief Returns `*this + (other - *this) * t`; @p t is not clamped.
    */
-  [[nodiscard]] constexpr Vector4 lerp(Vector4 const& other, Real const t) const noexcept
+  [[nodiscard]] constexpr BasicVector4<T> lerp(
+    BasicVector4<T> const& other,
+    T const t
+  ) const noexcept
   {
     return {
       this->m_x + (other.m_x - this->m_x) * t,
@@ -208,33 +233,33 @@ class W_COMMON_API Vector4
   /**
    * @brief Returns the components as `std::array {x, y, z, w}`.
    */
-  [[nodiscard]] constexpr std::array<Real, 4> to_array() const noexcept
+  [[nodiscard]] constexpr std::array<T, 4> to_array() const noexcept
   {
     return {this->m_x, this->m_y, this->m_z, this->m_w};
   }
 
-  [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_string() const { return fmt::format("{}", *this); }
 
-  [[nodiscard]] static constexpr Vector4 zero() noexcept { return {}; }
+  [[nodiscard]] static constexpr BasicVector4<T> zero() noexcept { return {}; }
 
-  [[nodiscard]] static constexpr Vector4 splat(Real const value) noexcept
+  [[nodiscard]] static constexpr BasicVector4<T> splat(T const value) noexcept
   {
     return {value, value, value, value};
   }
 
-  [[nodiscard]] static constexpr Vector4 unit_x() noexcept { return {1.0, 0.0, 0.0, 0.0}; }
+  [[nodiscard]] static constexpr BasicVector4<T> unit_x() noexcept { return {1.0, 0.0, 0.0, 0.0}; }
 
-  [[nodiscard]] static constexpr Vector4 unit_y() noexcept { return {0.0, 1.0, 0.0, 0.0}; }
+  [[nodiscard]] static constexpr BasicVector4<T> unit_y() noexcept { return {0.0, 1.0, 0.0, 0.0}; }
 
-  [[nodiscard]] static constexpr Vector4 unit_z() noexcept { return {0.0, 0.0, 1.0, 0.0}; }
+  [[nodiscard]] static constexpr BasicVector4<T> unit_z() noexcept { return {0.0, 0.0, 1.0, 0.0}; }
 
-  [[nodiscard]] static constexpr Vector4 unit_w() noexcept { return {0.0, 0.0, 0.0, 1.0}; }
+  [[nodiscard]] static constexpr BasicVector4<T> unit_w() noexcept { return {0.0, 0.0, 0.0, 1.0}; }
 
-  [[nodiscard]] static constexpr Vector4 from_xyzw(
-    Real const x,
-    Real const y,
-    Real const z,
-    Real const w
+  [[nodiscard]] static constexpr BasicVector4<T> from_xyzw(
+    T const x,
+    T const y,
+    T const z,
+    T const w
   ) noexcept
   {
     return {x, y, z, w};
@@ -243,7 +268,7 @@ class W_COMMON_API Vector4
   /**
    * @brief Returns the homogeneous point `(position, 1)`, which a Matrix4x4 translates.
    */
-  [[nodiscard]] static constexpr Vector4 from_point(Vector3 const position) noexcept
+  [[nodiscard]] static constexpr BasicVector4<T> from_point(BasicVector3<T> const position) noexcept
   {
     return {position, 1.0};
   }
@@ -252,24 +277,26 @@ class W_COMMON_API Vector4
    * @brief Returns the homogeneous direction `(direction, 0)`, which a Matrix4x4 does not
    * translate.
    */
-  [[nodiscard]] static constexpr Vector4 from_direction(Vector3 const direction) noexcept
+  [[nodiscard]] static constexpr BasicVector4<T> from_direction(
+    BasicVector3<T> const direction
+  ) noexcept
   {
     return {direction, 0.0};
   }
 
-  [[nodiscard]] constexpr bool operator==(Vector4 const&) const noexcept = default;
+  [[nodiscard]] constexpr bool operator==(BasicVector4<T> const&) const noexcept = default;
 
-  [[nodiscard]] constexpr std::partial_ordering operator<=>(Vector4 const&) const noexcept =
+  [[nodiscard]] constexpr std::partial_ordering operator<=>(BasicVector4<T> const&) const noexcept =
     default;
 
-  [[nodiscard]] constexpr Vector4 operator+() const noexcept { return *this; }
+  [[nodiscard]] constexpr BasicVector4<T> operator+() const noexcept { return *this; }
 
-  [[nodiscard]] constexpr Vector4 operator-() const noexcept
+  [[nodiscard]] constexpr BasicVector4<T> operator-() const noexcept
   {
     return {-this->m_x, -this->m_y, -this->m_z, -this->m_w};
   }
 
-  constexpr Vector4& operator+=(Vector4 const rhs) noexcept
+  constexpr BasicVector4<T>& operator+=(BasicVector4<T> const rhs) noexcept
   {
     this->m_x += rhs.m_x;
     this->m_y += rhs.m_y;
@@ -278,7 +305,7 @@ class W_COMMON_API Vector4
     return *this;
   }
 
-  constexpr Vector4& operator-=(Vector4 const rhs) noexcept
+  constexpr BasicVector4<T>& operator-=(BasicVector4<T> const rhs) noexcept
   {
     this->m_x -= rhs.m_x;
     this->m_y -= rhs.m_y;
@@ -287,7 +314,7 @@ class W_COMMON_API Vector4
     return *this;
   }
 
-  constexpr Vector4& operator*=(Real const rhs) noexcept
+  constexpr BasicVector4<T>& operator*=(T const rhs) noexcept
   {
     this->m_x *= rhs;
     this->m_y *= rhs;
@@ -296,7 +323,7 @@ class W_COMMON_API Vector4
     return *this;
   }
 
-  constexpr Vector4& operator/=(Real const rhs) noexcept
+  constexpr BasicVector4<T>& operator/=(T const rhs) noexcept
   {
     this->m_x /= rhs;
     this->m_y /= rhs;
@@ -305,65 +332,93 @@ class W_COMMON_API Vector4
     return *this;
   }
 
+  [[nodiscard]] friend constexpr BasicVector4<T> operator+(
+    BasicVector4<T> lhs,
+    BasicVector4<T> const rhs
+  ) noexcept
+  {
+    lhs += rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicVector4<T> operator-(
+    BasicVector4<T> lhs,
+    BasicVector4<T> const rhs
+  ) noexcept
+  {
+    lhs -= rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicVector4<T> operator*(
+    BasicVector4<T> lhs,
+    T const rhs
+  ) noexcept
+  {
+    lhs *= rhs;
+    return lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicVector4<T> operator*(
+    T const lhs,
+    BasicVector4<T> const rhs
+  ) noexcept
+  {
+    return rhs * lhs;
+  }
+
+  [[nodiscard]] friend constexpr BasicVector4<T> operator/(
+    BasicVector4<T> lhs,
+    T const rhs
+  ) noexcept
+  {
+    lhs /= rhs;
+    return lhs;
+  }
+
  private:
-  Real m_x = 0.0;
-  Real m_y = 0.0;
-  Real m_z = 0.0;
-  Real m_w = 0.0;
+  T m_x = 0.0;
+  T m_y = 0.0;
+  T m_z = 0.0;
+  T m_w = 0.0;
 };
 
-[[nodiscard]] constexpr Vector4 operator+(Vector4 lhs, Vector4 const rhs) noexcept
-{
-  lhs += rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Vector4 operator-(Vector4 lhs, Vector4 const rhs) noexcept
-{
-  lhs -= rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Vector4 operator*(Vector4 lhs, Real const rhs) noexcept
-{
-  lhs *= rhs;
-  return lhs;
-}
-
-[[nodiscard]] constexpr Vector4 operator*(Real const lhs, Vector4 const rhs) noexcept
-{
-  return rhs * lhs;
-}
-
-[[nodiscard]] constexpr Vector4 operator/(Vector4 lhs, Real const rhs) noexcept
-{
-  lhs /= rhs;
-  return lhs;
-}
+/**
+ * @brief Vector4 in single precision, the default.
+ */
+using Vector4 = BasicVector4<float>;
 
 /**
  * @brief Returns the dot product `a · b`.
  * @relates Vector4
  */
-[[nodiscard]] constexpr Real dot(Vector4 const& a, Vector4 const& b) noexcept { return a.dot(b); }
+template <std::floating_point T>
+[[nodiscard]] constexpr T dot(BasicVector4<T> const& a, BasicVector4<T> const& b) noexcept
+{
+  return a.dot(b);
+}
 
-W_COMMON_API std::ostream& operator<<(std::ostream& os, Vector4 vector);
+template <std::floating_point T>
+std::ostream& operator<<(std::ostream& os, BasicVector4<T> const& vector)
+{
+  return os << vector.to_string();
+}
 
 static_assert(std::is_standard_layout_v<Vector4>);
 static_assert(std::is_trivially_copyable_v<Vector4>);
 static_assert(sizeof(Vector4) == 16);
 static_assert(
-  std::bit_cast<std::array<Real, 4>>(Vector4(1.0, 2.0, 3.0, 4.0))
-    == std::array<Real, 4> {1, 2, 3, 4},
+  std::bit_cast<std::array<float, 4>>(Vector4(1.0, 2.0, 3.0, 4.0))
+    == std::array<float, 4> {1, 2, 3, 4},
   "Vector4 must store x, y, z, w contiguously"
 );
 
 W_COMMON_NAMESPACE_END
 
-template <>
-struct std::hash<w::common::Vector4>
+template <std::floating_point T>
+struct std::hash<w::common::BasicVector4<T>>
 {
-  [[nodiscard]] std::size_t operator()(w::common::Vector4 const vector) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::BasicVector4<T> const vector) const noexcept
   {
     return w::common::_hash_impl::combine(vector.x(), vector.y(), vector.z(), vector.w());
   }
@@ -373,12 +428,15 @@ struct std::hash<w::common::Vector4>
 /**
  * @brief Formats as `(x, y, z, w)`; the format spec, e.g. `{:.3f}`, applies to every component.
  */
-template <>
-struct fmt::formatter<w::common::Vector4> : fmt::formatter<w::common::Real>
+template <std::floating_point T>
+struct fmt::formatter<w::common::BasicVector4<T>> : fmt::formatter<T>
 {
-  format_context::iterator format(w::common::Vector4 const vector, format_context& ctx) const
+  format_context::iterator format(
+    w::common::BasicVector4<T> const vector,
+    format_context& ctx
+  ) const
   {
-    return w::common::_format_impl::format_components<4>(*this, vector.to_array(), ctx);
+    return w::common::_format_impl::format_components<4, T>(*this, vector.to_array(), ctx);
   }
 };
 #endif

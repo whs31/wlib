@@ -1,27 +1,21 @@
 #pragma once
 
+#include <concepts>
 #include <chrono>
 #include <string_view>
+#include <type_traits>
 
 #include <w/common/config.h>
 #include <w/common/constants.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/distance.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Velocity value stored in meters per second.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  * @details Velocity is a small value type with conversions for meters per
  * second, kilometers per hour, and miles per hour. It relates to Distance
  * through `std::chrono` durations.
@@ -41,17 +35,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Distance
  * @see Acceleration
  */
-class W_COMMON_API Velocity : public QuantityBase<Velocity>
+template <std::floating_point T>
+class BasicVelocity : public QuantityBase<BasicVelocity<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double metersPerSecond READ as_mps CONSTANT FINAL)
-  Q_PROPERTY(double kilometersPerHour READ as_kmph CONSTANT FINAL)
-  Q_PROPERTY(double milesPerHour READ as_mph CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicVelocity, T>;
 
  public:
   /**
@@ -62,100 +49,136 @@ class W_COMMON_API Velocity : public QuantityBase<Velocity>
   /**
    * @brief Creates a zero velocity.
    */
-  constexpr Velocity() noexcept = default;
+  constexpr BasicVelocity() noexcept = default;
 
   /**
    * @brief Creates a velocity from meters per second.
    */
-  explicit constexpr Velocity(Real const meters_per_second) noexcept
-    : QuantityBase(meters_per_second)
+  explicit constexpr BasicVelocity(T const meters_per_second) noexcept
+    : Base(meters_per_second)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicVelocity(
+    BasicVelocity<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a velocity from meters per second.
    */
-  [[nodiscard]] static constexpr Velocity from_mps(Real const meters_per_second) noexcept
+  [[nodiscard]] static constexpr BasicVelocity from_mps(T const meters_per_second) noexcept
   {
-    return Velocity(meters_per_second);
+    return BasicVelocity(meters_per_second);
   }
 
   /**
    * @brief Creates a velocity from kilometers per hour.
    */
-  [[nodiscard]] static constexpr Velocity from_kmph(Real const kilometers_per_hour) noexcept
+  [[nodiscard]] static constexpr BasicVelocity from_kmph(T const kilometers_per_hour) noexcept
   {
-    return from_mps((kilometers_per_hour / METER_KILOMETER_FACTOR) / SECONDS_HOURS_FACTOR);
+    return from_mps(
+      (kilometers_per_hour / static_cast<T>(METER_KILOMETER_FACTOR))
+      / static_cast<T>(SECONDS_HOURS_FACTOR)
+    );
   }
 
   /**
    * @brief Creates a velocity from miles per hour.
    */
-  [[nodiscard]] static constexpr Velocity from_mph(Real const miles_per_hour) noexcept
+  [[nodiscard]] static constexpr BasicVelocity from_mph(T const miles_per_hour) noexcept
   {
-    return from_mps((miles_per_hour / METER_MILE_FACTOR) / SECONDS_HOURS_FACTOR);
+    return from_mps(
+      (miles_per_hour / static_cast<T>(METER_MILE_FACTOR)) / static_cast<T>(SECONDS_HOURS_FACTOR)
+    );
   }
 
   /**
    * @brief Returns meters per second.
    */
-  [[nodiscard]] constexpr Real as_mps() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_mps() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns kilometers per hour.
    */
-  [[nodiscard]] constexpr Real as_kmph() const noexcept
+  [[nodiscard]] constexpr T as_kmph() const noexcept
   {
-    return (this->magnitude() * METER_KILOMETER_FACTOR) * SECONDS_HOURS_FACTOR;
+    return (this->magnitude() * static_cast<T>(METER_KILOMETER_FACTOR))
+         * static_cast<T>(SECONDS_HOURS_FACTOR);
   }
 
   /**
    * @brief Returns miles per hour.
    */
-  [[nodiscard]] constexpr Real as_mph() const noexcept
+  [[nodiscard]] constexpr T as_mph() const noexcept
   {
-    return this->magnitude() * METER_MILE_FACTOR * SECONDS_HOURS_FACTOR;
+    return this->magnitude() * static_cast<T>(METER_MILE_FACTOR)
+         * static_cast<T>(SECONDS_HOURS_FACTOR);
   }
 
-  using QuantityBase::operator+=;
-  using QuantityBase::operator-=;
+  using Base::operator+=;
+  using Base::operator-=;
 
-  constexpr Velocity& operator+=(Real const meters_per_second) noexcept
+  constexpr BasicVelocity& operator+=(T const meters_per_second) noexcept
   {
-    return *this += Velocity(meters_per_second);
+    return *this += BasicVelocity(meters_per_second);
   }
 
-  constexpr Velocity& operator-=(Real const meters_per_second) noexcept
+  constexpr BasicVelocity& operator-=(T const meters_per_second) noexcept
   {
-    return *this -= Velocity(meters_per_second);
+    return *this -= BasicVelocity(meters_per_second);
   }
 };
 
-[[nodiscard]] constexpr Velocity operator+(Velocity lhs, Real const meters_per_second) noexcept
+/**
+ * @brief Velocity in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Velocity = BasicVelocity<float>;
+
+template <std::floating_point T>
+[[nodiscard]] constexpr BasicVelocity<T> operator+(
+  BasicVelocity<T> lhs,
+  std::type_identity_t<T> const meters_per_second
+) noexcept
 {
   lhs += meters_per_second;
   return lhs;
 }
 
-[[nodiscard]] constexpr Velocity operator+(
-  Real const meters_per_second,
-  Velocity const rhs
+template <std::floating_point T>
+[[nodiscard]] constexpr BasicVelocity<T> operator+(
+  std::type_identity_t<T> const meters_per_second,
+  BasicVelocity<T> const rhs
 ) noexcept
 {
-  return Velocity(meters_per_second) + rhs;
+  return BasicVelocity<T>(meters_per_second) + rhs;
 }
 
-[[nodiscard]] constexpr Velocity operator-(Velocity lhs, Real const meters_per_second) noexcept
+template <std::floating_point T>
+[[nodiscard]] constexpr BasicVelocity<T> operator-(
+  BasicVelocity<T> lhs,
+  std::type_identity_t<T> const meters_per_second
+) noexcept
 {
   lhs -= meters_per_second;
   return lhs;
 }
 
-[[nodiscard]] constexpr Velocity operator-(
-  Real const meters_per_second,
-  Velocity const rhs
+template <std::floating_point T>
+[[nodiscard]] constexpr BasicVelocity<T> operator-(
+  std::type_identity_t<T> const meters_per_second,
+  BasicVelocity<T> const rhs
 ) noexcept
 {
-  return Velocity(meters_per_second) - rhs;
+  return BasicVelocity<T>(meters_per_second) - rhs;
 }
 
 /**
@@ -163,13 +186,15 @@ class W_COMMON_API Velocity : public QuantityBase<Velocity>
  * @ingroup core_measurements
  * @relates Velocity
  */
-template <typename Rep, typename Period>
-[[nodiscard]] constexpr Velocity operator/(
-  Distance const distance,
+template <std::floating_point T, typename Rep, typename Period>
+[[nodiscard]] constexpr BasicVelocity<T> operator/(
+  BasicDistance<T> const distance,
   std::chrono::duration<Rep, Period> const time
 ) noexcept
 {
-  return Velocity::from_mps(distance.as_m() / std::chrono::duration<Real>(time).count());
+  return BasicVelocity<T>::from_mps(
+    static_cast<T>(distance.as_m() / std::chrono::duration<double>(time).count())
+  );
 }
 
 /**
@@ -177,13 +202,15 @@ template <typename Rep, typename Period>
  * @ingroup core_measurements
  * @relates Velocity
  */
-template <typename Rep, typename Period>
-[[nodiscard]] constexpr Distance operator*(
-  Velocity const velocity,
+template <std::floating_point T, typename Rep, typename Period>
+[[nodiscard]] constexpr BasicDistance<T> operator*(
+  BasicVelocity<T> const velocity,
   std::chrono::duration<Rep, Period> const time
 ) noexcept
 {
-  return Distance::from_meters(velocity.as_mps() * std::chrono::duration<Real>(time).count());
+  return BasicDistance<T>::from_meters(
+    static_cast<T>(velocity.as_mps() * std::chrono::duration<double>(time).count())
+  );
 }
 
 /**
@@ -191,10 +218,10 @@ template <typename Rep, typename Period>
  * @ingroup core_measurements
  * @relates Velocity
  */
-template <typename Rep, typename Period>
-[[nodiscard]] constexpr Distance operator*(
+template <std::floating_point T, typename Rep, typename Period>
+[[nodiscard]] constexpr BasicDistance<T> operator*(
   std::chrono::duration<Rep, Period> const time,
-  Velocity const velocity
+  BasicVelocity<T> const velocity
 ) noexcept
 {
   return velocity * time;
@@ -205,12 +232,13 @@ template <typename Rep, typename Period>
  * @ingroup core_measurements
  * @relates Velocity
  */
-[[nodiscard]] constexpr std::chrono::duration<Real> operator/(
-  Distance const distance,
-  Velocity const velocity
+template <std::floating_point T>
+[[nodiscard]] constexpr std::chrono::duration<T> operator/(
+  BasicDistance<T> const distance,
+  BasicVelocity<T> const velocity
 ) noexcept
 {
-  return std::chrono::duration<Real>(distance.as_m() / velocity.as_mps());
+  return std::chrono::duration<T>(distance.as_m() / velocity.as_mps());
 }
 
 inline namespace literals
@@ -277,7 +305,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Velocity)
-#endif

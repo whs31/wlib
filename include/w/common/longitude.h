@@ -18,17 +18,11 @@
 #include <w/common/detail/geographic.h>
 #include <w/common/detail/namespace.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
-
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Longitude on the WGS84 ellipsoid, positive east of Greenwich, always in `[-180°, 180°)`,
- * stored in degrees as a `double` whatever the `precision` option of the library.
+ * stored in degrees as a `double`.
  * @details Every longitude names one meridian, so a longitude wraps into `[-180°, 180°)` when it
  * is created: 190° is −170°, and the antimeridian is −180°. A longitude already in range keeps its
  * exact digits. A non-finite longitude stays non-finite.
@@ -52,26 +46,12 @@ W_COMMON_NAMESPACE_BEGIN
  * tokyo.utm_zone();                         // 54
  * @endcode
  *
- * @note Qt properties, QString conversion, and metatype registration are available only when wlib
- * is built with `with_qt=True`.
  * @ingroup core_geodesy
  * @see Latitude
  * @see GeodeticPosition
  */
 class W_COMMON_API Longitude
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double degrees READ degrees CONSTANT FINAL)
-  Q_PROPERTY(double degreesEast READ degrees_east CONSTANT FINAL)
-  Q_PROPERTY(double radians READ radians CONSTANT FINAL)
-  Q_PROPERTY(Hemisphere hemisphere READ hemisphere CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-  Q_PROPERTY(QString dmsString READ to_dms_qstring CONSTANT FINAL)
-#endif
-
  public:
   /**
    * @brief Side of the prime meridian. The prime meridian counts as east, the antimeridian,
@@ -82,9 +62,6 @@ class W_COMMON_API Longitude
     East,
     West,
   };
-#ifdef W_COMMON_WITH_QT
-  Q_ENUM(Hemisphere)
-#endif
 
   /**
    * @brief Sexagesimal form of a longitude: whole degrees, whole minutes, seconds and the
@@ -329,14 +306,6 @@ class W_COMMON_API Longitude
    */
   [[nodiscard]] std::string to_dms_string(int second_decimals = 2) const;
 
-#ifdef W_COMMON_WITH_QT
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_qstring() const;
-
-  /// @note Available only when wlib is built with `with_qt=True`.
-  [[nodiscard]] QString to_dms_qstring() const;
-#endif
-
   /**
    * @brief Mirrors the longitude across the prime meridian.
    */
@@ -476,7 +445,3 @@ struct std::hash<w::common::Longitude>
     return std::hash<double> {}(value.degrees());
   }
 };
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Longitude)
-#endif

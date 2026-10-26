@@ -15,6 +15,6 @@ else()
   message(FATAL_ERROR "Unknown WLIB_CONSUMER_COMPONENT: ${WLIB_CONSUMER_COMPONENT}")
 endif()
 
+# note: the consumer sets no language standard; w::lib requires C++23 of it
 add_executable(wlib_consumer "${CMAKE_CURRENT_SOURCE_DIR}/${WLIB_CONSUMER_COMPONENT}.cc")
 target_link_libraries(wlib_consumer PRIVATE ${target})
-target_compile_features(wlib_consumer PRIVATE cxx_std_23)

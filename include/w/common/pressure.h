@@ -1,26 +1,19 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
 #include <w/common/constants.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Pressure value stored in `Pa`.
  * @details Pressure is a small value type with SI, meteorological and aviation pressure units.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -35,19 +28,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Density
  * @see Temperature
  */
-class W_COMMON_API Pressure : public QuantityBase<Pressure>
+template <std::floating_point T>
+class BasicPressure : public QuantityBase<BasicPressure<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double pascals READ as_pascals CONSTANT FINAL)
-  Q_PROPERTY(double hectopascals READ as_hectopascals CONSTANT FINAL)
-  Q_PROPERTY(double kilopascals READ as_kilopascals CONSTANT FINAL)
-  Q_PROPERTY(double millibars READ as_millibars CONSTANT FINAL)
-  Q_PROPERTY(double inchesOfMercury READ as_inches_of_mercury CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicPressure, T>;
 
  public:
   /**
@@ -58,85 +42,104 @@ class W_COMMON_API Pressure : public QuantityBase<Pressure>
   /**
    * @brief Creates a zero pressure.
    */
-  constexpr Pressure() noexcept = default;
+  constexpr BasicPressure() noexcept = default;
 
   /**
    * @brief Creates a pressure from pascals.
    */
-  explicit constexpr Pressure(Real const pascals) noexcept
-    : QuantityBase(pascals)
+  explicit constexpr BasicPressure(T const pascals) noexcept
+    : Base(pascals)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicPressure(
+    BasicPressure<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a pressure from pascals.
    */
-  [[nodiscard]] static constexpr Pressure from_pascals(Real const pascals) noexcept
+  [[nodiscard]] static constexpr BasicPressure from_pascals(T const pascals) noexcept
   {
-    return Pressure(pascals);
+    return BasicPressure(pascals);
   }
 
   /**
    * @brief Creates a pressure from hectopascals.
    */
-  [[nodiscard]] static constexpr Pressure from_hectopascals(Real const hectopascals) noexcept
+  [[nodiscard]] static constexpr BasicPressure from_hectopascals(T const hectopascals) noexcept
   {
-    return Pressure(hectopascals * 100);
+    return BasicPressure(hectopascals * 100);
   }
 
   /**
    * @brief Creates a pressure from kilopascals.
    */
-  [[nodiscard]] static constexpr Pressure from_kilopascals(Real const kilopascals) noexcept
+  [[nodiscard]] static constexpr BasicPressure from_kilopascals(T const kilopascals) noexcept
   {
-    return Pressure(kilopascals * 1'000);
+    return BasicPressure(kilopascals * 1'000);
   }
 
   /**
    * @brief Creates a pressure from millibars.
    */
-  [[nodiscard]] static constexpr Pressure from_millibars(Real const millibars) noexcept
+  [[nodiscard]] static constexpr BasicPressure from_millibars(T const millibars) noexcept
   {
-    return Pressure(millibars * 100);
+    return BasicPressure(millibars * 100);
   }
 
   /**
    * @brief Creates a pressure from conventional inches of mercury.
    */
-  [[nodiscard]] static constexpr Pressure from_inches_of_mercury(
-    Real const inches_of_mercury
+  [[nodiscard]] static constexpr BasicPressure from_inches_of_mercury(
+    T const inches_of_mercury
   ) noexcept
   {
-    return Pressure(inches_of_mercury * INHG_PASCAL_FACTOR);
+    return BasicPressure(inches_of_mercury * static_cast<T>(INHG_PASCAL_FACTOR));
   }
 
   /**
    * @brief Returns pascals.
    */
-  [[nodiscard]] constexpr Real as_pascals() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_pascals() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns hectopascals.
    */
-  [[nodiscard]] constexpr Real as_hectopascals() const noexcept { return this->magnitude() / 100; }
+  [[nodiscard]] constexpr T as_hectopascals() const noexcept { return this->magnitude() / 100; }
 
   /**
    * @brief Returns kilopascals.
    */
-  [[nodiscard]] constexpr Real as_kilopascals() const noexcept { return this->magnitude() / 1'000; }
+  [[nodiscard]] constexpr T as_kilopascals() const noexcept { return this->magnitude() / 1'000; }
 
   /**
    * @brief Returns millibars.
    */
-  [[nodiscard]] constexpr Real as_millibars() const noexcept { return this->magnitude() / 100; }
+  [[nodiscard]] constexpr T as_millibars() const noexcept { return this->magnitude() / 100; }
 
   /**
    * @brief Returns conventional inches of mercury.
    */
-  [[nodiscard]] constexpr Real as_inches_of_mercury() const noexcept
+  [[nodiscard]] constexpr T as_inches_of_mercury() const noexcept
   {
-    return this->magnitude() / INHG_PASCAL_FACTOR;
+    return this->magnitude() / static_cast<T>(INHG_PASCAL_FACTOR);
   }
 };
+
+/**
+ * @brief Pressure in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Pressure = BasicPressure<float>;
 
 inline namespace literals
 {
@@ -242,7 +245,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Pressure)
-#endif

@@ -30,7 +30,7 @@ W_COMMON_NAMESPACE_BEGIN
 [[nodiscard]] W_COMMON_API spdlog::level::level_enum get_env_log_level() noexcept;
 
 /**
- * @brief Error thrown when logger creation or Qt logger installation fails.
+ * @brief Error thrown when logger creation fails.
  * @ingroup core_errors
  */
 class W_COMMON_API LogError final : public Error
@@ -206,26 +206,6 @@ W_COMMON_API void attach_log_sink(spdlog::sink_ptr sink);
  * @ingroup core_logging
  */
 W_COMMON_API void detach_log_sink(spdlog::sink_ptr const& sink) noexcept;
-
-#ifdef W_COMMON_WITH_QT
-/**
- * @brief Installs a Qt message handler that forwards Qt logs to a spdlog logger.
- * @param target_logger_name Name of the spdlog logger that receives Qt messages.
- * @throws LogError if @p target_logger_name is null or empty.
- * @note Available only when wlib is built with `with_qt=True`.
- *
- * @ingroup core_logging
- */
-W_COMMON_API void install_qt_logger(char const* target_logger_name);
-
-/**
- * @brief Restores the Qt message handler that was active before install_qt_logger().
- * @note Available only when wlib is built with `with_qt=True`.
- *
- * @ingroup core_logging
- */
-W_COMMON_API void uninstall_qt_logger();
-#endif
 
 W_COMMON_NAMESPACE_END
 

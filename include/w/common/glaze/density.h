@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,22 +10,24 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct DensityFields
   {
-    std::optional<Real> kilograms_per_cubic_meter;
+    std::optional<T> kilograms_per_cubic_meter;
   };
 
-  inline auto constexpr density_reading = QuantityReading<Density, DensityFields, 1, 1> {
+  template <std::floating_point T>
+  inline auto constexpr density_reading = QuantityReading<BasicDensity<T>, DensityFields<T>, 1, 1> {
     .fields =
       {
         field_unit(
-          &DensityFields::kilograms_per_cubic_meter,
-          &Density::from_kilograms_per_cubic_meter
+          &DensityFields<T>::kilograms_per_cubic_meter,
+          &BasicDensity<T>::from_kilograms_per_cubic_meter
         ),
       },
     .literals =
       {
-        literal_unit("kg_per_m3", &Density::from_kilograms_per_cubic_meter),
+        literal_unit("kg_per_m3", &BasicDensity<T>::from_kilograms_per_cubic_meter),
       },
     .unknown_suffix = "a density literal needs one of the unit suffixes kg_per_m3",
   };
@@ -38,9 +41,9 @@ W_COMMON_NAMESPACE_END
  * of a C++ literal: `kg_per_m3`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::Density>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicDensity<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::density_reading>::value;
+    w::common::_glaze_impl::density_reading<T>>::value;
 };

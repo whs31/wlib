@@ -12,10 +12,6 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qdebug.h>
-#endif
-
 namespace
 {
   [[nodiscard]] constexpr spdlog::level::level_enum default_log_level() noexcept
@@ -29,11 +25,6 @@ namespace
 
   struct LogState
   {
-#ifdef W_COMMON_WITH_QT
-    QtMessageHandler previous_qt_handler = nullptr;
-    std::string target_logger = "qt";
-    bool qt_logger_installed = false;
-#endif
     std::shared_ptr<spdlog::sinks::dist_sink_mt>
       dynamic_sink_router = std::make_shared<spdlog::sinks::dist_sink_mt>();
   };
@@ -90,39 +81,6 @@ namespace
     }
   }
 
-#ifdef W_COMMON_WITH_QT
-  void message_handler(QtMsgType const type, QMessageLogContext const& ctx, QString const& msg)
-  {
-    auto const logger = spdlog::get(log_state().target_logger);
-    if(not logger)
-      return;
-
-    auto const location = spdlog::
-      source_loc {ctx.file ? ctx.file : "", ctx.line, ctx.function ? ctx.function : ""};
-
-    auto const* category = ctx.category ? ctx.category : "unknown";
-
-    auto const utf8_msg = msg.toStdString();
-
-    switch(type) {
-      case QtDebugMsg:
-        logger->log(location, spdlog::level::debug, "[{}] {}", category, utf8_msg);
-        break;
-      case QtInfoMsg:
-        logger->log(location, spdlog::level::info, "[{}] {}", category, utf8_msg);
-        break;
-      case QtWarningMsg:
-        logger->log(location, spdlog::level::warn, "[{}] {}", category, utf8_msg);
-        break;
-      case QtCriticalMsg:
-        logger->log(location, spdlog::level::err, "[{}] {}", category, utf8_msg);
-        break;
-      case QtFatalMsg:
-        logger->log(location, spdlog::level::critical, "[{}] {}", category, utf8_msg);
-        break;
-    }
-  }
-#endif
 }  // namespace
 
 W_COMMON_NAMESPACE_BEGIN
@@ -202,13 +160,7 @@ std::shared_ptr<spdlog::logger> create_logger(LoggerConfig const& config)
   return logger;
 }
 
-void shutdown_log()
-{
-#ifdef W_COMMON_WITH_QT
-  uninstall_qt_logger();
-#endif
-  spdlog::shutdown();
-}
+void shutdown_log() { spdlog::shutdown(); }
 
 void attach_log_sink(spdlog::sink_ptr sink)
 {
@@ -223,34 +175,5 @@ void detach_log_sink(spdlog::sink_ptr const& sink) noexcept
   if(sink)
     log_state().dynamic_sink_router->remove_sink(sink);
 }
-
-#ifdef W_COMMON_WITH_QT
-void install_qt_logger(char const* target_logger_name)
-{
-  if(target_logger_name == nullptr or *target_logger_name == '\0')
-    throw LogError("target logger name must not be null or empty");
-
-  auto& state = log_state();
-  state.target_logger = target_logger_name;
-  if(not state.qt_logger_installed) {
-    state.previous_qt_handler = qInstallMessageHandler(message_handler);
-    state.qt_logger_installed = true;
-  }
-
-  if(auto const l = spdlog::get(state.target_logger))
-    l->trace("installed QtMessageHandler bridging");
-}
-
-void uninstall_qt_logger()
-{
-  auto& state = log_state();
-  if(not state.qt_logger_installed)
-    return;
-
-  qInstallMessageHandler(state.previous_qt_handler);
-  state.previous_qt_handler = nullptr;
-  state.qt_logger_installed = false;
-}
-#endif
 
 W_COMMON_NAMESPACE_END

@@ -1,20 +1,15 @@
 #pragma once
 
+#include <concepts>
 #include <chrono>
 #include <string_view>
 
 #include <w/common/angular_velocity.h>
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/math.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -22,8 +17,6 @@ W_COMMON_NAMESPACE_BEGIN
  * @brief Angular acceleration value stored in `rad/s^2`.
  * @details AngularAcceleration is a small value type with radian and degree rates. It
  * relates to AngularVelocity through `std::chrono` durations.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -39,16 +32,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Torque
  * @see MomentOfInertia
  */
-class W_COMMON_API AngularAcceleration : public QuantityBase<AngularAcceleration>
+template <std::floating_point T>
+class BasicAngularAcceleration : public QuantityBase<BasicAngularAcceleration<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double radiansPerSecondSquared READ as_radians_per_second_squared CONSTANT FINAL)
-  Q_PROPERTY(double degreesPerSecondSquared READ as_degrees_per_second_squared CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicAngularAcceleration, T>;
 
  public:
   /**
@@ -59,39 +46,52 @@ class W_COMMON_API AngularAcceleration : public QuantityBase<AngularAcceleration
   /**
    * @brief Creates a zero angular acceleration.
    */
-  constexpr AngularAcceleration() noexcept = default;
+  constexpr BasicAngularAcceleration() noexcept = default;
 
   /**
    * @brief Creates an angular acceleration from radians per second squared.
    */
-  explicit constexpr AngularAcceleration(Real const radians_per_second_squared) noexcept
-    : QuantityBase(radians_per_second_squared)
+  explicit constexpr BasicAngularAcceleration(T const radians_per_second_squared) noexcept
+    : Base(radians_per_second_squared)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicAngularAcceleration(
+    BasicAngularAcceleration<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates an angular acceleration from radians per second squared.
    */
-  [[nodiscard]] static constexpr AngularAcceleration from_radians_per_second_squared(
-    Real const radians_per_second_squared
+  [[nodiscard]] static constexpr BasicAngularAcceleration from_radians_per_second_squared(
+    T const radians_per_second_squared
   ) noexcept
   {
-    return AngularAcceleration(radians_per_second_squared);
+    return BasicAngularAcceleration(radians_per_second_squared);
   }
 
   /**
    * @brief Creates an angular acceleration from degrees per second squared.
    */
-  [[nodiscard]] static constexpr AngularAcceleration from_degrees_per_second_squared(
-    Real const degrees_per_second_squared
+  [[nodiscard]] static constexpr BasicAngularAcceleration from_degrees_per_second_squared(
+    T const degrees_per_second_squared
   ) noexcept
   {
-    return AngularAcceleration(to_radians(degrees_per_second_squared));
+    return BasicAngularAcceleration(to_radians(degrees_per_second_squared));
   }
 
   /**
    * @brief Returns radians per second squared.
    */
-  [[nodiscard]] constexpr Real as_radians_per_second_squared() const noexcept
+  [[nodiscard]] constexpr T as_radians_per_second_squared() const noexcept
   {
     return this->magnitude();
   }
@@ -99,11 +99,17 @@ class W_COMMON_API AngularAcceleration : public QuantityBase<AngularAcceleration
   /**
    * @brief Returns degrees per second squared.
    */
-  [[nodiscard]] constexpr Real as_degrees_per_second_squared() const noexcept
+  [[nodiscard]] constexpr T as_degrees_per_second_squared() const noexcept
   {
     return to_degrees(this->magnitude());
   }
 };
+
+/**
+ * @brief AngularAcceleration in single precision, the default.
+ * @ingroup core_measurements
+ */
+using AngularAcceleration = BasicAngularAcceleration<float>;
 
 /**
  * @brief Returns the average angular acceleration that changes an angular velocity by @p delta in
@@ -111,14 +117,14 @@ class W_COMMON_API AngularAcceleration : public QuantityBase<AngularAcceleration
  * @ingroup core_measurements
  * @relates AngularAcceleration
  */
-template <typename Rep, typename Period>
-[[nodiscard]] constexpr AngularAcceleration operator/(
-  AngularVelocity const delta,
+template <std::floating_point T, typename Rep, typename Period>
+[[nodiscard]] constexpr BasicAngularAcceleration<T> operator/(
+  BasicAngularVelocity<T> const delta,
   std::chrono::duration<Rep, Period> const time
 ) noexcept
 {
-  return AngularAcceleration::from_radians_per_second_squared(
-    delta.as_radians_per_second() / std::chrono::duration<Real>(time).count()
+  return BasicAngularAcceleration<T>::from_radians_per_second_squared(
+    static_cast<T>(delta.as_radians_per_second() / std::chrono::duration<double>(time).count())
   );
 }
 
@@ -127,14 +133,16 @@ template <typename Rep, typename Period>
  * @ingroup core_measurements
  * @relates AngularAcceleration
  */
-template <typename Rep, typename Period>
-[[nodiscard]] constexpr AngularVelocity operator*(
-  AngularAcceleration const rate,
+template <std::floating_point T, typename Rep, typename Period>
+[[nodiscard]] constexpr BasicAngularVelocity<T> operator*(
+  BasicAngularAcceleration<T> const rate,
   std::chrono::duration<Rep, Period> const time
 ) noexcept
 {
-  return AngularVelocity::from_radians_per_second(
-    rate.as_radians_per_second_squared() * std::chrono::duration<Real>(time).count()
+  return BasicAngularVelocity<T>::from_radians_per_second(
+    static_cast<T>(
+      rate.as_radians_per_second_squared() * std::chrono::duration<double>(time).count()
+    )
   );
 }
 
@@ -143,10 +151,10 @@ template <typename Rep, typename Period>
  * @ingroup core_measurements
  * @relates AngularAcceleration
  */
-template <typename Rep, typename Period>
-[[nodiscard]] constexpr AngularVelocity operator*(
+template <std::floating_point T, typename Rep, typename Period>
+[[nodiscard]] constexpr BasicAngularVelocity<T> operator*(
   std::chrono::duration<Rep, Period> const time,
-  AngularAcceleration const rate
+  BasicAngularAcceleration<T> const rate
 ) noexcept
 {
   return rate * time;
@@ -204,7 +212,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::AngularAcceleration)
-#endif

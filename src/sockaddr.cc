@@ -118,41 +118,6 @@ std::strong_ordering SockAddr::operator<=>(SockAddr const& other) const noexcept
   return std::strong_ordering::equal;
 }
 
-#ifdef W_COMMON_WITH_QT
-SockAddrV4 SockAddrV4::from_qstring(QStringView const text)
-{
-  return parse(text.toString().toStdString());
-}
-
-SockAddrV4 SockAddrV4::from_qstring(QString const& text)
-{
-  return from_qstring(QStringView {text});
-}
-
-QString SockAddrV4::to_qstring() const { return QString::fromStdString(this->to_string()); }
-
-SockAddrV6 SockAddrV6::from_qstring(QStringView const text)
-{
-  return parse(text.toString().toStdString());
-}
-
-SockAddrV6 SockAddrV6::from_qstring(QString const& text)
-{
-  return from_qstring(QStringView {text});
-}
-
-QString SockAddrV6::to_qstring() const { return QString::fromStdString(this->to_string()); }
-
-SockAddr SockAddr::from_qstring(QStringView const text)
-{
-  return parse(text.toString().toStdString());
-}
-
-SockAddr SockAddr::from_qstring(QString const& text) { return from_qstring(QStringView {text}); }
-
-QString SockAddr::to_qstring() const { return QString::fromStdString(this->to_string()); }
-#endif
-
 std::ostream& operator<<(std::ostream& stream, SockAddrV4 const& address)
 {
   return stream << address.to_string();

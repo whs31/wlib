@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+#include <ostream>
 #include <array>
 #include <bit>
 #include <functional>
@@ -10,7 +12,6 @@
 
 #include <fmt/format.h>
 
-#include <w/common/detail/export.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
@@ -29,29 +30,40 @@ W_COMMON_NAMESPACE_BEGIN
  * normalized() makes it one. The default value has a zero normal, which no point is on.
  *
  * @par Layout
- * The storage is exactly four contiguous Real values in `a, b, c, d` order, so it bit-casts to an
+ * The storage is exactly four contiguous @p T values in `a, b, c, d` order, so it bit-casts to an
  * HLSL `float4`. The class is standard layout and trivially copyable. The layout is part of the
  * API and is checked by `static_assert`s in this header.
  * @ingroup core_math
  * @see Frustum
  * @see Ray
  */
-class W_COMMON_API Plane
+template <std::floating_point T>
+class BasicPlane
 {
  public:
-  constexpr Plane() noexcept = default;
+  constexpr BasicPlane() noexcept = default;
 
-  constexpr Plane(Vector3 const normal, Real const distance) noexcept
+  /**
+   * @brief Converts from another precision: implicitly when no value can lose digits, e.g. from
+   * `float` to `double`, and explicitly otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicPlane(BasicPlane<U> const& other) noexcept
+    : BasicPlane(BasicVector3<T>(other.normal()), static_cast<T>(other.distance()))
+  {}
+
+  constexpr BasicPlane(BasicVector3<T> const normal, T const distance) noexcept
     : m_normal(normal)
     , m_distance(distance)
   {}
 
-  [[nodiscard]] constexpr Vector3 normal() const noexcept { return this->m_normal; }
+  [[nodiscard]] constexpr BasicVector3<T> normal() const noexcept { return this->m_normal; }
 
   /**
    * @brief Returns `d`: the signed distance of the origin from the plane, for a unit normal.
    */
-  [[nodiscard]] constexpr Real distance() const noexcept { return this->m_distance; }
+  [[nodiscard]] constexpr T distance() const noexcept { return this->m_distance; }
 
   /**
    * @brief Checks whether every component is neither infinite nor NaN.
@@ -65,7 +77,7 @@ class W_COMMON_API Plane
    * @brief Returns `normal · point + distance`: positive in front of the plane, negative behind
    * it, and in units of length for a unit normal.
    */
-  [[nodiscard]] constexpr Real signed_distance(Vector3 const point) const noexcept
+  [[nodiscard]] constexpr T signed_distance(BasicVector3<T> const point) const noexcept
   {
     return this->m_normal.dot(point) + this->m_distance;
   }
@@ -75,7 +87,7 @@ class W_COMMON_API Plane
    * @details A plane with a zero normal stays as it is: a plane of no points, entirely in front
    * or behind by the sign of its distance, as perspective() makes of an infinite far plane.
    */
-  [[nodiscard]] Plane normalized() const noexcept
+  [[nodiscard]] BasicPlane<T> normalized() const noexcept
   {
     auto const length = this->m_normal.length();
     if(is_null(length))
@@ -86,7 +98,7 @@ class W_COMMON_API Plane
   /**
    * @brief Returns the same plane facing the other way.
    */
-  [[nodiscard]] constexpr Plane flipped() const noexcept
+  [[nodiscard]] constexpr BasicPlane<T> flipped() const noexcept
   {
     return {-this->m_normal, -this->m_distance};
   }
@@ -95,7 +107,7 @@ class W_COMMON_API Plane
    * @brief Returns the point of the plane closest to @p point.
    * @pre The normal is a unit vector.
    */
-  [[nodiscard]] constexpr Vector3 closest_point(Vector3 const point) const noexcept
+  [[nodiscard]] constexpr BasicVector3<T> closest_point(BasicVector3<T> const point) const noexcept
   {
     return point - this->m_normal * this->signed_distance(point);
   }
@@ -103,17 +115,17 @@ class W_COMMON_API Plane
   /**
    * @brief Returns `(a, b, c, d)`.
    */
-  [[nodiscard]] constexpr Vector4 to_vector4() const noexcept
+  [[nodiscard]] constexpr BasicVector4<T> to_vector4() const noexcept
   {
     return {this->m_normal, this->m_distance};
   }
 
-  [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_string() const { return fmt::format("{}", *this); }
 
   /**
    * @brief Returns the plane `(a, b, c, d)`.
    */
-  [[nodiscard]] static constexpr Plane from_vector4(Vector4 const abcd) noexcept
+  [[nodiscard]] static constexpr BasicPlane<T> from_vector4(BasicVector4<T> const abcd) noexcept
   {
     return {abcd.xyz(), abcd.w()};
   }
@@ -121,9 +133,9 @@ class W_COMMON_API Plane
   /**
    * @brief Returns the plane through @p point with the normal @p normal, as given.
    */
-  [[nodiscard]] static constexpr Plane from_point_normal(
-    Vector3 const point,
-    Vector3 const normal
+  [[nodiscard]] static constexpr BasicPlane<T> from_point_normal(
+    BasicVector3<T> const point,
+    BasicVector3<T> const normal
   ) noexcept
   {
     return {normal, -normal.dot(point)};
@@ -135,10 +147,10 @@ class W_COMMON_API Plane
    * frame.
    * @details Returns `std::nullopt` if the points are collinear or not finite.
    */
-  [[nodiscard]] static std::optional<Plane> from_points(
-    Vector3 const a,
-    Vector3 const b,
-    Vector3 const c
+  [[nodiscard]] static std::optional<BasicPlane<T>> from_points(
+    BasicVector3<T> const a,
+    BasicVector3<T> const b,
+    BasicVector3<T> const c
   ) noexcept
   {
     auto const normal = (b - a).cross(c - a).try_normalized();
@@ -147,30 +159,39 @@ class W_COMMON_API Plane
     return from_point_normal(a, *normal);
   }
 
-  [[nodiscard]] constexpr bool operator==(Plane const&) const noexcept = default;
+  [[nodiscard]] constexpr bool operator==(BasicPlane<T> const&) const noexcept = default;
 
  private:
-  Vector3 m_normal;
-  Real m_distance = 0.0;
+  BasicVector3<T> m_normal;
+  T m_distance = 0.0;
 };
 
-W_COMMON_API std::ostream& operator<<(std::ostream& os, Plane const& plane);
+/**
+ * @brief Plane in single precision, the default.
+ */
+using Plane = BasicPlane<float>;
+
+template <std::floating_point T>
+std::ostream& operator<<(std::ostream& os, BasicPlane<T> const& plane)
+{
+  return os << plane.to_string();
+}
 
 static_assert(std::is_standard_layout_v<Plane>);
 static_assert(std::is_trivially_copyable_v<Plane>);
 static_assert(sizeof(Plane) == 16);
 static_assert(
-  std::bit_cast<std::array<Real, 4>>(Plane({1.0, 2.0, 3.0}, 4.0))
-    == std::array<Real, 4> {1, 2, 3, 4},
+  std::bit_cast<std::array<float, 4>>(Plane({1.0, 2.0, 3.0}, 4.0))
+    == std::array<float, 4> {1, 2, 3, 4},
   "Plane must store a, b, c, d contiguously"
 );
 
 W_COMMON_NAMESPACE_END
 
-template <>
-struct std::hash<w::common::Plane>
+template <std::floating_point T>
+struct std::hash<w::common::BasicPlane<T>>
 {
-  [[nodiscard]] std::size_t operator()(w::common::Plane const& plane) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::BasicPlane<T> const& plane) const noexcept
   {
     return w::common::_hash_impl::combine(plane.normal(), plane.distance());
   }
@@ -180,12 +201,13 @@ struct std::hash<w::common::Plane>
 /**
  * @brief Formats as `(a, b, c, d)`; the format spec, e.g. `{:.3f}`, applies to every component.
  */
-template <>
-struct fmt::formatter<w::common::Plane> : fmt::formatter<w::common::Real>
+template <std::floating_point T>
+struct fmt::formatter<w::common::BasicPlane<T>> : fmt::formatter<T>
 {
-  format_context::iterator format(w::common::Plane const& plane, format_context& ctx) const
+  format_context::iterator format(w::common::BasicPlane<T> const& plane, format_context& ctx) const
   {
-    return w::common::_format_impl::format_components<4>(*this, plane.to_vector4().to_array(), ctx);
+    return w::common::_format_impl::
+      format_components<4, T>(*this, plane.to_vector4().to_array(), ctx);
   }
 };
 #endif

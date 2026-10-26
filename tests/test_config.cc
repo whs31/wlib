@@ -7,12 +7,6 @@
 
 #include <w/common/precision.h>
 
-#ifdef W_COMMON_WITH_QT
-inline auto constexpr wlib_with_qt = true;
-#else
-inline auto constexpr wlib_with_qt = false;
-#endif
-
 TEST_CASE("Version macros encode and decode components", "[core][config]")
 {
   auto constexpr version = W_VERSION_ENCODE(12, 34, 56);
@@ -32,15 +26,6 @@ TEST_CASE("Preprocessor helpers expand arguments", "[core][config]")
   STATIC_CHECK(W_CONCAT(WLIB_TEST_TOKEN, _SUFFIX) == 8);
   STATIC_CHECK(W_CONCAT3(WLIB_TEST_, TOKEN, _SUFFIX) == 8);
 #undef WLIB_TEST_NUMBER
-}
-
-TEST_CASE("Generated configuration records Qt support", "[core][config][qt]")
-{
-#ifdef QT_CORE_LIB
-  STATIC_CHECK(wlib_with_qt);
-#else
-  STATIC_CHECK_FALSE(wlib_with_qt);
-#endif
 }
 
 TEST_CASE("Real is a float", "[core][config]") { STATIC_CHECK(std::same_as<w::Real, float>); }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <w/common/glaze/detail.h>
@@ -9,32 +10,34 @@ W_COMMON_NAMESPACE_BEGIN
 
 namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
+  template <std::floating_point T>
   struct AngularAccelerationFields
   {
-    std::optional<Real> radians_per_second_squared;
-    std::optional<Real> degrees_per_second_squared;
+    std::optional<T> radians_per_second_squared;
+    std::optional<T> degrees_per_second_squared;
   };
 
+  template <std::floating_point T>
   inline auto constexpr angular_acceleration_reading = QuantityReading<
-    AngularAcceleration,
-    AngularAccelerationFields,
+    BasicAngularAcceleration<T>,
+    AngularAccelerationFields<T>,
     2,
     2> {
     .fields =
       {
         field_unit(
-          &AngularAccelerationFields::radians_per_second_squared,
-          &AngularAcceleration::from_radians_per_second_squared
+          &AngularAccelerationFields<T>::radians_per_second_squared,
+          &BasicAngularAcceleration<T>::from_radians_per_second_squared
         ),
         field_unit(
-          &AngularAccelerationFields::degrees_per_second_squared,
-          &AngularAcceleration::from_degrees_per_second_squared
+          &AngularAccelerationFields<T>::degrees_per_second_squared,
+          &BasicAngularAcceleration<T>::from_degrees_per_second_squared
         ),
       },
     .literals =
       {
-        literal_unit("rad_per_s2", &AngularAcceleration::from_radians_per_second_squared),
-        literal_unit("deg_per_s2", &AngularAcceleration::from_degrees_per_second_squared),
+        literal_unit("rad_per_s2", &BasicAngularAcceleration<T>::from_radians_per_second_squared),
+        literal_unit("deg_per_s2", &BasicAngularAcceleration<T>::from_degrees_per_second_squared),
       },
     .unknown_suffix =
       "a angular acceleration literal needs one of the unit suffixes rad_per_s2, deg_per_s2",
@@ -50,9 +53,9 @@ W_COMMON_NAMESPACE_END
  * literal: `rad_per_s2`, `deg_per_s2`.
  * @ingroup core_glaze
  */
-template <>
-struct glz::meta<w::common::AngularAcceleration>
+template <std::floating_point T>
+struct glz::meta<w::common::BasicAngularAcceleration<T>>
 {
   static auto constexpr value = w::common::_glaze_impl::QuantityAdapter<
-    w::common::_glaze_impl::angular_acceleration_reading>::value;
+    w::common::_glaze_impl::angular_acceleration_reading<T>>::value;
 };

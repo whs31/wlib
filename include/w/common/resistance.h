@@ -1,17 +1,12 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -19,8 +14,6 @@ W_COMMON_NAMESPACE_BEGIN
  * @brief Resistance value stored in `ohm`.
  * @details Resistance is a small value type with ohm and milliohm conversions. The
  * `_mohm` literal is a milliohm, not a megaohm.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -34,16 +27,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see Voltage
  * @see Current
  */
-class W_COMMON_API Resistance : public QuantityBase<Resistance>
+template <std::floating_point T>
+class BasicResistance : public QuantityBase<BasicResistance<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double ohms READ as_ohms CONSTANT FINAL)
-  Q_PROPERTY(double milliohms READ as_milliohms CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicResistance, T>;
 
  public:
   /**
@@ -54,41 +41,60 @@ class W_COMMON_API Resistance : public QuantityBase<Resistance>
   /**
    * @brief Creates a zero resistance.
    */
-  constexpr Resistance() noexcept = default;
+  constexpr BasicResistance() noexcept = default;
 
   /**
    * @brief Creates a resistance from ohms.
    */
-  explicit constexpr Resistance(Real const ohms) noexcept
-    : QuantityBase(ohms)
+  explicit constexpr BasicResistance(T const ohms) noexcept
+    : Base(ohms)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicResistance(
+    BasicResistance<U> const other
+  ) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a resistance from ohms.
    */
-  [[nodiscard]] static constexpr Resistance from_ohms(Real const ohms) noexcept
+  [[nodiscard]] static constexpr BasicResistance from_ohms(T const ohms) noexcept
   {
-    return Resistance(ohms);
+    return BasicResistance(ohms);
   }
 
   /**
    * @brief Creates a resistance from milliohms.
    */
-  [[nodiscard]] static constexpr Resistance from_milliohms(Real const milliohms) noexcept
+  [[nodiscard]] static constexpr BasicResistance from_milliohms(T const milliohms) noexcept
   {
-    return Resistance(milliohms / 1'000);
+    return BasicResistance(milliohms / 1'000);
   }
 
   /**
    * @brief Returns ohms.
    */
-  [[nodiscard]] constexpr Real as_ohms() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_ohms() const noexcept { return this->magnitude(); }
 
   /**
    * @brief Returns milliohms.
    */
-  [[nodiscard]] constexpr Real as_milliohms() const noexcept { return this->magnitude() * 1'000; }
+  [[nodiscard]] constexpr T as_milliohms() const noexcept { return this->magnitude() * 1'000; }
 };
+
+/**
+ * @brief Resistance in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Resistance = BasicResistance<float>;
 
 inline namespace literals
 {
@@ -134,7 +140,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Resistance)
-#endif

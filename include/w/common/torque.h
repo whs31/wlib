@@ -1,25 +1,18 @@
 #pragma once
 
+#include <concepts>
 #include <string_view>
 
 #include <w/common/config.h>
-#include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
+#include <w/common/precision.h>
 #include <w/common/quantity.h>
-
-#ifdef W_COMMON_WITH_QT
-#  include <qmetaobject.h>
-#  include <qmetatype.h>
-#  include <qstring.h>
-#endif
 
 W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief Torque value stored in `N*m`.
  * @details Torque is a small value type stored in newton-meters.
- * @note Qt properties, QString conversion, and metatype registration are
- * available only when wlib is built with `with_qt=True`.
  *
  * @code {.cpp}
  * using namespace w::literals;
@@ -33,15 +26,10 @@ W_COMMON_NAMESPACE_BEGIN
  * @see AngularAcceleration
  * @see MomentOfInertia
  */
-class W_COMMON_API Torque : public QuantityBase<Torque>
+template <std::floating_point T>
+class BasicTorque : public QuantityBase<BasicTorque<T>, T>
 {
-#ifdef W_COMMON_WITH_QT
-  Q_GADGET
-
-  Q_PROPERTY(double newtonMeters READ as_newton_meters CONSTANT FINAL)
-  Q_PROPERTY(bool isFinite READ is_finite CONSTANT FINAL)
-  Q_PROPERTY(QString string READ to_qstring CONSTANT FINAL)
-#endif
+  using Base = QuantityBase<BasicTorque, T>;
 
  public:
   /**
@@ -52,28 +40,45 @@ class W_COMMON_API Torque : public QuantityBase<Torque>
   /**
    * @brief Creates a zero torque.
    */
-  constexpr Torque() noexcept = default;
+  constexpr BasicTorque() noexcept = default;
 
   /**
    * @brief Creates a torque from newton-meters.
    */
-  explicit constexpr Torque(Real const newton_meters) noexcept
-    : QuantityBase(newton_meters)
+  explicit constexpr BasicTorque(T const newton_meters) noexcept
+    : Base(newton_meters)
+  {}
+
+  /**
+   * @brief Converts the magnitude from another precision.
+   * @details Implicit where no digits are lost, e.g. from `float` to `double`, and explicit
+   * otherwise.
+   */
+  template <std::floating_point U>
+    requires(not std::same_as<U, T>)
+  constexpr explicit(not LosslessConversion<U, T>) BasicTorque(BasicTorque<U> const other) noexcept
+    : Base(static_cast<T>(static_cast<U>(other)))
   {}
 
   /**
    * @brief Creates a torque from newton-meters.
    */
-  [[nodiscard]] static constexpr Torque from_newton_meters(Real const newton_meters) noexcept
+  [[nodiscard]] static constexpr BasicTorque from_newton_meters(T const newton_meters) noexcept
   {
-    return Torque(newton_meters);
+    return BasicTorque(newton_meters);
   }
 
   /**
    * @brief Returns newton-meters.
    */
-  [[nodiscard]] constexpr Real as_newton_meters() const noexcept { return this->magnitude(); }
+  [[nodiscard]] constexpr T as_newton_meters() const noexcept { return this->magnitude(); }
 };
+
+/**
+ * @brief Torque in single precision, the default.
+ * @ingroup core_measurements
+ */
+using Torque = BasicTorque<float>;
 
 inline namespace literals
 {
@@ -99,7 +104,3 @@ inline namespace literals
 }  // namespace literals
 
 W_COMMON_NAMESPACE_END
-
-#ifdef W_COMMON_WITH_QT
-Q_DECLARE_METATYPE(w::common::Torque)
-#endif

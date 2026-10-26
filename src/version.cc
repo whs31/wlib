@@ -5,11 +5,6 @@
 #include <system_error>
 #include <utility>
 
-#ifdef W_COMMON_WITH_QT
-#  include <qstring.h>
-#  include <qstringview.h>
-#endif
-
 #include <w/common/char_utils.h>
 
 W_COMMON_NAMESPACE_BEGIN
@@ -290,24 +285,6 @@ Version operator""_version(char const* const text, std::size_t const length)
 {
   return Version(std::string_view {text, length});
 }
-
-#ifdef W_COMMON_WITH_QT
-QString Version::prerelease_qstring() const { return QString::fromStdString(this->m_pre.as_str()); }
-
-QString Version::build_metadata_qstring() const
-{
-  return QString::fromStdString(this->m_build.as_str());
-}
-
-QString Version::to_qstring() const { return QString::fromStdString(this->to_string()); }
-
-Version Version::from_qstring(QStringView const text)
-{
-  return Version(text.toString().toStdString());
-}
-
-Version Version::from_qstring(QString const& text) { return from_qstring(QStringView {text}); }
-#endif
 
 std::ostream& operator<<(std::ostream& stream, Prerelease const& value)
 {

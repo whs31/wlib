@@ -253,7 +253,8 @@ TEST_CASE("Kinematic quantities relate through std::chrono durations", "[quantit
 
 TEST_CASE("Acceleration converts to standard gravity", "[quantities]")
 {
-  STATIC_CHECK((1_gn).as_mps2() == STANDARD_GRAVITY);
+  STATIC_CHECK((1_gn).as_mps2() == static_cast<float>(STANDARD_GRAVITY));
+  STATIC_CHECK(BasicAcceleration<double>::from_standard_gravity(1.0).as_mps2() == STANDARD_GRAVITY);
   STATIC_CHECK(near(Acceleration::from_mps2(19.613'3).as_standard_gravity(), 2.0));
 }
 
