@@ -1,5 +1,5 @@
 [project]
-name = "wcommon"
+name = "wlib"
 description = "Common C++23 utility library"
 languages = ["cpp"]
 wkit = ">=0.1.1"
@@ -21,5 +21,4 @@ system = "conan"
 runner = "ctest"
 
 [scripts]
-ci = { run = ["bash", "ci/matrix.sh"], description = "Build and test every Conan configuration with and without Qt and the serialization adapters" }
-doc = { run = "poxy", cwd = ".doc", description = "Generate the documentation HTML" }
+ci = { run = ["bash", "ci/matrix.sh"], description = "Build and test every Conan configuration with and without Qt and glaze, in both precisions" }

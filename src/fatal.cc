@@ -1,13 +1,13 @@
-#include <whs31/common/fatal.h>
+#include <w/common/fatal.h>
 
 #include <cstdio>
 #include <cstdlib>
 
 #include <fmt/color.h>
 
-#include <whs31/common/log.h>
+#include <w/common/log.h>
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 void fatal(std::string const& message)
 {
@@ -23,4 +23,4 @@ void fatal(std::string const& message)
   std::exit(EXIT_FAILURE);
 }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

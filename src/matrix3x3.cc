@@ -1,15 +1,15 @@
-#include <whs31/common/matrix3x3.h>
+#include <w/common/matrix3x3.h>
 
 #include <array>
 #include <ostream>
 
 #include <fmt/format.h>
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 std::string Matrix3x3::to_string() const { return fmt::format("{}", *this); }
 
-#ifdef WHS31_COMMON_WITH_QT
+#ifdef W_COMMON_WITH_QT
 Matrix3x3::Matrix3x3(QMatrix3x3 const& matrix) noexcept
   : m_rows {
       Vector3(matrix(0, 0), matrix(0, 1), matrix(0, 2)),
@@ -49,4 +49,4 @@ std::ostream& operator<<(std::ostream& os, Matrix3x3 const& matrix)
   return os << matrix.to_string();
 }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

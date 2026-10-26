@@ -1,18 +1,18 @@
-#include <whs31/common/version.h>
+#include <w/common/version.h>
 
 #include <algorithm>
 #include <charconv>
 #include <system_error>
 #include <utility>
 
-#ifdef WHS31_COMMON_WITH_QT
+#ifdef W_COMMON_WITH_QT
 #  include <qstring.h>
 #  include <qstringview.h>
 #endif
 
-#include <whs31/common/char_utils.h>
+#include <w/common/char_utils.h>
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 namespace
 {
@@ -291,7 +291,7 @@ Version operator""_version(char const* const text, std::size_t const length)
   return Version(std::string_view {text, length});
 }
 
-#ifdef WHS31_COMMON_WITH_QT
+#ifdef W_COMMON_WITH_QT
 QString Version::prerelease_qstring() const { return QString::fromStdString(this->m_pre.as_str()); }
 
 QString Version::build_metadata_qstring() const
@@ -324,4 +324,4 @@ std::ostream& operator<<(std::ostream& stream, Version const& value)
   return stream << value.to_string();
 }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

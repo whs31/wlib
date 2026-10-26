@@ -1,4 +1,4 @@
-#include <whs31/common/version_range.h>
+#include <w/common/version_range.h>
 
 #include <array>
 #include <sstream>
@@ -9,7 +9,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 TEST_CASE("VersionRange matches comparators alternatives and partial versions", "[version_range]")
 {

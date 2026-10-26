@@ -1,8 +1,8 @@
-#include <whs31/common/math.h>
-#include <whs31/common/point2.h>
-#include <whs31/common/point3.h>
-#include <whs31/common/vector2.h>
-#include <whs31/common/vector3.h>
+#include <w/common/math.h>
+#include <w/common/point2.h>
+#include <w/common/point3.h>
+#include <w/common/vector2.h>
+#include <w/common/vector3.h>
 
 #include <cmath>
 #include <limits>
@@ -13,7 +13,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31::common;
+#include "precision_support.h"
+
+using namespace w::common;
+using test::near;
 
 TEST_CASE("Geometry values support constexpr vector math", "[geometry]")
 {
@@ -36,8 +39,8 @@ TEST_CASE("Points translate and measure", "[geometry]")
   auto const moved = point + Vector2::from_xy(3.0, 4.0);
   REQUIRE(moved == Point2::from_xy(4.0, 6.0));
   REQUIRE(moved - point == Vector2::from_xy(3.0, 4.0));
-  REQUIRE(approx_eq(point.distance_to(moved), 5.0));
-  REQUIRE(approx_eq(point.angle_to(Point2::from_xy(1.0, 3.0)).degrees(), 90.0, 1e-4));
+  REQUIRE(near(point.distance_to(moved), 5.0));
+  REQUIRE(near(point.angle_to(Point2::from_xy(1.0, 3.0)).degrees(), 90.0, 1e-4));
 
   auto const point3 = Point3::from_xyz(1.0, 2.0, 3.0);
   REQUIRE(point3.xy() == Point2::from_xy(1.0, 2.0));
@@ -46,13 +49,13 @@ TEST_CASE("Points translate and measure", "[geometry]")
 
 TEST_CASE("Vectors normalize, rotate and handle a zero length", "[geometry]")
 {
-  REQUIRE(approx_eq(Vector2::from_xy(3.0, 4.0).normalized().length(), 1.0));
-  REQUIRE(approx_eq(Vector3::from_xyz(0.0, 3.0, 4.0).normalized().length(), 1.0));
+  REQUIRE(near(Vector2::from_xy(3.0, 4.0).normalized().length(), 1.0));
+  REQUIRE(near(Vector3::from_xyz(0.0, 3.0, 4.0).normalized().length(), 1.0));
   REQUIRE(Vector2::zero().normalized() == Vector2::zero());
   REQUIRE(Vector3::zero().normalized() == Vector3::zero());
   REQUIRE(Vector2::from_xy(1.0, 0.0).rotated(Angle::frac_pi_2()).y() > 0.999);
   REQUIRE_FALSE(
-    std::isfinite(Vector2::from_xy(std::numeric_limits<double>::infinity(), 0.0).length())
+    std::isfinite(Vector2::from_xy(std::numeric_limits<Real>::infinity(), 0.0).length())
   );
 }
 

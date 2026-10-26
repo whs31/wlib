@@ -1,10 +1,10 @@
-#include <whs31/common/adapter.h>
+#include <w/common/adapter.h>
 
 #include <type_traits>
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 namespace
 {

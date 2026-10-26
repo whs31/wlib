@@ -1,28 +1,28 @@
-#include <whs31/common/acceleration.h>
-#include <whs31/common/angle.h>
-#include <whs31/common/angular_acceleration.h>
-#include <whs31/common/angular_velocity.h>
-#include <whs31/common/capacitance.h>
-#include <whs31/common/charge.h>
-#include <whs31/common/concepts.h>
-#include <whs31/common/conductance.h>
-#include <whs31/common/current.h>
-#include <whs31/common/density.h>
-#include <whs31/common/distance.h>
-#include <whs31/common/energy.h>
-#include <whs31/common/force.h>
-#include <whs31/common/frequency.h>
-#include <whs31/common/magnetic_flux_density.h>
-#include <whs31/common/mass.h>
-#include <whs31/common/math.h>
-#include <whs31/common/moment_of_inertia.h>
-#include <whs31/common/power.h>
-#include <whs31/common/pressure.h>
-#include <whs31/common/resistance.h>
-#include <whs31/common/temperature.h>
-#include <whs31/common/torque.h>
-#include <whs31/common/velocity.h>
-#include <whs31/common/voltage.h>
+#include <w/common/acceleration.h>
+#include <w/common/angle.h>
+#include <w/common/angular_acceleration.h>
+#include <w/common/angular_velocity.h>
+#include <w/common/capacitance.h>
+#include <w/common/charge.h>
+#include <w/common/concepts.h>
+#include <w/common/conductance.h>
+#include <w/common/current.h>
+#include <w/common/density.h>
+#include <w/common/distance.h>
+#include <w/common/energy.h>
+#include <w/common/force.h>
+#include <w/common/frequency.h>
+#include <w/common/magnetic_flux_density.h>
+#include <w/common/mass.h>
+#include <w/common/math.h>
+#include <w/common/moment_of_inertia.h>
+#include <w/common/power.h>
+#include <w/common/pressure.h>
+#include <w/common/resistance.h>
+#include <w/common/temperature.h>
+#include <w/common/torque.h>
+#include <w/common/velocity.h>
+#include <w/common/voltage.h>
 
 #include <bit>
 #include <chrono>
@@ -38,7 +38,10 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+#include "precision_support.h"
+
+using namespace w;
+using test::near;
 using namespace std::chrono_literals;
 
 namespace
@@ -55,16 +58,10 @@ namespace
   template <typename T>
   concept Negatable = requires(T value) { -value; };
 
-  auto constexpr tolerance = 1e-9;
-
-  constexpr bool near(double const actual, double const expected, double const epsilon = tolerance)
-  {
-    return approx_eq(actual, expected, epsilon);
-  }
 }  // namespace
 
 TEMPLATE_TEST_CASE(
-  "Every quantity is one SI double with the common operations",
+  "Every quantity is one SI Real with the common operations",
   "[quantities]",
   Angle,
   Distance,
@@ -97,8 +94,8 @@ TEMPLATE_TEST_CASE(
   STATIC_CHECK(DerivedQuantity<T>);
   STATIC_CHECK(std::is_trivially_copyable_v<T>);
   STATIC_CHECK(std::is_standard_layout_v<T>);
-  STATIC_CHECK(sizeof(T) == sizeof(double));
-  STATIC_CHECK(std::bit_cast<double>(T(2.5)) == 2.5);
+  STATIC_CHECK(sizeof(T) == sizeof(Real));
+  STATIC_CHECK(std::bit_cast<Real>(T(2.5)) == Real {2.5});
   STATIC_CHECK(QuantityTraits<T>::from_si(2.5) == T(2.5));
   STATIC_CHECK(QuantityTraits<T>::si_symbol == T::si_symbol);
 
@@ -112,13 +109,13 @@ TEMPLATE_TEST_CASE(
   STATIC_CHECK(T(2.0) < T(3.0));
   STATIC_CHECK(static_cast<double>(T(-4.0).abs()) == 4.0);
   STATIC_CHECK(T(1.0).is_finite());
-  STATIC_CHECK_FALSE(T(std::numeric_limits<double>::infinity()).is_finite());
-  STATIC_CHECK_FALSE(T(std::numeric_limits<double>::quiet_NaN()).is_finite());
-  STATIC_CHECK_FALSE(T(std::numeric_limits<double>::quiet_NaN()) == T(0.0));
+  STATIC_CHECK_FALSE(T(std::numeric_limits<Real>::infinity()).is_finite());
+  STATIC_CHECK_FALSE(T(std::numeric_limits<Real>::quiet_NaN()).is_finite());
+  STATIC_CHECK_FALSE(T(std::numeric_limits<Real>::quiet_NaN()) == T(0.0));
 
   STATIC_CHECK_FALSE(SelfMultipliable<T>);
-  STATIC_CHECK_FALSE(std::is_convertible_v<double, T>);
-  STATIC_CHECK_FALSE(std::is_convertible_v<T, double>);
+  STATIC_CHECK_FALSE(std::is_convertible_v<Real, T>);
+  STATIC_CHECK_FALSE(std::is_convertible_v<T, Real>);
 
   auto value = T(1.0);
   value += T(2.0);
@@ -181,30 +178,30 @@ TEST_CASE("Quantities format the magnitude with the SI symbol", "[quantities]")
 
 TEST_CASE("Mechanical quantities convert between units", "[quantities]")
 {
-  STATIC_CHECK((2.5_kg + 300_g).as_kilograms() == 2.8);
+  STATIC_CHECK(near((2.5_kg + 300_g).as_kilograms(), 2.8));
   STATIC_CHECK(near(Mass::from_kilograms(1.5).as_grams(), 1'500.0));
 
-  STATIC_CHECK(Force::from_kilonewtons(1.2).as_newtons() == 1'200.0);
+  STATIC_CHECK(near(Force::from_kilonewtons(1.2).as_newtons(), 1'200.0));
   STATIC_CHECK(near((1_kgf).as_newtons(), 9.806'65));
   STATIC_CHECK(near(Force::from_newtons(9.806'65).as_kilograms_force(), 1.0));
   STATIC_CHECK(near((2_n).as_kilonewtons(), 0.002));
 
-  STATIC_CHECK((1.5_nm).as_newton_meters() == 1.5);
+  STATIC_CHECK(near((1.5_nm).as_newton_meters(), 1.5));
 
-  STATIC_CHECK((1013.25_hpa).as_pascals() == 101'325.0);
+  STATIC_CHECK(near((1013.25_hpa).as_pascals(), 101'325.0));
   STATIC_CHECK(near((101.325_kpa).as_hectopascals(), 1'013.25));
   STATIC_CHECK(near((1013.25_mbar).as_kilopascals(), 101.325));
   STATIC_CHECK(near((1013.25_hpa).as_millibars(), 1'013.25));
   STATIC_CHECK(near((29.92_inhg).as_hectopascals(), 1'013.207'589, 1e-6));
   STATIC_CHECK(near(Pressure::from_pascals(101'325.0).as_inches_of_mercury(), 29.921'252, 1e-6));
 
-  STATIC_CHECK((1.225_kg_per_m3).as_kilograms_per_cubic_meter() == 1.225);
-  STATIC_CHECK((0.35_kg_m2).as_kilogram_square_meters() == 0.35);
+  STATIC_CHECK(near((1.225_kg_per_m3).as_kilograms_per_cubic_meter(), 1.225));
+  STATIC_CHECK(near((0.35_kg_m2).as_kilogram_square_meters(), 0.35));
 }
 
 TEST_CASE("Temperature is absolute and converts to Celsius and Fahrenheit", "[quantities]")
 {
-  STATIC_CHECK((0_degc).as_kelvin() == 273.15);
+  STATIC_CHECK(near((0_degc).as_kelvin(), 273.15));
   STATIC_CHECK(near((15_degc).as_kelvin(), 288.15));
   STATIC_CHECK(near(Temperature::from_celsius(-40.0).as_fahrenheit(), -40.0));
   STATIC_CHECK(near((212_degf).as_celsius(), 100.0));
@@ -221,28 +218,22 @@ TEST_CASE("Temperature is absolute and converts to Celsius and Fahrenheit", "[qu
 
 TEST_CASE("Rotational quantities convert between units", "[quantities]")
 {
-  STATIC_CHECK(near((180_deg_per_s).as_radians_per_second(), std::numbers::pi_v<double>));
-  STATIC_CHECK(near((60_rpm).as_radians_per_second(), 2.0 * std::numbers::pi_v<double>));
+  STATIC_CHECK(near((180_deg_per_s).as_radians_per_second(), std::numbers::pi));
+  STATIC_CHECK(near((60_rpm).as_radians_per_second(), 2.0 * std::numbers::pi));
   STATIC_CHECK(near((60_rpm).as_degrees_per_second(), 360.0));
-  STATIC_CHECK(
-    near(AngularVelocity::from_radians_per_second(std::numbers::pi_v<double>).as_rpm(), 30.0)
-  );
+  STATIC_CHECK(near(AngularVelocity::from_radians_per_second(std::numbers::pi).as_rpm(), 30.0));
 
-  STATIC_CHECK(
-    near((90_deg_per_s2).as_radians_per_second_squared(), std::numbers::pi_v<double> / 2.0)
-  );
-  STATIC_CHECK(
-    near((1_rad_per_s2).as_degrees_per_second_squared(), 180.0 / std::numbers::pi_v<double>)
-  );
+  STATIC_CHECK(near((90_deg_per_s2).as_radians_per_second_squared(), std::numbers::pi / 2.0));
+  STATIC_CHECK(near((1_rad_per_s2).as_degrees_per_second_squared(), 180.0 / std::numbers::pi));
 }
 
 TEST_CASE("Kinematic quantities relate through std::chrono durations", "[quantities]")
 {
   STATIC_CHECK(100_m / 4s == Velocity::from_mps(25.0));
-  STATIC_CHECK(1_km / 500ms == Velocity::from_mps(2'000.0));
+  STATIC_CHECK(near((1_km / 500ms).as_mps(), 2'000.0));
   STATIC_CHECK(Velocity::from_mps(25.0) * 2s == Distance::from_meters(50.0));
   STATIC_CHECK(2s * Velocity::from_mps(25.0) == Distance::from_meters(50.0));
-  STATIC_CHECK(100_m / Velocity::from_mps(25.0) == std::chrono::duration<double>(4.0));
+  STATIC_CHECK(100_m / Velocity::from_mps(25.0) == std::chrono::duration<Real>(4.0));
   STATIC_CHECK(
     std::chrono::duration_cast<std::chrono::milliseconds>(10_m / Velocity::from_mps(4.0)) == 2'500ms
   );
@@ -268,12 +259,12 @@ TEST_CASE("Acceleration converts to standard gravity", "[quantities]")
 
 TEST_CASE("Frequency converts to and from a period", "[quantities]")
 {
-  STATIC_CHECK((2_khz).as_hertz() == 2'000.0);
+  STATIC_CHECK(near((2_khz).as_hertz(), 2'000.0));
   STATIC_CHECK(near((500_hz).as_kilohertz(), 0.5));
-  STATIC_CHECK((400_hz).period() == std::chrono::duration<double>(0.002'5));
-  STATIC_CHECK(Frequency::from_period(16ms) == 62.5_hz);
-  STATIC_CHECK(Frequency::from_period(std::chrono::duration<double>(0.5)) == 2_hz);
-  REQUIRE((0_hz).period().count() == std::numeric_limits<double>::infinity());
+  STATIC_CHECK(near((400_hz).period().count(), 0.002'5));
+  STATIC_CHECK(near(Frequency::from_period(16ms).as_hertz(), 62.5));
+  STATIC_CHECK(Frequency::from_period(std::chrono::duration<Real>(0.5)) == 2_hz);
+  REQUIRE((0_hz).period().count() == std::numeric_limits<Real>::infinity());
 }
 
 TEST_CASE("Electrical quantities convert between units", "[quantities]")
@@ -288,12 +279,12 @@ TEST_CASE("Electrical quantities convert between units", "[quantities]")
   STATIC_CHECK(near((45_mohm).as_ohms(), 0.045));
   STATIC_CHECK(near((2_ohm).as_milliohms(), 2'000.0));
 
-  STATIC_CHECK((0.25_siemens).as_siemens() == 0.25);
+  STATIC_CHECK(near((0.25_siemens).as_siemens(), 0.25));
 
-  STATIC_CHECK((1.8_kw + 150_w).as_watts() == 1'950.0);
+  STATIC_CHECK(near((1.8_kw + 150_w).as_watts(), 1'950.0));
   STATIC_CHECK(near((500_w).as_kilowatts(), 0.5));
 
-  STATIC_CHECK((222_wh).as_joules() == 799'200.0);
+  STATIC_CHECK(near((222_wh).as_joules(), 799'200.0));
   STATIC_CHECK(near((1_kwh).as_watt_hours(), 1'000.0));
   STATIC_CHECK(near(Energy::from_joules(7'200.0).as_kilowatt_hours(), 0.002));
 
@@ -328,7 +319,7 @@ TEST_CASE("Distance has short literals, ratios, abs and finite checks", "[quanti
   STATIC_CHECK(abs(Distance::from_meters(-3.0)) == 3_m);
   STATIC_CHECK(Velocity::from_mps(-2.0).abs() == 2_mps);
   STATIC_CHECK(Distance::from_meters(1.0).is_finite());
-  STATIC_CHECK_FALSE(Velocity::from_mps(std::numeric_limits<double>::infinity()).is_finite());
+  STATIC_CHECK_FALSE(Velocity::from_mps(std::numeric_limits<Real>::infinity()).is_finite());
 }
 
 TEST_CASE("Math helpers accept quantities", "[quantities][math]")
@@ -337,7 +328,7 @@ TEST_CASE("Math helpers accept quantities", "[quantities][math]")
   STATIC_CHECK(clamp(-1_a, 0_a, 2_a) == 0_a);
   STATIC_CHECK(clamp(1_a, 2_a, 0_a) == 1_a);
   STATIC_CHECK(lerp(10_m, 20_m, 0.5) == 15_m);
-  STATIC_CHECK(approx_eq(lerp(0_degc, 100_degc, 0.25), 25_degc, 1e-9_k));
+  STATIC_CHECK(near(lerp(0_degc, 100_degc, 0.25).as_kelvin(), (25_degc).as_kelvin()));
   STATIC_CHECK(
     near(lerp(Angle::from_degrees(350.0), Angle::from_degrees(10.0), 0.5).degrees(), 180.0)
   );
@@ -352,7 +343,7 @@ TEST_CASE("Math helpers accept quantities", "[quantities][math]")
   STATIC_CHECK(positive(1_hz));
   STATIC_CHECK(nonnegative(0_w));
   STATIC_CHECK(in_closed_range(15_degc, Temperature::from_celsius(-40.0), 400_k));
-  STATIC_CHECK_FALSE(is_finite(Pressure::from_pascals(std::numeric_limits<double>::infinity())));
+  STATIC_CHECK_FALSE(is_finite(Pressure::from_pascals(std::numeric_limits<Real>::infinity())));
 
   STATIC_CHECK(std::min(2_v, 3_v) == 2_v);
   STATIC_CHECK(std::max(2_v, 3_v) == 3_v);

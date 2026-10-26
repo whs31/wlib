@@ -1,13 +1,15 @@
-#include <whs31/common/angle.h>
-#include <whs31/common/distance.h>
-#include <whs31/common/error.h>
-#include <whs31/common/geodesy.h>
-#include <whs31/common/math.h>
-#include <whs31/common/vector3.h>
+#include <w/common/angle.h>
+#include <w/common/distance.h>
+#include <w/common/error.h>
+#include <w/common/geodesy.h>
+#include <w/common/math.h>
+#include <w/common/vector3.h>
 
 #include <cmath>
 #include <algorithm>
+#include <concepts>
 #include <string>
+#include <type_traits>
 
 #include <fmt/format.h>
 
@@ -16,7 +18,10 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <catch2/matchers/catch_matchers_templated.hpp>
 
-using namespace whs31;
+#include "precision_support.h"
+#include "text_support.h"
+
+using namespace w;
 using Catch::Matchers::WithinAbs;
 
 namespace
@@ -51,14 +56,16 @@ namespace
     double m_tolerance;
   };
 
+  // positions in the plane are Vector3 in the precision of the library: a float resolves 50 km to
+  // 4 mm
   [[nodiscard]] IsCloseTo is_close_to(Vector3 const& expected, double const tolerance)
   {
-    return {expected, tolerance};
+    return {expected, test::tolerance(tolerance, 1e-2)};
   }
 
   auto constexpr origin = GeodeticPosition {
-    .latitude = 60.195964_deg,
-    .longitude = 30.323451_deg,
+    .latitude = 60.195964_lat,
+    .longitude = 30.323451_lon,
   };
 
   [[nodiscard]] GeodeticPosition origin_at(Distance const altitude)
@@ -71,8 +78,8 @@ namespace
   [[nodiscard]] GeodeticPosition at(double const latitude_deg, double const longitude_deg)
   {
     return {
-      .latitude = Angle::from_degrees(latitude_deg),
-      .longitude = Angle::from_degrees(longitude_deg),
+      .latitude = Latitude::from_degrees(latitude_deg),
+      .longitude = Longitude::from_degrees(longitude_deg),
     };
   }
 
@@ -82,8 +89,8 @@ namespace
 
 TEST_CASE("WGS84 constants derive from the axis and the flattening", "[geodesy]")
 {
-  CHECK(wgs84::semi_major_axis == 6'378'137_meters);
-  CHECK_THAT(wgs84::semi_minor_axis.as_m(), WithinAbs(6'356'752.314'245, 1e-6));
+  CHECK(wgs84::semi_major_axis == 6'378'137.0);
+  CHECK_THAT(wgs84::semi_minor_axis, WithinAbs(6'356'752.314'245, 1e-6));
   CHECK_THAT(wgs84::eccentricity_squared, WithinAbs(6.694'379'990'14e-3, 1e-14));
   CHECK_THAT(wgs84::second_eccentricity_squared, WithinAbs(6.739'496'742'28e-3, 1e-14));
 }
@@ -91,11 +98,11 @@ TEST_CASE("WGS84 constants derive from the axis and the flattening", "[geodesy]"
 TEST_CASE("Geodetic positions format in degrees and metres MSL", "[geodesy]")
 {
   auto constexpr position = GeodeticPosition {
-    .latitude = 59.5_deg,
-    .longitude = -30.25_deg,
+    .latitude = 59.5_lat,
+    .longitude = -30.25_lon,
     .altitude_msl = 70_meters,
   };
-  CHECK(position.to_string() == "59.5 deg, -30.25 deg, 70 m MSL");
+  CHECK(position.to_string() == test::with_degree_signs("59.5^N, 30.25^W, 70 m MSL"));
   CHECK(fmt::format("{}", position) == position.to_string());
   CHECK(position.latitude_degrees() == 59.5);
   CHECK(position.longitude_degrees() == -30.25);
@@ -104,7 +111,7 @@ TEST_CASE("Geodetic positions format in degrees and metres MSL", "[geodesy]")
   STATIC_CHECK(position != GeodeticPosition {});
   STATIC_CHECK(position.is_finite());
   CHECK_FALSE(GeodeticPosition {.altitude_msl = Distance::from_meters(NaN)}.is_finite());
-  CHECK_FALSE(GeodeticPosition {.longitude = Angle::from_degrees(Inf)}.is_finite());
+  CHECK_FALSE(GeodeticPosition {.longitude = Longitude::from_degrees(Inf)}.is_finite());
 }
 
 TEST_CASE("Tangent plane maps its origin onto itself", "[geodesy]")
@@ -162,8 +169,8 @@ TEST_CASE("Tangent plane matches the exact ellipsoid geometry", "[geodesy]")
   CHECK(plane.lla_from_ned(reference.position_ned) == position);
 
   auto const back = plane.ned_from_lla({
-    .latitude = Angle::from_degrees(reference.latitude_deg),
-    .longitude = Angle::from_degrees(reference.longitude_deg),
+    .latitude = Latitude::from_degrees(reference.latitude_deg),
+    .longitude = Longitude::from_degrees(reference.longitude_deg),
     .altitude_msl = reference.altitude,
   });
   CHECK_THAT(back, is_close_to(reference.position_ned, 1e-5));
@@ -206,13 +213,13 @@ TEST_CASE("Tangent plane round trip stays within a millimetre at 50 km", "[geode
 {
   auto const latitude_deg = GENERATE(0.0, 45.0, 60.195964, -70.0, 85.0);
   auto const plane = LocalTangentPlane({
-    .latitude = Angle::from_degrees(latitude_deg),
-    .longitude = -120.0_deg,
+    .latitude = Latitude::from_degrees(latitude_deg),
+    .longitude = -120.0_lon,
     .altitude_msl = 1'500_meters,
   });
   for(auto step = 0; step < 24; ++step) {
-    auto const azimuth = Angle::from_degrees(15.0 * step);
-    auto const position_ned = Vector3 {50'000.0 * azimuth.cos(), 50'000.0 * azimuth.sin(), -400.0};
+    auto const azimuth = Angle::from_degrees(static_cast<Real>(15 * step));
+    auto const position_ned = Vector3 {azimuth.cos() * 50'000, azimuth.sin() * 50'000, -400.0};
     CAPTURE(latitude_deg, azimuth.degrees());
     CHECK_THAT(
       plane.ned_from_lla(plane.lla_from_ned(position_ned)),
@@ -239,9 +246,11 @@ TEST_CASE("Tangent plane rejects invalid origins and positions", "[geodesy]")
 {
   CHECK_THROWS_AS(LocalTangentPlane(at(90.0, 0.0)), InvalidArgumentError);
   CHECK_THROWS_AS(LocalTangentPlane(at(-90.0, 0.0)), InvalidArgumentError);
-  CHECK_THROWS_AS(LocalTangentPlane(at(0.0, 180.5)), InvalidArgumentError);
   CHECK_THROWS_AS(LocalTangentPlane(at(NaN, 0.0)), InvalidArgumentError);
   CHECK_THROWS_AS(LocalTangentPlane(origin_at(Distance::from_meters(NaN))), InvalidArgumentError);
+
+  // a longitude always names a meridian
+  CHECK(LocalTangentPlane(at(0.0, 180.5)).origin().longitude == -179.5_lon);
 
   auto const plane = LocalTangentPlane(origin);
   CHECK_THROWS_AS(plane.lla_from_ned({NaN, 0.0, 0.0}), InvalidArgumentError);

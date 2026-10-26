@@ -6,8 +6,8 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 run_configuration() {
-  local with_qt="$1" with_adapters="$2" namespace="$3"
-  local output_folder="build/ci-qt-${with_qt,,}-adapters-${with_adapters,,}-ns-${namespace//::/-}"
+  local with_qt="$1" with_glaze="$2" precision="$3"
+  local output_folder="build/ci-qt-${with_qt,,}-glaze-${with_glaze,,}-${precision}"
   conan build . \
     --build=missing \
     -cc core:non_interactive=True \
@@ -16,13 +16,12 @@ run_configuration() {
     -o "&:shared=True" \
     -o "&:test=True" \
     -o "&:with_qt=$with_qt" \
-    -o "&:with_nlohmann=$with_adapters" \
-    -o "&:with_glaze=$with_adapters" \
-    -o "&:namespace=$namespace" \
+    -o "&:with_glaze=$with_glaze" \
+    -o "&:precision=$precision" \
     -of "$output_folder"
   ctest --test-dir "$output_folder/build/Debug" --output-on-failure
   bash ci/cmake-package.sh "$output_folder/build/Debug"
-  mapfile -t libraries < <(find "$output_folder/build/Debug" -type f -name 'libwcommon.so*')
+  mapfile -t libraries < <(find "$output_folder/build/Debug" -type f -name 'libwlib.so*')
   test "${#libraries[@]}" -gt 0
   linkage="$(ldd "${libraries[0]}")"
   if [[ "$with_qt" == "True" ]]; then
@@ -37,9 +36,8 @@ run_configuration() {
 }
 
 for with_qt in False True; do
-  for with_adapters in False True; do
-    run_configuration "$with_qt" "$with_adapters" whs31
+  for with_glaze in False True; do
+    run_configuration "$with_qt" "$with_glaze" float
   done
 done
-# Any other namespace builds a respelled copy of the sources.
-run_configuration True True acme::util
+run_configuration True True double

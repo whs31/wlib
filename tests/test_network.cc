@@ -1,9 +1,5 @@
-#include <whs31/common/ip.h>
-#include <whs31/common/sockaddr.h>
-
-#ifdef NLOHMANN_JSON_VERSION_MAJOR
-#  error "Base networking headers must not include nlohmann_json"
-#endif
+#include <w/common/ip.h>
+#include <w/common/sockaddr.h>
 
 #include <array>
 #include <compare>
@@ -17,7 +13,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 using namespace std::string_view_literals;
 
 TEST_CASE("IP address value operations are constexpr", "[network][ip]")

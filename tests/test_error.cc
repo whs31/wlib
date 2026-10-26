@@ -1,5 +1,5 @@
-#include <whs31/common/error.h>
-#include <whs31/common/memory/null_pointer_error.h>
+#include <w/common/error.h>
+#include <w/common/memory/null_pointer_error.h>
 
 #include <cerrno>
 #include <exception>
@@ -10,7 +10,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 TEST_CASE("Errors retain formatted diagnostics", "[error]")
 {

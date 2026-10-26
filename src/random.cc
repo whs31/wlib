@@ -1,4 +1,4 @@
-#include <whs31/common/random.h>
+#include <w/common/random.h>
 
 #include <cmath>
 
@@ -9,7 +9,7 @@
 #  error "deterministic random streams cannot be built with -ffast-math"
 #endif
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 double portable_log(double const x) noexcept
 {
@@ -86,4 +86,4 @@ double RandomStream::normal(double const mean, double const stddev) noexcept
   return mean + stddev * this->normal();
 }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

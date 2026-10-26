@@ -1,10 +1,10 @@
-#include <whs31/common/concepts.h>
+#include <w/common/concepts.h>
 
 #include <memory>
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 TEST_CASE("Concepts classify numbers and pointers", "[concepts]")
 {

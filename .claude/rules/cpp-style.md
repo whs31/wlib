@@ -65,7 +65,7 @@ Prefer typed domain values over strings, primitive numbers, maps, and `QVariant`
 
 Keep `QVariant` at genuinely dynamic API boundaries and validate or convert it immediately.
 
-Before introducing a common infrastructure type or helper in the project, check whether RCommon already provides the concept. In particular, prefer RCommon for identifiers, physical quantities, geometry, errors, Pimpl, and non-owning pointers when its semantics match.
+Before introducing a common infrastructure type or helper in the project, check whether WLib already provides the concept. In particular, prefer WLib for identifiers, physical quantities, geometry, errors, Pimpl, and non-owning pointers when its semantics match.
 
 ## Headers and includes
 Keep headers self-contained and expose the smallest practical interface.

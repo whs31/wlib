@@ -1,0 +1,20 @@
+include(CMakeFindDependencyMacro)
+
+find_dependency(Qt6 REQUIRED COMPONENTS Core Gui Network)
+target_link_libraries(w::lib INTERFACE Qt6::Core Qt6::Gui Qt6::Network)
+
+if(TARGET w::lib::glaze)
+  find_dependency(Qt6 REQUIRED COMPONENTS Positioning)
+  target_link_libraries(w::lib::glaze INTERFACE Qt6::Positioning)
+endif()
+
+get_filename_component(WLib_PACKAGE_DIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
+set(WLib_METATYPES_FILE
+  "${WLib_PACKAGE_DIR}/lib/metatypes/qt6wlib_metatypes.json"
+)
+if(NOT EXISTS "${WLib_METATYPES_FILE}")
+  message(FATAL_ERROR "WLib metatypes file does not exist: ${WLib_METATYPES_FILE}")
+endif()
+target_sources(w::lib INTERFACE
+  "$<$<BOOL:$<TARGET_PROPERTY:QT_CONSUMES_METATYPES>>:${WLib_METATYPES_FILE}>"
+)

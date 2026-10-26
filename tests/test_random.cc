@@ -1,5 +1,5 @@
-#include <whs31/common/error.h>
-#include <whs31/common/random.h>
+#include <w/common/error.h>
+#include <w/common/random.h>
 
 #include <cmath>
 #include <cstdint>
@@ -12,7 +12,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 namespace
 {

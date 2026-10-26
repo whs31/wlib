@@ -1,13 +1,10 @@
-import re
-
 from conan import ConanFile
-from conan.errors import ConanInvalidConfiguration
 from conan.tools.build import check_min_cppstd
 
 
-class WCommonRecipe(ConanFile):
-  name = "wcommon"
-  version = "6.0.0"
+class WLibRecipe(ConanFile):
+  name = "wlib"
+  version = "7.0.0"
   description = "Common C++23 utility library"
   author = "whs31 <whs31@github.io>"
   settings = "os", "arch", "compiler", "build_type"
@@ -20,18 +17,16 @@ class WCommonRecipe(ConanFile):
     "fPIC": [True, False],
     "test": [True, False],
     "with_qt": [True, False],
-    "with_nlohmann": [True, False],
     "with_glaze": [True, False],
-    "namespace": ["ANY"],
+    "precision": ["float", "double"],
   }
   default_options = {
     "shared": True,
     "fPIC": True,
     "test": False,
     "with_qt": False,
-    "with_nlohmann": False,
     "with_glaze": False,
-    "namespace": "w",
+    "precision": "float",
   }
 
   user = "whs31"
@@ -50,19 +45,6 @@ class WCommonRecipe(ConanFile):
 
   def validate(self):
     check_min_cppstd(self, "23")
-    if not re.fullmatch(r"[A-Za-z_]\w*(::[A-Za-z_]\w*)*", str(self.options.namespace), re.ASCII):
-      raise ConanInvalidConfiguration(
-        f"namespace '{self.options.namespace}' must be identifiers joined by '::', "
-        "e.g. 'whs31' or 'acme::util'"
-      )
-
-  @property
-  def _target_namespace(self):
-    return f"{self.options.namespace}::common"
-
-  @property
-  def _macro_prefix(self):
-    return str(self.options.namespace).replace("::", "_").upper()
 
   def requirements(self):
     self.req(
@@ -72,8 +54,6 @@ class WCommonRecipe(ConanFile):
       transitive_libs=True,
     )
     self.req("fmt", transitive_headers=True, transitive_libs=True)
-    if self.options.with_nlohmann:
-      self.req("nlohmann_json", transitive_headers=True)
     if self.options.with_glaze:
       self.req("glaze", transitive_headers=True)
     if self.options.test:
@@ -82,42 +62,33 @@ class WCommonRecipe(ConanFile):
   def configure_cmake_toolchain(self, toolchain):
     toolchain.shared = self.options.shared
     toolchain.cache_variables["BUILD_TESTING"] = bool(self.options.test)
-    toolchain.cache_variables["WCOMMON_WITH_QT"] = bool(self.options.with_qt)
-    toolchain.cache_variables["WCOMMON_WITH_NLOHMANN"] = bool(self.options.with_nlohmann)
-    toolchain.cache_variables["WCOMMON_WITH_GLAZE"] = bool(self.options.with_glaze)
-    toolchain.cache_variables["WCOMMON_NAMESPACE"] = str(self.options.namespace)
+    toolchain.cache_variables["WLIB_WITH_QT"] = bool(self.options.with_qt)
+    toolchain.cache_variables["WLIB_WITH_GLAZE"] = bool(self.options.with_glaze)
+    toolchain.cache_variables["WLIB_PRECISION"] = str(self.options.precision)
 
   def package_info(self):
-    self.cpp_info.set_property("cmake_file_name", "WCommon")
+    self.cpp_info.set_property("cmake_file_name", "WLib")
     if self.options.with_qt:
       self.cpp_info.set_property(
         "cmake_build_modules",
-        ["cmake_modules/WCommonQtDependencies.cmake"],
+        ["cmake_modules/WLibQtDependencies.cmake"],
       )
-    common = self.cpp_info.components["common"]
-    common.set_property("cmake_target_name", self._target_namespace)
-    common.libs = ["wcommon"]
+    lib = self.cpp_info.components["lib"]
+    lib.set_property("cmake_target_name", "w::lib")
+    lib.libs = ["wlib"]
     if not self.options.shared:
-      common.defines = [f"{self._macro_prefix}_COMMON_STATIC_LIBRARY"]
+      lib.defines = ["W_COMMON_STATIC_LIBRARY"]
     if self.settings.os == "Windows":
-      common.system_libs = ["ws2_32"]
-    common.requires = [
+      lib.system_libs = ["ws2_32"]
+    lib.requires = [
       "spdlog::spdlog",
       "fmt::fmt",
     ]
 
-    if self.options.with_nlohmann:
-      json = self.cpp_info.components["json"]
-      json.set_property("cmake_target_name", f"{self._target_namespace}::json")
-      json.requires = [
-        "common",
-        "nlohmann_json::nlohmann_json",
-      ]
-
     if self.options.with_glaze:
       glaze = self.cpp_info.components["glaze"]
-      glaze.set_property("cmake_target_name", f"{self._target_namespace}::glaze")
+      glaze.set_property("cmake_target_name", "w::lib::glaze")
       glaze.requires = [
-        "common",
+        "lib",
         "glaze::glaze",
       ]

@@ -1,12 +1,12 @@
-#include <whs31/common/glaze/ip.h>
-#include <whs31/common/glaze/sockaddr.h>
-#include <whs31/common/glaze/uuid.h>
+#include <w/common/glaze/ip.h>
+#include <w/common/glaze/sockaddr.h>
+#include <w/common/glaze/uuid.h>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "glaze_support.h"
 
-using namespace whs31;
+using namespace w;
 using namespace glaze_support;
 
 TEST_CASE("UUID glaze adapter uses the canonical string", "[glaze][uuid]")

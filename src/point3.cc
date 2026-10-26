@@ -1,20 +1,20 @@
-#include <whs31/common/point3.h>
+#include <w/common/point3.h>
 
 #include <ostream>
 
 #include <fmt/format.h>
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 std::string Point3::to_string() const
 {
   return fmt::format("({}, {}, {})", this->m_x, this->m_y, this->m_z);
 }
 
-#ifdef WHS31_COMMON_WITH_QT
+#ifdef W_COMMON_WITH_QT
 Point3::Point3(QPointF const point) noexcept
-  : m_x(static_cast<double>(point.x()))
-  , m_y(static_cast<double>(point.y()))
+  : m_x(static_cast<Real>(point.x()))
+  , m_y(static_cast<Real>(point.y()))
 {}
 
 Point3::Point3(QVector2D const& vector) noexcept
@@ -55,4 +55,4 @@ Point3 Point3::from_qvector3d(QVector3D const& vector) noexcept { return Point3(
 
 std::ostream& operator<<(std::ostream& os, Point3 const point) { return os << point.to_string(); }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

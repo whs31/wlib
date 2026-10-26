@@ -14,41 +14,39 @@ build:cpp:x86_64:
 build:cpp:windows:
   extends: .build:cpp:windows
   variables:
-    CONAN_ARGS: -o &:shared=True -o &:test=True -o &:with_qt=False -o &:with_nlohmann=True
+    CONAN_ARGS: -o &:shared=True -o &:test=True -o &:with_qt=False -o &:with_glaze=True
 
 test:cpp:x86_64:
   extends: .test:cpp:x86_64
   parallel:
     matrix:
-      - WCOMMON_WITH_QT: ["False", "True"]
-        WCOMMON_WITH_ADAPTERS: ["False", "True"]
-        WCOMMON_NAMESPACE: ["whs31"]
-      # Any other namespace builds a respelled copy of the sources.
-      - WCOMMON_WITH_QT: ["True"]
-        WCOMMON_WITH_ADAPTERS: ["True"]
-        WCOMMON_NAMESPACE: ["acme::util"]
+      - WLIB_WITH_QT: ["False", "True"]
+        WLIB_WITH_GLAZE: ["False", "True"]
+        WLIB_PRECISION: ["float"]
+      - WLIB_WITH_QT: ["True"]
+        WLIB_WITH_GLAZE: ["True"]
+        WLIB_PRECISION: ["double"]
   script:
     - >
       conan build "$CONAN_RECIPE" "${conan_profile[@]}"
       --build=missing
       -o "&:shared=True"
       -o "&:test=True"
-      -o "&:with_qt=$WCOMMON_WITH_QT"
-      -o "&:with_nlohmann=$WCOMMON_WITH_ADAPTERS"
-      -o "&:with_glaze=$WCOMMON_WITH_ADAPTERS"
-      -o "&:namespace=$WCOMMON_NAMESPACE"
+      -o "&:with_qt=$WLIB_WITH_QT"
+      -o "&:with_glaze=$WLIB_WITH_GLAZE"
+      -o "&:precision=$WLIB_PRECISION"
     - |
-      mapfile -t WCOMMON_LIBRARIES < <(find "$CONAN_BUILD_DIR" -type f -name 'libwcommon.so*')
-      test "${#WCOMMON_LIBRARIES[@]}" -gt 0
-      WCOMMON_LINKAGE="$(ldd "${WCOMMON_LIBRARIES[0]}")"
-      if [[ "$WCOMMON_WITH_QT" == "True" ]]; then
-        grep -Fq "libQt6Core" <<< "$WCOMMON_LINKAGE"
-        grep -Fq "libQt6Gui" <<< "$WCOMMON_LINKAGE"
-        grep -Fq "libQt6Network" <<< "$WCOMMON_LINKAGE"
+      mapfile -t WLIB_LIBRARIES < <(find "$CONAN_BUILD_DIR" -type f -name 'libwlib.so*')
+      test "${#WLIB_LIBRARIES[@]}" -gt 0
+      WLIB_LINKAGE="$(ldd "${WLIB_LIBRARIES[0]}")"
+      if [[ "$WLIB_WITH_QT" == "True" ]]; then
+        grep -Fq "libQt6Core" <<< "$WLIB_LINKAGE"
+        grep -Fq "libQt6Gui" <<< "$WLIB_LINKAGE"
+        grep -Fq "libQt6Network" <<< "$WLIB_LINKAGE"
       else
-        ! grep -Fq "libQt6Core" <<< "$WCOMMON_LINKAGE"
-        ! grep -Fq "libQt6Gui" <<< "$WCOMMON_LINKAGE"
-        ! grep -Fq "libQt6Network" <<< "$WCOMMON_LINKAGE"
+        ! grep -Fq "libQt6Core" <<< "$WLIB_LINKAGE"
+        ! grep -Fq "libQt6Gui" <<< "$WLIB_LINKAGE"
+        ! grep -Fq "libQt6Network" <<< "$WLIB_LINKAGE"
       fi
     - bash ci/cmake-package.sh "$CONAN_BUILD_DIR"
     - ctest --test-dir "$CONAN_BUILD_DIR" --output-on-failure -j "${RUNNER_BUILD_JOBS:-2}" --output-junit "$CI_PROJECT_DIR/ctest.xml"

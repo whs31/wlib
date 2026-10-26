@@ -1,17 +1,17 @@
-#include <whs31/common/point2.h>
+#include <w/common/point2.h>
 
 #include <ostream>
 
 #include <fmt/format.h>
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 std::string Point2::to_string() const { return fmt::format("({}, {})", this->m_x, this->m_y); }
 
-#ifdef WHS31_COMMON_WITH_QT
+#ifdef W_COMMON_WITH_QT
 Point2::Point2(QPointF const point) noexcept
-  : m_x(static_cast<double>(point.x()))
-  , m_y(static_cast<double>(point.y()))
+  : m_x(static_cast<Real>(point.x()))
+  , m_y(static_cast<Real>(point.y()))
 {}
 
 Point2::Point2(QVector2D const& vector) noexcept
@@ -35,4 +35,4 @@ Point2 Point2::from_qvector2d(QVector2D const& vector) noexcept { return Point2(
 
 std::ostream& operator<<(std::ostream& os, Point2 const point) { return os << point.to_string(); }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

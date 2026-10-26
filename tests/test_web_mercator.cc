@@ -1,6 +1,5 @@
-#include <whs31/common/angle.h>
-#include <whs31/common/distance.h>
-#include <whs31/common/web_mercator.h>
+#include <w/common/distance.h>
+#include <w/common/web_mercator.h>
 
 #include <cstdint>
 
@@ -8,7 +7,9 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
-using namespace whs31;
+#include "precision_support.h"
+
+using namespace w;
 using Catch::Matchers::WithinAbs;
 using Catch::Matchers::WithinRel;
 
@@ -18,10 +19,10 @@ TEST_CASE("Web Mercator maps the world onto a square of tiles", "[web_mercator]"
   STATIC_CHECK(web_mercator::tiles(12) == 4'096.0);
   STATIC_CHECK(web_mercator::tiles(30) == 1'073'741'824.0);
 
-  CHECK(web_mercator::project(0_deg, 0_deg, 0) == web_mercator::Point {.x = 0.5, .y = 0.5});
-  CHECK(web_mercator::project(0_deg, -180_deg, 1) == web_mercator::Point {.x = 0.0, .y = 1.0});
-  CHECK_THAT(web_mercator::project(web_mercator::max_latitude, 0_deg, 4).y, WithinAbs(0.0, 1e-9));
-  CHECK_THAT(web_mercator::project(-web_mercator::max_latitude, 0_deg, 4).y, WithinAbs(16.0, 1e-9));
+  CHECK(web_mercator::project(0_lat, 0_lon, 0) == web_mercator::Point {.x = 0.5, .y = 0.5});
+  CHECK(web_mercator::project(0_lat, -180_lon, 1) == web_mercator::Point {.x = 0.0, .y = 1.0});
+  CHECK_THAT(web_mercator::project(web_mercator::max_latitude, 0_lon, 4).y, WithinAbs(0.0, 1e-9));
+  CHECK_THAT(web_mercator::project(-web_mercator::max_latitude, 0_lon, 4).y, WithinAbs(16.0, 1e-9));
   // the edges of the map are the latitude whose row is zero
   CHECK_THAT(
     web_mercator::latitude_at(0.0, 7).degrees(),
@@ -31,7 +32,7 @@ TEST_CASE("Web Mercator maps the world onto a square of tiles", "[web_mercator]"
 
 TEST_CASE("Web Mercator places a point in its slippy map tile", "[web_mercator]")
 {
-  auto const at = web_mercator::project(60.2_deg, 30.3_deg, 12);
+  auto const at = web_mercator::project(60.2_lat, 30.3_lon, 12);
   CHECK_THAT(at.x, WithinAbs(2'392.746'666'666'667, 1e-9));
   CHECK_THAT(at.y, WithinAbs(1'184.911'994'830'207, 1e-9));
 }
@@ -39,15 +40,15 @@ TEST_CASE("Web Mercator places a point in its slippy map tile", "[web_mercator]"
 TEST_CASE("Web Mercator clamps latitudes beyond the map", "[web_mercator]")
 {
   CHECK(
-    web_mercator::project(89_deg, 10_deg, 3)
-    == web_mercator::project(web_mercator::max_latitude, 10_deg, 3)
+    web_mercator::project(89_lat, 10_lon, 3)
+    == web_mercator::project(web_mercator::max_latitude, 10_lon, 3)
   );
   CHECK(
-    web_mercator::project(-90_deg, 10_deg, 3)
-    == web_mercator::project(-web_mercator::max_latitude, 10_deg, 3)
+    web_mercator::project(-90_lat, 10_lon, 3)
+    == web_mercator::project(-web_mercator::max_latitude, 10_lon, 3)
   );
   CHECK(
-    web_mercator::tile_size(90_deg, 3) == web_mercator::tile_size(web_mercator::max_latitude, 3)
+    web_mercator::tile_size(90_lat, 3) == web_mercator::tile_size(web_mercator::max_latitude, 3)
   );
 }
 
@@ -59,18 +60,33 @@ TEST_CASE("Web Mercator inverts its projection", "[web_mercator]")
   CAPTURE(latitude_deg, longitude_deg, zoom);
 
   auto const at = web_mercator::
-    project(Angle::from_degrees(latitude_deg), Angle::from_degrees(longitude_deg), zoom);
+    project(Latitude::from_degrees(latitude_deg), Longitude::from_degrees(longitude_deg), zoom);
   CHECK_THAT(web_mercator::latitude_at(at.y, zoom).degrees(), WithinAbs(latitude_deg, 1e-9));
   CHECK_THAT(web_mercator::longitude_at(at.x, zoom).degrees(), WithinAbs(longitude_deg, 1e-9));
 }
 
+TEST_CASE("Web Mercator columns start and end at the antimeridian", "[web_mercator]")
+{
+  // a longitude never reaches 180°, so every point falls into a tile of the map
+  CHECK(web_mercator::project(0_lat, 180_east, 3).x == 0.0);
+  CHECK(web_mercator::project(0_lat, 179.999_east, 3).x < web_mercator::tiles(3));
+  STATIC_CHECK(web_mercator::longitude_at(0.0, 3) == Longitude::antimeridian());
+  STATIC_CHECK(web_mercator::longitude_at(web_mercator::tiles(3), 3) == Longitude::antimeridian());
+  STATIC_CHECK(web_mercator::longitude_at(4.0, 3) == Longitude::prime_meridian());
+}
+
 TEST_CASE("Web Mercator tiles shrink towards the poles", "[web_mercator]")
 {
-  CHECK_THAT(web_mercator::tile_size(0_deg, 0).as_m(), WithinRel(40'075'016.685'578'49, 1e-12));
-  CHECK_THAT(web_mercator::tile_size(60.2_deg, 12).as_m(), WithinRel(4'862.363'227'655'594, 1e-12));
-  CHECK(web_mercator::tile_size(-60.2_deg, 12) == web_mercator::tile_size(60.2_deg, 12));
+  // tile sizes are a Distance, in the precision of the library
+  auto const tolerance = test::tolerance(1e-12, 1e-6);
+  CHECK_THAT(web_mercator::tile_size(0_lat, 0).as_m(), WithinRel(40'075'016.685'578'49, tolerance));
   CHECK_THAT(
-    web_mercator::tile_size(60_deg, 5).as_m(),
-    WithinRel(web_mercator::tile_size(0_deg, 5).as_m() / 2.0, 1e-12)
+    web_mercator::tile_size(60.2_lat, 12).as_m(),
+    WithinRel(4'862.363'227'655'594, tolerance)
+  );
+  CHECK(web_mercator::tile_size(-60.2_lat, 12) == web_mercator::tile_size(60.2_lat, 12));
+  CHECK_THAT(
+    web_mercator::tile_size(60_lat, 5).as_m(),
+    WithinRel(web_mercator::tile_size(0_lat, 5).as_m() / 2.0, tolerance)
   );
 }

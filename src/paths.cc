@@ -1,4 +1,4 @@
-#include <whs31/common/paths.h>
+#include <w/common/paths.h>
 
 #include <array>
 #include <cerrno>
@@ -35,7 +35,7 @@ namespace
       auto path = fn();
       ec.clear();
       return path;
-    } catch(whs31::common::PathError const&) {
+    } catch(w::common::PathError const&) {
       ec = std::make_error_code(std::errc::io_error);
       return {};
     } catch(std::system_error const& e) {
@@ -57,7 +57,7 @@ namespace
       value.empty() or value == "." or value == ".." or value.contains('/') or value.contains('\\')
       or value.contains('\0') or path.has_root_path() or path.has_parent_path()
     )
-      throw whs31::common::PathError("{} must be a single non-empty path component", name);
+      throw w::common::PathError("{} must be a single non-empty path component", name);
   }
 
 #ifdef _WIN32
@@ -67,7 +67,7 @@ namespace
     auto const result = ::SHGetKnownFolderPath(id, 0, nullptr, &buffer);
     if(FAILED(result)) {
       ::CoTaskMemFree(buffer);
-      throw whs31::common::PathError(
+      throw w::common::PathError(
         "failed to get known folder path: {}",
         std::system_error(result, std::system_category()).what()
       );
@@ -78,19 +78,19 @@ namespace
     return path;
   }
 
-  [[nodiscard]] whs31::common::PathError last_path_error(
+  [[nodiscard]] w::common::PathError last_path_error(
     char const* operation,
     std::errc const fallback
   )
   {
     auto const error = ::GetLastError();
     if(error != 0)
-      return whs31::common::PathError(
+      return w::common::PathError(
         "failed to {}: {}",
         operation,
         std::system_error(static_cast<int>(error), std::system_category()).what()
       );
-    return whs31::common::
+    return w::common::
       PathError("failed to {}: {}", operation, std::make_error_code(fallback).message());
   }
 #endif
@@ -98,10 +98,10 @@ namespace
   // the categories under one root: the portable layout, and the standard one outside linux
   [[nodiscard]] std::filesystem::path nested_directory_path(
     std::filesystem::path const& root,
-    whs31::common::ApplicationDirectory const directory
+    w::common::ApplicationDirectory const directory
   )
   {
-    using whs31::common::ApplicationDirectory;
+    using w::common::ApplicationDirectory;
     switch(directory) {
       case ApplicationDirectory::Root: return root;
       case ApplicationDirectory::Config: return root / "config";
@@ -110,8 +110,7 @@ namespace
       case ApplicationDirectory::Cache: return root / "cache";
       case ApplicationDirectory::Runtime: return root / "runtime";
     }
-    throw whs31::common::
-      PathError("unknown application directory {}", std::to_underlying(directory));
+    throw w::common::PathError("unknown application directory {}", std::to_underlying(directory));
   }
 
 #ifdef __linux__
@@ -124,15 +123,15 @@ namespace
       if(auto path = std::filesystem::path(value); path.is_absolute())
         return path;
     }
-    auto const home = whs31::common::user_home_path();
+    auto const home = w::common::user_home_path();
     if(not home.is_absolute())
-      throw whs31::common::PathError("failed to get XDG base directory: $HOME is not absolute");
+      throw w::common::PathError("failed to get XDG base directory: $HOME is not absolute");
     return home / fallback;
   }
 #endif
 }  // namespace
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 std::filesystem::path user_home_path(std::error_code& ec) noexcept
 {
@@ -359,4 +358,4 @@ std::filesystem::path application_directory_path(
 #endif
 }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

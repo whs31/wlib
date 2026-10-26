@@ -1,8 +1,8 @@
-#include <whs31/common/all.h>
+#include <w/common/all.h>
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 TEST_CASE("Umbrella header exports the public API", "[headers]")
 {

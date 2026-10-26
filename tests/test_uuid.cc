@@ -1,4 +1,4 @@
-#include <whs31/common/uuid.h>
+#include <w/common/uuid.h>
 
 #include <algorithm>
 #include <array>
@@ -15,7 +15,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 namespace
 {

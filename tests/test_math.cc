@@ -1,5 +1,5 @@
-#include <whs31/common/constants.h>
-#include <whs31/common/math.h>
+#include <w/common/constants.h>
+#include <w/common/math.h>
 
 #include <cmath>
 #include <cstdint>
@@ -8,40 +8,40 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 TEST_CASE("Measurement constants preserve their unit relationships", "[constants][math]")
 {
   STATIC_CHECK(SECONDS_HOURS_FACTOR == 3'600.0);
   STATIC_CHECK(METER_MILLIMETER_FACTOR == 1'000.0);
-  STATIC_CHECK(approx_eq(METER_FEET_FACTOR * 0.3048, 1.0, 1e-12));
+  STATIC_CHECK(
+    approx_eq(METER_FEET_FACTOR * Real {0.3048}, Real {1}, std::numeric_limits<Real>::epsilon())
+  );
   STATIC_CHECK(approx_eq(EARTH_RADIUS_KM * 1'000.0, EARTH_RADIUS, 1e-6));
 }
 
 TEST_CASE("floor supports constexpr values", "[math]")
 {
-  STATIC_CHECK(whs31::floor(3.75) == 3.0);
-  STATIC_CHECK(whs31::floor(3.0) == 3.0);
-  STATIC_CHECK(whs31::floor(-3.75) == -4.0);
-  STATIC_CHECK(whs31::floor(-3.0) == -3.0);
+  STATIC_CHECK(w::floor(3.75) == 3.0);
+  STATIC_CHECK(w::floor(3.0) == 3.0);
+  STATIC_CHECK(w::floor(-3.75) == -4.0);
+  STATIC_CHECK(w::floor(-3.0) == -3.0);
 }
 
 TEST_CASE("floor preserves non-finite and large values", "[math]")
 {
-  STATIC_CHECK(whs31::floor(Inf) == Inf);
-  STATIC_CHECK(std::isnan(whs31::floor(NaN)));
-  STATIC_CHECK(
-    whs31::floor(std::numeric_limits<double>::max()) == std::numeric_limits<double>::max()
-  );
+  STATIC_CHECK(w::floor(Inf) == Inf);
+  STATIC_CHECK(std::isnan(w::floor(NaN)));
+  STATIC_CHECK(w::floor(std::numeric_limits<double>::max()) == std::numeric_limits<double>::max());
 }
 
 TEST_CASE("abs and fmod support constexpr values", "[math]")
 {
-  STATIC_CHECK(whs31::abs(-12) == 12);
-  STATIC_CHECK(whs31::abs(12) == 12);
-  STATIC_CHECK(whs31::fmod(5.5F, 2.0F) == 1.5F);
-  STATIC_CHECK(whs31::fmod(-5.5F, 2.0F) == 0.5F);
-  STATIC_CHECK(whs31::fmod(5.5F, -2.0F) == -0.5F);
+  STATIC_CHECK(w::abs(-12) == 12);
+  STATIC_CHECK(w::abs(12) == 12);
+  STATIC_CHECK(w::fmod(5.5F, 2.0F) == 1.5F);
+  STATIC_CHECK(w::fmod(-5.5F, 2.0F) == 0.5F);
+  STATIC_CHECK(w::fmod(5.5F, -2.0F) == -0.5F);
 }
 
 TEST_CASE("Radians and degrees conversions support constexpr values", "[math]")

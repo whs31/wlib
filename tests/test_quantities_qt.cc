@@ -1,4 +1,4 @@
-#include <whs31/common/all.h>
+#include <w/common/all.h>
 
 #include <qmetatype.h>
 #include <qstring.h>
@@ -7,7 +7,7 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 TEMPLATE_TEST_CASE(
   "Quantities are Qt gadgets with string and finite properties",

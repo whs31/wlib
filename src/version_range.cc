@@ -1,4 +1,4 @@
-#include <whs31/common/version_range.h>
+#include <w/common/version_range.h>
 
 #include <algorithm>
 #include <charconv>
@@ -9,14 +9,14 @@
 #include <string>
 #include <system_error>
 
-#ifdef WHS31_COMMON_WITH_QT
+#ifdef W_COMMON_WITH_QT
 #  include <qstring.h>
 #  include <qstringview.h>
 #endif
 
-#include <whs31/common/char_utils.h>
+#include <w/common/char_utils.h>
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 namespace
 {
@@ -540,7 +540,7 @@ VersionRange::VersionRange(std::string_view const expression)
 bool VersionRange::contains(Version const& version) const noexcept
 {
   return std::ranges::any_of(this->m_alternatives, [&](Alternative const& alternative) {
-    return ::whs31::common::contains(alternative, version, this->m_include_prerelease);
+    return ::w::common::contains(alternative, version, this->m_include_prerelease);
   });
 }
 
@@ -568,7 +568,7 @@ VersionRange VersionRange::parse(std::string_view const expression)
   return VersionRange(expression);
 }
 
-#ifdef WHS31_COMMON_WITH_QT
+#ifdef W_COMMON_WITH_QT
 QString VersionRange::to_qstring() const { return QString::fromStdString(this->to_string()); }
 
 VersionRange VersionRange::from_qstring(QStringView const text)
@@ -587,4 +587,4 @@ std::ostream& operator<<(std::ostream& stream, VersionRange const& range)
   return stream << range.to_string();
 }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

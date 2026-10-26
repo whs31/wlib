@@ -23,18 +23,14 @@ cache_option() {
   sed -n "s/^$1:BOOL=//p" "$build_dir/CMakeCache.txt"
 }
 
-namespace="$(sed -n 's/^WCOMMON_NAMESPACE:STRING=//p' "$build_dir/CMakeCache.txt")"
-include_prefix="${namespace//:://}/common"
+include_prefix="w/common"
 
 is_on() {
   [[ "${1^^}" =~ ^(ON|TRUE|YES|Y|1)$ ]]
 }
 
 components=(core)
-if is_on "$(cache_option WCOMMON_WITH_NLOHMANN)"; then
-  components+=(json)
-fi
-if is_on "$(cache_option WCOMMON_WITH_GLAZE)"; then
+if is_on "$(cache_option WLIB_WITH_GLAZE)"; then
   components+=(glaze)
 fi
 
@@ -44,13 +40,10 @@ if [[ ! -f "$install_dir/include/$include_prefix/config.h" ]]; then
 fi
 
 # Adapter headers are installed only together with their component.
-for adapter in json glaze; do
-  if [[ " ${components[*]} " != *" $adapter "* ]] \
-    && [[ -d "$install_dir/include/$include_prefix/$adapter" ]]; then
-    echo "Headers of the disabled $adapter component were installed" >&2
-    exit 1
-  fi
-done
+if [[ " ${components[*]} " != *" glaze "* ]] && [[ -d "$install_dir/include/$include_prefix/glaze" ]]; then
+  echo "Headers of the disabled glaze component were installed" >&2
+  exit 1
+fi
 
 for component in "${components[@]}"; do
   consumer_build="$build_dir/package-smoke/$component"
@@ -58,9 +51,9 @@ for component in "${components[@]}"; do
     -S "$repo_root/tests/cmake_consumer" \
     -B "$consumer_build" \
     -G Ninja \
-    -DWCOMMON_CONSUMER_COMPONENT="$component" \
+    -DWLIB_CONSUMER_COMPONENT="$component" \
     -DCMAKE_BUILD_TYPE="$build_type" \
     -DCMAKE_PREFIX_PATH="$install_dir;$build_dir/generators"
   cmake --build "$consumer_build"
-  "$consumer_build/wcommon_consumer"
+  "$consumer_build/wlib_consumer"
 done

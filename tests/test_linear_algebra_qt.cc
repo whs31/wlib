@@ -1,5 +1,5 @@
-#include <whs31/common/matrix3x3.h>
-#include <whs31/common/quaternion.h>
+#include <w/common/matrix3x3.h>
+#include <w/common/quaternion.h>
 
 #include <qgenericmatrix.h>
 #include <qmetatype.h>
@@ -8,7 +8,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31::common;
+using namespace w::common;
 
 TEST_CASE("Linear algebra values round-trip Qt Gui types", "[linalg][qt]")
 {

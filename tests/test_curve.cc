@@ -1,7 +1,7 @@
-#include <whs31/common/angle.h>
-#include <whs31/common/curve.h>
-#include <whs31/common/distance.h>
-#include <whs31/common/error.h>
+#include <w/common/angle.h>
+#include <w/common/curve.h>
+#include <w/common/distance.h>
+#include <w/common/error.h>
 
 #include <array>
 #include <limits>
@@ -10,7 +10,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 TEST_CASE("Curve stays trivially copyable for embedding into state", "[curve]")
 {
@@ -74,8 +74,8 @@ TEST_CASE("Curve rejects malformed point sets on construction", "[curve]")
   );
   CHECK_THROWS_AS(C(std::array {0.5, 0.5}, std::array {1.0, 2.0}), InvalidArgumentError);
   CHECK_THROWS_AS(C(std::array {1.0, 0.0}, std::array {1.0, 2.0}), InvalidArgumentError);
-  CHECK_THROWS_AS(C(std::array {0.0, NaN}, std::array {1.0, 2.0}), InvalidArgumentError);
-  CHECK_THROWS_AS(C(std::array {0.0, 1.0}, std::array {1.0, NaN}), InvalidArgumentError);
+  CHECK_THROWS_AS(C(std::array<double, 2> {0.0, NaN}, std::array {1.0, 2.0}), InvalidArgumentError);
+  CHECK_THROWS_AS(C(std::array {0.0, 1.0}, std::array<double, 2> {1.0, NaN}), InvalidArgumentError);
 }
 
 TEST_CASE("Curve interpolates values in another precision than its arguments", "[curve]")

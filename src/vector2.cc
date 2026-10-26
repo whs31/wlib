@@ -1,17 +1,17 @@
-#include <whs31/common/vector2.h>
+#include <w/common/vector2.h>
 
 #include <ostream>
 
 #include <fmt/format.h>
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 std::string Vector2::to_string() const { return fmt::format("{}", *this); }
 
-#ifdef WHS31_COMMON_WITH_QT
+#ifdef W_COMMON_WITH_QT
 Vector2::Vector2(QPointF const point) noexcept
-  : m_x(static_cast<double>(point.x()))
-  , m_y(static_cast<double>(point.y()))
+  : m_x(static_cast<Real>(point.x()))
+  , m_y(static_cast<Real>(point.y()))
 {}
 
 Vector2::Vector2(QVector2D const& vector) noexcept
@@ -38,4 +38,4 @@ std::ostream& operator<<(std::ostream& os, Vector2 const vector)
   return os << vector.to_string();
 }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

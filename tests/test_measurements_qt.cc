@@ -1,14 +1,14 @@
-#include <whs31/common/angle.h>
-#include <whs31/common/distance.h>
-#include <whs31/common/euler_angles.h>
-#include <whs31/common/velocity.h>
+#include <w/common/angle.h>
+#include <w/common/distance.h>
+#include <w/common/euler_angles.h>
+#include <w/common/velocity.h>
 
 #include <qmetatype.h>
 #include <qstring.h>
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31::common;
+using namespace w::common;
 
 TEST_CASE(
   "Measurement Qt integration exposes strings, metatypes and properties",

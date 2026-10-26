@@ -1,4 +1,4 @@
-#include <whs31/common/threading.h>
+#include <w/common/threading.h>
 
 #include <mutex>
 #include <shared_mutex>
@@ -7,7 +7,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 namespace
 {

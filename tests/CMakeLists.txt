@@ -1,57 +1,46 @@
 find_package(Catch2 REQUIRED)
 
-file(GLOB WCOMMON_TEST_SOURCES CONFIGURE_DEPENDS "${WCOMMON_SOURCE_ROOT}/tests/*.cc")
-file(GLOB WCOMMON_JSON_TEST_SOURCES CONFIGURE_DEPENDS "${WCOMMON_SOURCE_ROOT}/tests/*_json.cc")
-file(GLOB WCOMMON_GLAZE_TEST_SOURCES CONFIGURE_DEPENDS "${WCOMMON_SOURCE_ROOT}/tests/*_glaze.cc")
-set(WCOMMON_QT_TEST_SOURCES
-  "${WCOMMON_SOURCE_ROOT}/tests/test_geodesy_qt.cc"
-  "${WCOMMON_SOURCE_ROOT}/tests/test_geometry_qt.cc"
-  "${WCOMMON_SOURCE_ROOT}/tests/test_identifiers_qt.cc"
-  "${WCOMMON_SOURCE_ROOT}/tests/test_linear_algebra_qt.cc"
-  "${WCOMMON_SOURCE_ROOT}/tests/test_memory_qt.cc"
-  "${WCOMMON_SOURCE_ROOT}/tests/test_measurements_qt.cc"
-  "${WCOMMON_SOURCE_ROOT}/tests/test_network_qt.cc"
-  "${WCOMMON_SOURCE_ROOT}/tests/test_quantities_qt.cc"
+set(WLIB_TESTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+file(GLOB WLIB_TEST_SOURCES CONFIGURE_DEPENDS "${WLIB_TESTS_DIR}/*.cc")
+file(GLOB WLIB_GLAZE_TEST_SOURCES CONFIGURE_DEPENDS "${WLIB_TESTS_DIR}/*_glaze.cc")
+set(WLIB_QT_TEST_SOURCES
+  "${WLIB_TESTS_DIR}/test_geodesy_qt.cc"
+  "${WLIB_TESTS_DIR}/test_geometry_qt.cc"
+  "${WLIB_TESTS_DIR}/test_identifiers_qt.cc"
+  "${WLIB_TESTS_DIR}/test_linear_algebra_qt.cc"
+  "${WLIB_TESTS_DIR}/test_memory_qt.cc"
+  "${WLIB_TESTS_DIR}/test_measurements_qt.cc"
+  "${WLIB_TESTS_DIR}/test_network_qt.cc"
+  "${WLIB_TESTS_DIR}/test_quantities_qt.cc"
 )
-set(WCOMMON_JSON_QT_TEST_SOURCES "${WCOMMON_SOURCE_ROOT}/tests/test_json_qt.cc")
-set(WCOMMON_GLAZE_QT_TEST_SOURCES "${WCOMMON_SOURCE_ROOT}/tests/test_glaze_qt.cc")
-list(REMOVE_ITEM WCOMMON_TEST_SOURCES
-  "${WCOMMON_SOURCE_ROOT}/tests/test_main.cc"
-  ${WCOMMON_JSON_TEST_SOURCES}
-  ${WCOMMON_GLAZE_TEST_SOURCES}
-  ${WCOMMON_QT_TEST_SOURCES}
-  ${WCOMMON_JSON_QT_TEST_SOURCES}
-  ${WCOMMON_GLAZE_QT_TEST_SOURCES}
+set(WLIB_GLAZE_QT_TEST_SOURCES "${WLIB_TESTS_DIR}/test_glaze_qt.cc")
+list(REMOVE_ITEM WLIB_TEST_SOURCES
+  "${WLIB_TESTS_DIR}/test_main.cc"
+  ${WLIB_GLAZE_TEST_SOURCES}
+  ${WLIB_QT_TEST_SOURCES}
+  ${WLIB_GLAZE_QT_TEST_SOURCES}
 )
 
 add_executable(${PROJECT_NAME}_tests
-  "${WCOMMON_SOURCE_ROOT}/tests/test_main.cc"
-  ${WCOMMON_TEST_SOURCES}
+  "${WLIB_TESTS_DIR}/test_main.cc"
+  ${WLIB_TEST_SOURCES}
 )
 
 target_link_libraries(${PROJECT_NAME}_tests
   PRIVATE
-  ${WCOMMON_TARGET_NAMESPACE}
+  w::lib
   Catch2::Catch2
 )
 
-if(WCOMMON_WITH_NLOHMANN)
-  target_sources(${PROJECT_NAME}_tests PRIVATE ${WCOMMON_JSON_TEST_SOURCES})
-  target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${WCOMMON_TARGET_NAMESPACE}::json)
+if(WLIB_WITH_GLAZE)
+  target_sources(${PROJECT_NAME}_tests PRIVATE ${WLIB_GLAZE_TEST_SOURCES})
+  target_link_libraries(${PROJECT_NAME}_tests PRIVATE w::lib::glaze)
 endif()
 
-if(WCOMMON_WITH_GLAZE)
-  target_sources(${PROJECT_NAME}_tests PRIVATE ${WCOMMON_GLAZE_TEST_SOURCES})
-  target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${WCOMMON_TARGET_NAMESPACE}::glaze)
-endif()
-
-if(WCOMMON_WITH_QT)
-  target_sources(${PROJECT_NAME}_tests PRIVATE ${WCOMMON_QT_TEST_SOURCES})
-  if(WCOMMON_WITH_NLOHMANN)
-    target_sources(${PROJECT_NAME}_tests PRIVATE ${WCOMMON_JSON_QT_TEST_SOURCES})
-  endif()
-  if(WCOMMON_WITH_GLAZE)
-    target_sources(${PROJECT_NAME}_tests PRIVATE ${WCOMMON_GLAZE_QT_TEST_SOURCES})
+if(WLIB_WITH_QT)
+  target_sources(${PROJECT_NAME}_tests PRIVATE ${WLIB_QT_TEST_SOURCES})
+  if(WLIB_WITH_GLAZE)
+    target_sources(${PROJECT_NAME}_tests PRIVATE ${WLIB_GLAZE_QT_TEST_SOURCES})
   endif()
   set_target_properties(${PROJECT_NAME}_tests PROPERTIES AUTOMOC ON)
 endif()

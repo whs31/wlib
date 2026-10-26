@@ -1,4 +1,4 @@
-#include <whs31/common/functional.h>
+#include <w/common/functional.h>
 
 #include <string>
 #include <stdexcept>
@@ -7,7 +7,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 namespace
 {

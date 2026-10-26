@@ -1,7 +1,7 @@
-#include <whs31/common/memory/observer_ptr.h>
+#include <w/common/memory/observer_ptr.h>
 
-#ifndef WHS31_COMMON_WITH_QT
-#  error "Qt configuration must enable WHS31_COMMON_WITH_QT"
+#ifndef W_COMMON_WITH_QT
+#  error "Qt configuration must enable W_COMMON_WITH_QT"
 #endif
 
 #include <qbytearrayview.h>
@@ -12,13 +12,13 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 // moc generates code that refers to the class from outside an anonymous namespace
 class ObserverPtrQtObject final : public QObject  // NOLINT(misc-use-internal-linkage)
 {
   Q_OBJECT
-  Q_PROPERTY(whs31::observer_ptr<int> watched READ watched WRITE setWatched NOTIFY watchedChanged)
+  Q_PROPERTY(w::observer_ptr<int> watched READ watched WRITE setWatched NOTIFY watchedChanged)
 
  public:
   [[nodiscard]] observer_ptr<int> watched() const noexcept { return this->m_watched; }

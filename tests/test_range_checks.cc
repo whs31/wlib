@@ -1,18 +1,18 @@
-#include <whs31/common/angle.h>
-#include <whs31/common/concepts.h>
-#include <whs31/common/distance.h>
-#include <whs31/common/math.h>
-#include <whs31/common/vector3.h>
-#include <whs31/common/velocity.h>
+#include <w/common/angle.h>
+#include <w/common/concepts.h>
+#include <w/common/distance.h>
+#include <w/common/math.h>
+#include <w/common/vector3.h>
+#include <w/common/velocity.h>
 
 #include <limits>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
-TEST_CASE("Quantity concept accepts WCommon quantities only", "[concepts][math]")
+TEST_CASE("Quantity concept accepts WLib quantities only", "[concepts][math]")
 {
   STATIC_CHECK(Quantity<Angle>);
   STATIC_CHECK(Quantity<Distance>);

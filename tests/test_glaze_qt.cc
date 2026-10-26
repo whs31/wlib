@@ -1,13 +1,13 @@
-#include <whs31/common/glaze/qgeocoordinate.h>
-#include <whs31/common/glaze/qkey.h>
-#include <whs31/common/glaze/qkeymodifier.h>
-#include <whs31/common/glaze/qmousebutton.h>
-#include <whs31/common/glaze/qmouseeventsource.h>
-#include <whs31/common/glaze/qpoint.h>
-#include <whs31/common/glaze/qsize.h>
+#include <w/common/glaze/qgeocoordinate.h>
+#include <w/common/glaze/qkey.h>
+#include <w/common/glaze/qkeymodifier.h>
+#include <w/common/glaze/qmousebutton.h>
+#include <w/common/glaze/qmouseeventsource.h>
+#include <w/common/glaze/qpoint.h>
+#include <w/common/glaze/qsize.h>
 
-#ifndef WHS31_COMMON_WITH_QT
-#  error "Qt configuration must enable WHS31_COMMON_WITH_QT"
+#ifndef W_COMMON_WITH_QT
+#  error "Qt configuration must enable W_COMMON_WITH_QT"
 #endif
 
 #include <string>

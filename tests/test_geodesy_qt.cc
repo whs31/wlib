@@ -1,4 +1,4 @@
-#include <whs31/common/geodesy.h>
+#include <w/common/geodesy.h>
 
 #include <qmetatype.h>
 #include <qstring.h>
@@ -6,17 +6,21 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31::common;
+#include "text_support.h"
+
+using namespace w::common;
 
 TEST_CASE("Geodetic positions are Qt gadgets with plain-number properties", "[geodesy][qt]")
 {
   auto position = GeodeticPosition {
-    .latitude = 59.5_deg,
-    .longitude = -30.25_deg,
+    .latitude = 59.5_lat,
+    .longitude = -30.25_lon,
     .altitude_msl = 70_meters,
   };
   REQUIRE(QMetaType::fromType<GeodeticPosition>().isValid());
-  REQUIRE(position.to_qstring() == QString("59.5 deg, -30.25 deg, 70 m MSL"));
+  REQUIRE(
+    position.to_qstring() == QString::fromUtf8(test::with_degree_signs("59.5^N, 30.25^W, 70 m MSL"))
+  );
 
   auto const& meta = GeodeticPosition::staticMetaObject;
   auto const read = [&](char const* const name) {
@@ -27,7 +31,9 @@ TEST_CASE("Geodetic positions are Qt gadgets with plain-number properties", "[ge
   REQUIRE(read("latitudeDegrees").toDouble() == 59.5);
   REQUIRE(read("longitudeDegrees").toDouble() == -30.25);
   REQUIRE(read("altitudeMslMeters").toDouble() == 70.0);
-  REQUIRE(read("latitude").value<Angle>() == 59.5_deg);
+  REQUIRE(read("latitude").value<Latitude>() == 59.5_lat);
+  REQUIRE(read("longitude").value<Longitude>() == 30.25_west);
+  REQUIRE(read("isValid").toBool());
   REQUIRE(read("string").toString() == position.to_qstring());
 
   auto const altitude = meta.property(meta.indexOfProperty("altitudeMsl"));

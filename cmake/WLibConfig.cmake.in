@@ -1,0 +1,35 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(fmt REQUIRED)
+find_dependency(spdlog REQUIRED)
+
+if(@WLIB_WITH_QT@)
+  find_dependency(Qt6 REQUIRED COMPONENTS Core Gui Network)
+endif()
+
+# A component is found only if the package was built with it.
+if("glaze" IN_LIST WLib_FIND_COMPONENTS AND @WLIB_WITH_GLAZE@)
+  find_dependency(glaze REQUIRED)
+  if(@WLIB_WITH_QT@)
+    find_dependency(Qt6 REQUIRED COMPONENTS Positioning)
+  endif()
+  set(WLib_glaze_FOUND TRUE)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/WLibTargets.cmake")
+
+if(@WLIB_WITH_QT@)
+  set_and_check(WLib_METATYPES_FILE
+    "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_LIBDIR@/metatypes/qt6wlib_metatypes.json"
+  )
+  target_sources(w::lib INTERFACE
+    "$<$<BOOL:$<TARGET_PROPERTY:QT_CONSUMES_METATYPES>>:${WLib_METATYPES_FILE}>"
+  )
+endif()
+
+# The floating-point type of the quantities and the linear algebra types: float or double.
+set(WLib_PRECISION "@WLIB_PRECISION@")
+
+check_required_components(WLib)

@@ -1,10 +1,10 @@
-#include <whs31/common/angle.h>
-#include <whs31/common/error.h>
-#include <whs31/common/euler_angles.h>
-#include <whs31/common/matrix3x3.h>
-#include <whs31/common/quaternion.h>
-#include <whs31/common/vector2.h>
-#include <whs31/common/vector3.h>
+#include <w/common/angle.h>
+#include <w/common/error.h>
+#include <w/common/euler_angles.h>
+#include <w/common/matrix3x3.h>
+#include <w/common/quaternion.h>
+#include <w/common/vector2.h>
+#include <w/common/vector3.h>
 
 #include <cmath>
 #include <algorithm>
@@ -23,7 +23,9 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_templated.hpp>
 
-using namespace whs31;
+#include "precision_support.h"
+
+using namespace w;
 
 namespace
 {
@@ -50,7 +52,7 @@ namespace
 
   [[nodiscard]] double max_difference(Quaternion const& a, Quaternion const& b)
   {
-    return std::max(std::abs(a.w() - b.w()), max_difference(a.vector(), b.vector()));
+    return std::max<double>(std::abs(a.w() - b.w()), max_difference(a.vector(), b.vector()));
   }
 
   template <typename T>
@@ -79,10 +81,11 @@ namespace
     double m_tolerance;
   };
 
+  // in single precision, no tighter than test::tolerance() allows
   template <typename T>
   [[nodiscard]] IsCloseTo<T> is_close_to(T const& expected, double const tolerance = 1e-12)
   {
-    return {expected, tolerance};
+    return {expected, test::tolerance(tolerance)};
   }
 
   // rotations about skewed axes, so no component of a rotated vector is trivially zero
@@ -124,19 +127,19 @@ TEST_CASE("Vector3 components can be replaced and validated", "[geometry][linalg
 
 TEST_CASE("Vectors keep their documented storage layout", "[geometry][linalg]")
 {
-  CHECK(std::bit_cast<std::array<double, 3>>(sample_vector) == std::array {0.3, -1.7, 2.4});
-  CHECK(std::bit_cast<std::array<double, 2>>(Vector2(4.0, 5.0)) == std::array {4.0, 5.0});
+  CHECK(std::bit_cast<std::array<Real, 3>>(sample_vector) == std::array<Real, 3> {0.3, -1.7, 2.4});
+  CHECK(std::bit_cast<std::array<Real, 2>>(Vector2(4.0, 5.0)) == std::array<Real, 2> {4.0, 5.0});
   CHECK(
-    std::bit_cast<std::array<double, 3>>(EulerAngles::from_radians(0.1, 0.2, 0.3))
-    == std::array {0.1, 0.2, 0.3}
+    std::bit_cast<std::array<Real, 3>>(EulerAngles::from_radians(0.1, 0.2, 0.3))
+    == std::array<Real, 3> {0.1, 0.2, 0.3}
   );
   CHECK(
     std::bit_cast<std::array<Vector3, 3>>(inertia)
     == std::array {inertia.row(0), inertia.row(1), inertia.row(2)}
   );
   CHECK(
-    std::bit_cast<std::array<double, 4>>(Quaternion(0.5, -0.5, 0.25, 1.0))
-    == std::array {0.5, -0.5, 0.25, 1.0}
+    std::bit_cast<std::array<Real, 4>>(Quaternion(0.5, -0.5, 0.25, 1.0))
+    == std::array<Real, 4> {0.5, -0.5, 0.25, 1.0}
   );
 }
 
@@ -241,7 +244,10 @@ TEST_CASE("Transpose and inverse satisfy their identities", "[linalg][matrix]")
     CHECK(m.try_inverse() == inverse);
     CHECK_THAT(m * inverse, is_close_to(Matrix3x3::identity()));
     CHECK_THAT(inverse * m, is_close_to(Matrix3x3::identity()));
-    CHECK_THAT(inverse.transposed(), is_close_to(m.transposed().inverse(), 1e-6));
+    CHECK_THAT(
+      inverse.transposed(),
+      is_close_to(m.transposed().inverse(), test::tolerance(1e-6, 1.0))
+    );
   }
 }
 
@@ -287,10 +293,12 @@ TEST_CASE("Symmetry check accepts inertia tensors and rejects others", "[linalg]
     CHECK((r * inertia * r.transposed()).is_symmetric());
   }
 
+  // well above the default tolerance of either precision
+  auto constexpr skew = test::double_precision ? Real {1e-6} : Real {1e-3};
   auto constexpr skewed = Matrix3x3::
-    from_rows(inertia.row(0).with_y(inertia.at(0, 1) + 1e-6), inertia.row(1), inertia.row(2));
+    from_rows(inertia.row(0).with_y(inertia.at(0, 1) + skew), inertia.row(1), inertia.row(2));
   STATIC_CHECK_FALSE(skewed.is_symmetric());
-  STATIC_CHECK(skewed.is_symmetric(1e-6));
+  STATIC_CHECK(skewed.is_symmetric(skew));
   CHECK_FALSE(
     Matrix3x3::from_rows(inertia.row(0), inertia.row(1).with_y(NaN), inertia.row(2)).is_symmetric()
   );
@@ -420,7 +428,7 @@ TEST_CASE("Normalizing a quaternion keeps its rotation", "[linalg][quaternion]")
 TEST_CASE("Quaternion derivative integrates to the axis-angle rotation", "[linalg][quaternion]")
 {
   auto constexpr omega_body = Vector3(0.4, -1.1, 2.3);
-  auto constexpr duration = 2.0;
+  auto constexpr duration = Real {2};
   auto constexpr steps = 2'000;
   constexpr auto dt = duration / steps;
   auto const initial = sample_rotations().at(1);
@@ -429,10 +437,10 @@ TEST_CASE("Quaternion derivative integrates to the axis-angle rotation", "[linal
   auto q = initial;
   for(auto step = 0; step < steps; ++step) {
     auto const k1 = q.derivative(omega_body);
-    auto const k2 = (q + dt / 2.0 * k1).derivative(omega_body);
-    auto const k3 = (q + dt / 2.0 * k2).derivative(omega_body);
+    auto const k2 = (q + dt / 2 * k1).derivative(omega_body);
+    auto const k3 = (q + dt / 2 * k2).derivative(omega_body);
     auto const k4 = (q + dt * k3).derivative(omega_body);
-    q += dt / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+    q += dt / 6 * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
   }
 
   // a constant body rate turns the body about the body-fixed axis: q(t) = q0 ⊗ q(ω t)
@@ -440,8 +448,8 @@ TEST_CASE("Quaternion derivative integrates to the axis-angle rotation", "[linal
     expected = initial
              * Quaternion::
                  from_axis_angle(omega_body, Angle::from_radians(omega_body.length() * duration));
-  CHECK_THAT(q, is_close_to(expected, 1e-10));
-  CHECK(q.length() == Catch::Approx(1.0).margin(1e-10));
+  CHECK_THAT(q, is_close_to(expected, test::tolerance(1e-10, 1e-3)));
+  CHECK(q.length() == Catch::Approx(1.0).margin(test::tolerance(1e-10, 1e-3)));
   STATIC_CHECK(Quaternion().derivative(omega_body) == Quaternion(0.0, 0.2, -0.55, 1.15));
 }
 
@@ -466,9 +474,9 @@ TEST_CASE("Euler angles turn the body FRD axes in NED as documented", "[linalg][
 
 TEST_CASE("Euler angles compose as yaw, then pitch, then roll", "[linalg][quaternion]")
 {
-  auto const roll = GENERATE(-170.0, -30.0, 0.0, 45.0, 179.0);
-  auto const pitch = GENERATE(-89.0, -10.0, 0.0, 60.0);
-  auto const yaw = GENERATE(-120.0, 0.0, 15.0, 180.0);
+  auto const roll = GENERATE(as<Real> {}, -170.0, -30.0, 0.0, 45.0, 179.0);
+  auto const pitch = GENERATE(as<Real> {}, -89.0, -10.0, 0.0, 60.0);
+  auto const yaw = GENERATE(as<Real> {}, -120.0, 0.0, 15.0, 180.0);
   auto const angles = EulerAngles::from_degrees(roll, pitch, yaw);
 
   auto const expected = Quaternion::from_axis_angle(unit_z, angles.yaw())
@@ -480,16 +488,17 @@ TEST_CASE("Euler angles compose as yaw, then pitch, then roll", "[linalg][quater
 
 TEST_CASE("Euler angles round-trip away from the pitch singularity", "[linalg][quaternion]")
 {
-  auto const roll = GENERATE(-170.0, -30.0, 0.0, 45.0, 179.0);
-  auto const pitch = GENERATE(-89.0, -10.0, 0.0, 60.0);
-  auto const yaw = GENERATE(-120.0, 0.0, 15.0, 180.0);
+  auto const roll = GENERATE(as<Real> {}, -170.0, -30.0, 0.0, 45.0, 179.0);
+  auto const pitch = GENERATE(as<Real> {}, -89.0, -10.0, 0.0, 60.0);
+  auto const yaw = GENERATE(as<Real> {}, -120.0, 0.0, 15.0, 180.0);
 
   auto const angles = Quaternion::from_euler_angles(EulerAngles::from_degrees(roll, pitch, yaw))
                         .to_euler_angles();
 
-  CHECK(angles.roll_degrees() == Catch::Approx(roll).margin(1e-9));
-  CHECK(angles.pitch_degrees() == Catch::Approx(pitch).margin(1e-9));
-  CHECK(std::remainder(angles.yaw_degrees() - yaw, 360.0) == Catch::Approx(0.0).margin(1e-9));
+  auto const margin = test::tolerance(1e-9, 1e-2);
+  CHECK(angles.roll_degrees() == Catch::Approx(roll).margin(margin));
+  CHECK(angles.pitch_degrees() == Catch::Approx(pitch).margin(margin));
+  CHECK(std::remainder(angles.yaw_degrees() - yaw, 360.0) == Catch::Approx(0.0).margin(margin));
 }
 
 TEST_CASE(
@@ -497,7 +506,7 @@ TEST_CASE(
   "[linalg][quaternion]"
 )
 {
-  auto const pitch = GENERATE(-90.0, 90.0);
+  auto const pitch = GENERATE(as<Real> {}, -90.0, 90.0);
   auto const attitude = Quaternion::from_euler_angles(EulerAngles::from_degrees(20.0, pitch, 50.0));
   auto const angles = attitude.to_euler_angles();
 

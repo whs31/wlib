@@ -1,4 +1,4 @@
-## WCommon
+## WLib
 
 <h3 align="center">
     <img src="./docs/images/icon.png" alt=""/><br/>
@@ -9,83 +9,104 @@
     <img src="./docs/images/badges/cxx.svg" alt=""/><img src="./docs/images/badges/cmake.svg" alt=""/>
 </h3>
 
-*WCommon* is a general-purpose C++23 utility library: physical quantities, geometry, geodesy,
-identifiers, networking, logging, deterministic randomness and more, with optional Qt,
-nlohmann/json and glaze integration. It is created and maintained by
-**whs31**.
+*WLib* is a general-purpose C++23 utility library: physical quantities, geometry, geodesy,
+identifiers, networking, logging, deterministic randomness and more, with optional Qt and glaze
+integration. It is created and maintained by **whs31**.
+
+The library lives in the `w` namespace with an inline `common` namespace, so `w::Angle` and
+`w::common::Angle` name the same type. Its headers are included as `<w/common/...>` and its macros
+are prefixed with `W_` (e.g. `W_LOG`, `W_COMMON_API`).
 
 #### Dependencies
 
 - <img src="./docs/images/logos/fmt.png" alt="" height="16px" width="16px"/>[**fmt**](https://github.com/fmtlib/fmt) - modern formatting library (**MIT**)
 - <img src="./docs/images/logos/spdlog.jpg" alt="" height="16px" width="16px"/>[**spdlog**](https://github.com/gabime/spdlog) - fast C++ logging library (**MIT**)
-- [**nlohmann/json**](https://github.com/nlohmann/json) - optional JSON adapters exposed by the
-  `whs31::common::json` target, enabled with `with_nlohmann=True` in Conan or
-  `WCOMMON_WITH_NLOHMANN=ON` in CMake (**MIT**)
 - [**glaze**](https://github.com/stephenberry/glaze) - optional serialization adapters exposed by
-  the `whs31::common::glaze` target, enabled with `with_glaze=True` in Conan or
-  `WCOMMON_WITH_GLAZE=ON` in CMake (**MIT**)
+  the `w::lib::glaze` target, enabled with `with_glaze=True` in Conan or `WLIB_WITH_GLAZE=ON` in
+  CMake (**MIT**)
 - [**Qt 6**](https://www.qt.io/) - optional Core, Gui, Network, and Positioning integration enabled
-  with
-  `with_qt=True` in Conan or `WCOMMON_WITH_QT=ON` in CMake (**LGPL/GPL/commercial**)
+  with `with_qt=True` in Conan or `WLIB_WITH_QT=ON` in CMake (**LGPL/GPL/commercial**)
 - <img src="./docs/images/logos/catch2.png" alt="" height="16px" width="16px"/>[**catch2**](https://github.com/catchorg/Catch2) - c++ testing
   framework (**BSL-1.0**)
 
 #### CMake targets
 
-- `whs31::common` provides the core library without any serialization dependency.
-- `whs31::common::json` adds the header-only nlohmann/json adapters in
-  `<whs31/common/json/...>`. It exists only when the package is built with
-  `with_nlohmann=True` (default `False`).
-- `whs31::common::glaze` adds the header-only glaze adapters in
-  `<whs31/common/glaze/...>`. It exists only when the package is built with `with_glaze=True`
-  (default `False`).
+The Conan package `wlib` provides the CMake package `WLib`:
 
-With Qt enabled, both adapter targets also cover Qt Core, Gui, and Positioning types. The two
-adapter sets write the same JSON, so a document written with one is read by the other. The glaze
-adapters also read physical quantities in any unit the quantity has a factory for, e.g.
-`{"ampere_hours": 52}` or `{"celsius": 15}`, and, in JSON and TOML, as a string spelled like the
-C++ literal without its underscore, e.g. `"52ah"` or `"400hz"`. That suits hand-written TOML
-configuration; they still write the SI unit.
+- `w::lib` provides the core library without any serialization dependency.
+- `w::lib::glaze` adds the header-only glaze adapters in `<w/common/glaze/...>`. It exists only
+  when the package is built with `with_glaze=True` (default `False`).
+
+```cmake
+find_package(WLib REQUIRED COMPONENTS glaze)
+target_link_libraries(my_target PRIVATE w::lib w::lib::glaze)
+```
+
+With Qt enabled, the glaze adapters also cover Qt Core, Gui, and Positioning types. They read
+physical quantities in any unit the quantity has a factory for, e.g. `{"ampere_hours": 52}` or
+`{"celsius": 15}`, and, in JSON and TOML, as a string spelled like the C++ literal without its
+underscore, e.g. `"52ah"` or `"400hz"`. That suits hand-written TOML configuration; they still
+write the SI unit.
 
 Enable the adapters through the consumer's Conan options, e.g. in its `conanfile.py`:
 
 ```python
-default_options = {"wcommon/*:with_nlohmann": True, "wcommon/*:with_glaze": True}
+default_options = {"wlib/*:with_glaze": True}
 ```
 
-or on the command line with `-o "wcommon/*:with_nlohmann=True" -o "wcommon/*:with_glaze=True"`.
+or on the command line with `-o "wlib/*:with_glaze=True"`.
 
-For an installed native CMake package, request the adapter components explicitly:
+#### Precision
 
-```cmake
-find_package(WCommon REQUIRED COMPONENTS json glaze)
-target_link_libraries(my_target PRIVATE whs31::common::json whs31::common::glaze)
-```
+The physical quantities (`Distance`, `Angle`, `Mass`, `Velocity`, ...) and the linear algebra
+types (`Vector2`, `Vector3`, `Point2`, `Point3`, `Quaternion`, `Matrix3x3`, `EulerAngles`) store
+`w::Real`, which the Conan option `precision` selects:
 
-#### Namespace
-
-By default the library lives in the `whs31` namespace (with an inline `common` namespace, so
-`whs31::Angle` and `whs31::common::Angle` name the same type), its headers are included as
-`<whs31/common/...>`, its CMake targets are `whs31::common[::json|::glaze]` and its macros are
-prefixed with `WHS31_` (e.g. `WHS31_LOG`, `WHS31_COMMON_API`).
-
-A single option relocates all of it, so that a project can ship the library under its own name, or
-link two differently configured copies into one program without conflicts. Set the Conan option
-`namespace` (or the CMake cache variable `WCOMMON_NAMESPACE`) to a C++ namespace:
+| `precision`       | `w::Real` | CMake                   | Macro in `<w/common/config.h>` |
+|-------------------|-----------|-------------------------|--------------------------------|
+| `float` (default) | `float`   | `WLIB_PRECISION=float`  | —                              |
+| `double`          | `double`  | `WLIB_PRECISION=double` | `W_COMMON_DOUBLE_PRECISION`    |
 
 ```python
-default_options = {"wcommon/*:namespace": "acme::util"}
+default_options = {"wlib/*:precision": "double"}
 ```
 
-| `namespace`  | C++ namespace | Include path                | CMake target        | Macro prefix |
-|--------------|---------------|-----------------------------|---------------------|--------------|
-| `whs31`      | `whs31`       | `<whs31/common/angle.h>`    | `whs31::common`     | `WHS31_`     |
-| `acme::util` | `acme::util`  | `<acme/util/common/angle.h>`| `acme::util::common`| `ACME_UTIL_` |
+The choice is part of the ABI, and an installed package records it in `WLib_PRECISION` after
+`find_package(WLib)`.
 
-The sources are written in the default namespace; any other namespace is built from a respelled
-copy that CMake generates in the build tree. An installed package records its namespace in
-`WCommon_NAMESPACE` after `find_package(WCommon)`.
+Positions on the Earth need more than a `float`, which resolves a longitude to about a metre and a
+half, so geodesy stays in `double` either way. `Latitude` and `Longitude` are dedicated coordinate
+types rather than angles:
+
+- they store `double` degrees, so a coordinate keeps the digits it was written with;
+- they are positions, not amounts: `Latitude ± Angle -> Latitude`, `Latitude − Latitude -> Angle`,
+  and a longitude difference is the shortest turn across the antimeridian;
+- a `Longitude` always wraps into `[-180°, 180°)`; a `Latitude` may run past a pole, and
+  `clamped()`, `folded()` and `GeodeticPosition::normalized()` bring it back;
+- they know their hemisphere, quadrant, UTM zone and band, nautical time zone, WGS84 radii of
+  curvature and geocentric and parametric latitudes;
+- they print and parse decimal degrees and degrees-minutes-seconds: `59.771°N`,
+  `59°46'15.60"N`, `33 51 36 S`, `50north`;
+- with glaze they are plain signed degrees, `{"latitude": 59.771, "longitude": 30.326}`, and a
+  text document may spell them any way `parse()` reads.
+
+`LocalTangentPlane` and the `web_mercator` helpers also compute in `double`.
+
+```cpp
+using namespace w::literals;
+
+auto constexpr pulkovo = w::GeodeticPosition {
+  .latitude = 59.771_north,   // or 59.771_lat
+  .longitude = 30.326_east,   // or 30.326_lon
+  .altitude_msl = 70_meters,
+};
+
+pulkovo.latitude.to_dms_string();     // 59°46'15.60"N
+pulkovo.utm_zone()->to_string();      // 36V
+(179_east + 3_deg).degrees();         // -178
+auto const longitude = w::Longitude::parse("157°51'36\"W");  // std::optional<w::Longitude>
+```
 
 #### Licensing
 
-*WCommon* library is distributed under the MIT license. See [LICENSE](./LICENSE) for details.
+*WLib* library is distributed under the MIT license. See [LICENSE](./LICENSE) for details.

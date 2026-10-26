@@ -1,4 +1,4 @@
-#include <whs31/common/version.h>
+#include <w/common/version.h>
 
 #include <array>
 #include <compare>
@@ -12,7 +12,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 TEST_CASE("Version parses and formats semantic versions", "[version]")
 {

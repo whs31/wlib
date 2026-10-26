@@ -1,15 +1,15 @@
-#include <whs31/common/euler_angles.h>
-#include <whs31/common/quaternion.h>
+#include <w/common/euler_angles.h>
+#include <w/common/quaternion.h>
 
 #include <ostream>
 
 #include <fmt/format.h>
 
-#ifdef WHS31_COMMON_WITH_QT
+#ifdef W_COMMON_WITH_QT
 #  include <qstring.h>
 #endif
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 EulerAngles EulerAngles::from_quaternion(Quaternion const& attitude) noexcept
 {
@@ -26,7 +26,7 @@ std::string EulerAngles::to_string() const
   return fmt::format("roll {}, pitch {}, yaw {}", this->m_roll, this->m_pitch, this->m_yaw);
 }
 
-#ifdef WHS31_COMMON_WITH_QT
+#ifdef W_COMMON_WITH_QT
 QString EulerAngles::to_qstring() const { return QString::fromStdString(this->to_string()); }
 #endif
 
@@ -35,4 +35,4 @@ std::ostream& operator<<(std::ostream& os, EulerAngles const& angles)
   return os << angles.to_string();
 }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

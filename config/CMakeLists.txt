@@ -1,18 +1,21 @@
-project(wcommon_config LANGUAGES NONE)
+project(wlib_config LANGUAGES NONE)
 
 add_library(${PROJECT_NAME} INTERFACE)
-add_library("${WCOMMON_TARGET_NAMESPACE}::config" ALIAS ${PROJECT_NAME})
+add_library(w::lib::config ALIAS ${PROJECT_NAME})
 
-set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_NAME config)
+set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_NAME lib::config)
 
 # config.h.in tests the feature macros by their prefixed name, so they are set under that name.
-foreach(feature IN ITEMS QT NLOHMANN GLAZE)
-  set(${WCOMMON_MACRO_PREFIX}_COMMON_WITH_${feature} ${WCOMMON_WITH_${feature}})
+foreach(feature IN ITEMS QT GLAZE)
+  set(W_COMMON_WITH_${feature} ${WLIB_WITH_${feature}})
 endforeach()
+if(WLIB_PRECISION STREQUAL "double")
+  set(W_COMMON_DOUBLE_PRECISION ON)
+endif()
 
 configure_file(
-  "${WCOMMON_SOURCE_ROOT}/config/config.h.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/${WCOMMON_INCLUDE_PREFIX}/config.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/config.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/w/common/config.h"
   @ONLY
 )
 
@@ -21,11 +24,11 @@ target_include_directories(${PROJECT_NAME} INTERFACE
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${WCOMMON_INCLUDE_PREFIX}/config.h"
-  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${WCOMMON_INCLUDE_PREFIX}"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/w/common/config.h"
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/w/common"
 )
 
 install(TARGETS ${PROJECT_NAME}
-  EXPORT wcommonTargets
+  EXPORT wlibTargets
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )

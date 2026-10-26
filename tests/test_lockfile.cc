@@ -1,4 +1,4 @@
-#include <whs31/common/lockfile.h>
+#include <w/common/lockfile.h>
 
 #include <filesystem>
 #include <fstream>
@@ -13,13 +13,13 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 namespace
 {
   [[nodiscard]] std::filesystem::path lockfile_test_path(char const* const name)
   {
-    auto const path = std::filesystem::temp_directory_path() / "wcommon_lockfile_tests";
+    auto const path = std::filesystem::temp_directory_path() / "wlib_lockfile_tests";
     std::filesystem::create_directories(path);
     return path / name;
   }
@@ -33,7 +33,7 @@ namespace
 
 TEST_CASE("LockFile is move-only", "[lockfile]")
 {
-  using CommonLockFile = whs31::common::LockFile;
+  using CommonLockFile = w::common::LockFile;
 
   STATIC_CHECK(not std::is_copy_constructible_v<CommonLockFile>);
   STATIC_CHECK(not std::is_copy_assignable_v<CommonLockFile>);
@@ -47,7 +47,7 @@ TEST_CASE("LockFile creates and removes an owned lock marker", "[lockfile]")
   std::filesystem::remove(path);
 
   {
-    auto lock = whs31::common::LockFile(path);
+    auto lock = w::common::LockFile(path);
     REQUIRE(lock.path() == path);
     REQUIRE_FALSE(lock.is_locked());
 
@@ -69,8 +69,8 @@ TEST_CASE("LockFile does not remove a replacement lock owned by another instance
   auto const path = lockfile_test_path("replaced.lock");
   std::filesystem::remove(path);
 
-  auto first = whs31::common::LockFile(path);
-  auto second = whs31::common::LockFile(path);
+  auto first = w::common::LockFile(path);
+  auto second = w::common::LockFile(path);
   REQUIRE(first.try_lock());
 
   std::filesystem::remove(path);
@@ -90,8 +90,8 @@ TEST_CASE("LockFile refuses to acquire an existing lock", "[lockfile]")
   auto const path = lockfile_test_path("existing.lock");
   std::filesystem::remove(path);
 
-  auto first = whs31::common::LockFile(path);
-  auto second = whs31::common::LockFile(path);
+  auto first = w::common::LockFile(path);
+  auto second = w::common::LockFile(path);
 
   REQUIRE(first.try_lock());
   REQUIRE(first.is_locked());
@@ -109,15 +109,15 @@ TEST_CASE("LockFile transfers ownership when moved", "[lockfile]")
   std::filesystem::remove(path);
   std::filesystem::remove(other_path);
 
-  auto lock = whs31::common::LockFile(path);
+  auto lock = w::common::LockFile(path);
   REQUIRE(lock.try_lock());
 
-  auto moved = whs31::common::LockFile(std::move(lock));
+  auto moved = w::common::LockFile(std::move(lock));
   REQUIRE_FALSE(lock.is_locked());  // NOLINT(bugprone-use-after-move): checks the moved-from state
   REQUIRE(moved.is_locked());
   REQUIRE(std::filesystem::exists(path));
 
-  moved = whs31::common::LockFile(other_path);
+  moved = w::common::LockFile(other_path);
   REQUIRE_FALSE(std::filesystem::exists(path));
   REQUIRE_FALSE(moved.is_locked());
 }
@@ -132,7 +132,7 @@ TEST_CASE("LockFile reports directory creation failures with project errors", "[
     marker << "file";
   }
 
-  auto lock = whs31::common::LockFile(path);
+  auto lock = w::common::LockFile(path);
   REQUIRE_THROWS_AS(lock.lock(), LockFileError);
   REQUIRE_FALSE(lock.try_lock());
 

@@ -1,6 +1,6 @@
-#include <whs31/common/graph_resolver.h>
+#include <w/common/graph_resolver.h>
 
-WHS31_COMMON_NAMESPACE_BEGIN
+W_COMMON_NAMESPACE_BEGIN
 
 void GraphResolver::enqueue(Uuid const& node, std::unordered_set<Uuid> const& leafs)
 {
@@ -56,4 +56,4 @@ std::unordered_map<Uuid, std::unordered_set<Uuid>> const& GraphResolver::tree() 
 
 std::unordered_map<Uuid, std::unordered_set<Uuid>>& GraphResolver::tree() { return this->m_tree; }
 
-WHS31_COMMON_NAMESPACE_END
+W_COMMON_NAMESPACE_END

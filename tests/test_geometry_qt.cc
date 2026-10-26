@@ -1,7 +1,7 @@
-#include <whs31/common/point2.h>
-#include <whs31/common/point3.h>
-#include <whs31/common/vector2.h>
-#include <whs31/common/vector3.h>
+#include <w/common/point2.h>
+#include <w/common/point3.h>
+#include <w/common/vector2.h>
+#include <w/common/vector3.h>
 
 #include <qmetatype.h>
 #include <qpoint.h>
@@ -11,7 +11,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31::common;
+using namespace w::common;
 
 TEST_CASE("Geometry values round-trip Qt Gui types", "[geometry][qt]")
 {

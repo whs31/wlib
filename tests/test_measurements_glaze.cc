@@ -1,27 +1,27 @@
-#include <whs31/common/glaze/acceleration.h>
-#include <whs31/common/glaze/angle.h>
-#include <whs31/common/glaze/angular_acceleration.h>
-#include <whs31/common/glaze/angular_velocity.h>
-#include <whs31/common/glaze/capacitance.h>
-#include <whs31/common/glaze/charge.h>
-#include <whs31/common/glaze/conductance.h>
-#include <whs31/common/glaze/current.h>
-#include <whs31/common/glaze/density.h>
-#include <whs31/common/glaze/distance.h>
-#include <whs31/common/glaze/energy.h>
-#include <whs31/common/glaze/euler_angles.h>
-#include <whs31/common/glaze/force.h>
-#include <whs31/common/glaze/frequency.h>
-#include <whs31/common/glaze/magnetic_flux_density.h>
-#include <whs31/common/glaze/mass.h>
-#include <whs31/common/glaze/moment_of_inertia.h>
-#include <whs31/common/glaze/power.h>
-#include <whs31/common/glaze/pressure.h>
-#include <whs31/common/glaze/resistance.h>
-#include <whs31/common/glaze/temperature.h>
-#include <whs31/common/glaze/torque.h>
-#include <whs31/common/glaze/velocity.h>
-#include <whs31/common/glaze/voltage.h>
+#include <w/common/glaze/acceleration.h>
+#include <w/common/glaze/angle.h>
+#include <w/common/glaze/angular_acceleration.h>
+#include <w/common/glaze/angular_velocity.h>
+#include <w/common/glaze/capacitance.h>
+#include <w/common/glaze/charge.h>
+#include <w/common/glaze/conductance.h>
+#include <w/common/glaze/current.h>
+#include <w/common/glaze/density.h>
+#include <w/common/glaze/distance.h>
+#include <w/common/glaze/energy.h>
+#include <w/common/glaze/euler_angles.h>
+#include <w/common/glaze/force.h>
+#include <w/common/glaze/frequency.h>
+#include <w/common/glaze/magnetic_flux_density.h>
+#include <w/common/glaze/mass.h>
+#include <w/common/glaze/moment_of_inertia.h>
+#include <w/common/glaze/power.h>
+#include <w/common/glaze/pressure.h>
+#include <w/common/glaze/resistance.h>
+#include <w/common/glaze/temperature.h>
+#include <w/common/glaze/torque.h>
+#include <w/common/glaze/velocity.h>
+#include <w/common/glaze/voltage.h>
 
 #include <numbers>
 #include <string>
@@ -35,9 +35,9 @@
 
 #include "glaze_support.h"
 
-using namespace whs31;
+using namespace w;
 using namespace glaze_support;
-using namespace whs31::literals;
+using namespace w::literals;
 
 namespace
 {
@@ -152,7 +152,7 @@ TEST_CASE("Quantity glaze adapters read literal strings in text formats", "[glaz
   // the object form is still what is written
   REQUIRE(write(read<Frequency>(R"("1khz")")) == R"({"hertz":1000})");
 
-  using namespace whs31::common::_glaze_impl;
+  using namespace w::common::_glaze_impl;
   check_literals<Acceleration, acceleration_reading>();
   check_literals<Angle, angle_reading>();
   check_literals<AngularAcceleration, angular_acceleration_reading>();

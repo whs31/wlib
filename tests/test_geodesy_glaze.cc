@@ -1,6 +1,7 @@
-#include <whs31/common/geodesy.h>
-#include <whs31/common/glaze/angle.h>
-#include <whs31/common/glaze/distance.h>
+#include <w/common/geodesy.h>
+#include <w/common/glaze/distance.h>
+#include <w/common/glaze/latitude.h>
+#include <w/common/glaze/longitude.h>
 
 #include <string>
 
@@ -11,21 +12,21 @@
 
 #include "glaze_support.h"
 
-using namespace whs31;
+using namespace w;
 using namespace glaze_support;
 
 TEST_CASE("Geodetic positions glaze-reflect into their quantities", "[glaze][geodesy]")
 {
   check_round_trip(
     GeodeticPosition {
-      .latitude = 45_deg,
-      .longitude = -30.5_deg,
+      .latitude = 45_north,
+      .longitude = 30.5_west,
       .altitude_msl = 120_meters,
     },
-    R"({"latitude":{"angle":45,"units":"degrees"},"longitude":{"angle":-30.5,"units":"degrees"},"altitude_msl":{"meters":120}})"
+    R"({"latitude":45,"longitude":-30.5,"altitude_msl":{"meters":120}})"
   );
   REQUIRE(
-    strict_read_error<GeodeticPosition>(R"({"latitude":{"degrees":60},"longitude":{"degrees":30}})")
+    strict_read_error<GeodeticPosition>(R"({"latitude":60,"longitude":30})")
     == glz::error_code::missing_key
   );
 }
@@ -34,7 +35,7 @@ TEST_CASE("Geodetic positions read from TOML in natural units", "[glaze][geodesy
 {
   auto position = GeodeticPosition {};
   auto const toml = std::string(R"(latitude = "59.771deg"
-longitude = { degrees = 30.326 }
+longitude = "30.326east"
 altitude_msl = "70m"
 )");
   auto const error = glz::read_toml(position, toml);
@@ -43,8 +44,8 @@ altitude_msl = "70m"
   REQUIRE(
     position
     == GeodeticPosition {
-      .latitude = 59.771_deg,
-      .longitude = 30.326_deg,
+      .latitude = 59.771_north,
+      .longitude = 30.326_east,
       .altitude_msl = 70_meters,
     }
   );

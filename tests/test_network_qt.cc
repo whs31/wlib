@@ -1,8 +1,8 @@
-#include <whs31/common/ip.h>
-#include <whs31/common/sockaddr.h>
+#include <w/common/ip.h>
+#include <w/common/sockaddr.h>
 
-#ifndef WHS31_COMMON_WITH_QT
-#  error "Qt configuration must enable WHS31_COMMON_WITH_QT"
+#ifndef W_COMMON_WITH_QT
+#  error "Qt configuration must enable W_COMMON_WITH_QT"
 #endif
 
 #include <qbytearrayview.h>
@@ -14,7 +14,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace whs31;
+using namespace w;
 
 TEST_CASE("IP addresses expose Qt conversions and metatypes", "[network][qt][ip]")
 {
