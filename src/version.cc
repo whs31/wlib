@@ -281,7 +281,7 @@ std::strong_ordering Version::operator<=>(Version const& other) const noexcept
   return this->m_build <=> other.m_build;
 }
 
-Version operator""_version(char const* const text, std::size_t const length)
+Version literals::operator""_version(char const* const text, std::size_t const length)
 {
   return Version(std::string_view {text, length});
 }

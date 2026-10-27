@@ -227,15 +227,30 @@ class W_COMMON_API Ipv6Addr
 W_COMMON_API std::ostream& operator<<(std::ostream& stream, Ipv4Addr const& address);
 W_COMMON_API std::ostream& operator<<(std::ostream& stream, Ipv6Addr const& address);
 
-[[nodiscard]] inline Ipv4Addr operator""_ipv4(char const* text, std::size_t const length)
+inline namespace literals
 {
-  return Ipv4Addr::parse(std::string_view {text, length});
-}
+  /**
+   * @brief Creates an IPv4 address from a string literal, e.g. `"192.168.0.1"_ipv4`.
+   * @throws IpError if the literal is not an IPv4 address.
+   * @ingroup core_networking
+   * @relates Ipv4Addr
+   */
+  [[nodiscard]] inline Ipv4Addr operator""_ipv4(char const* text, std::size_t const length)
+  {
+    return Ipv4Addr::parse(std::string_view {text, length});
+  }
 
-[[nodiscard]] inline Ipv6Addr operator""_ipv6(char const* text, std::size_t const length)
-{
-  return Ipv6Addr::parse(std::string_view {text, length});
-}
+  /**
+   * @brief Creates an IPv6 address from a string literal, e.g. `"::1"_ipv6`.
+   * @throws IpError if the literal is not an IPv6 address.
+   * @ingroup core_networking
+   * @relates Ipv6Addr
+   */
+  [[nodiscard]] inline Ipv6Addr operator""_ipv6(char const* text, std::size_t const length)
+  {
+    return Ipv6Addr::parse(std::string_view {text, length});
+  }
+}  // namespace literals
 
 W_COMMON_NAMESPACE_END
 

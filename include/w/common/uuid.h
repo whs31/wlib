@@ -284,10 +284,20 @@ class W_COMMON_API Uuid
   std::array<std::uint8_t, 16> m_bytes {};
 };
 
-[[nodiscard]] constexpr Uuid operator""_uuid(char const* const text, std::size_t const length)
+inline namespace literals
 {
-  return Uuid(std::string_view {text, length});
-}
+  /**
+   * @brief Creates a UUID from a string literal, e.g.
+   * `"67e55044-10b1-426f-9247-bb680e5fe0c8"_uuid`.
+   * @throws UuidError if the literal is not a UUID.
+   * @ingroup core_identifiers
+   * @relates Uuid
+   */
+  [[nodiscard]] constexpr Uuid operator""_uuid(char const* const text, std::size_t const length)
+  {
+    return Uuid(std::string_view {text, length});
+  }
+}  // namespace literals
 
 [[nodiscard]] W_COMMON_API int uuid_stream_format_index();
 W_COMMON_API std::ostream& operator<<(std::ostream& stream, Uuid::Format format);

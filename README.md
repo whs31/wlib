@@ -138,6 +138,11 @@ auto const longitude = w::Longitude::parse("157°51'36\"W");  // std::optional<w
 - The physical constants in `<w/common/constants.h>` are `double`; cast them to the precision you
   compute in.
 
+#### Agent skill
+
+[`skills/wlib/SKILL.md`](skills/wlib/SKILL.md) teaches coding agents to use WLib. Copy it to
+`.claude/skills/wlib/` or `.agents/skills/wlib/` of a project that depends on `wlib`.
+
 #### Licensing
 
 *WLib* library is distributed under the MIT license. See [LICENSE](./LICENSE) for details.

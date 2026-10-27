@@ -138,7 +138,16 @@ class W_COMMON_API Version
   BuildMetadata m_build;
 };
 
-[[nodiscard]] W_COMMON_API Version operator""_version(char const* text, std::size_t length);
+inline namespace literals
+{
+  /**
+   * @brief Creates a version from a string literal, e.g. `"1.2.3-rc.1"_version`.
+   * @throws VersionError if the literal is not a semantic version.
+   * @ingroup core_identifiers
+   * @relates Version
+   */
+  [[nodiscard]] W_COMMON_API Version operator""_version(char const* text, std::size_t length);
+}  // namespace literals
 
 W_COMMON_API std::ostream& operator<<(std::ostream& stream, Prerelease const& value);
 W_COMMON_API std::ostream& operator<<(std::ostream& stream, BuildMetadata const& value);
