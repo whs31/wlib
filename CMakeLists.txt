@@ -4,7 +4,7 @@ message(DEBUG "Using ${CMAKE_TOOLCHAIN_FILE}")
 message(DEBUG "Tests: ${BUILD_TESTING}")
 
 project(wlib
-  VERSION 8.0.0
+  VERSION 8.0.1
   DESCRIPTION "Common C++23 utility library"
   HOMEPAGE_URL "https://git.whs31.com/shared/support/wlib"
   LANGUAGES CXX
