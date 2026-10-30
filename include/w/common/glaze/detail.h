@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <concepts>
 #include <memory>
 #include <cstddef>
 #include <cstdint>
@@ -85,10 +86,14 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
     T (*from)(typename T::Scalar) = nullptr;
   };
 
-  template <DerivedQuantity T, typename Fields>
+  // note: [whs31 : 2026-10-30]
+  // the scalar is a parameter of its own: MSVC deduces no Fields from a member pointer whose type
+  // names T::Scalar
+  template <typename Fields, typename Scalar, DerivedQuantity T>
+    requires std::same_as<Scalar, typename T::Scalar>
   [[nodiscard]] constexpr FieldUnit<T, Fields> field_unit(
-    std::optional<typename T::Scalar> Fields::* const field,
-    T (*const from)(typename T::Scalar)
+    std::optional<Scalar> Fields::* const field,
+    T (*const from)(Scalar)
   ) noexcept
   {
     return {
