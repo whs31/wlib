@@ -196,6 +196,10 @@ TEST_CASE("aligned_log_pattern pads every column to a fixed width", "[log]")
   auto without_source = std::string();
   REQUIRE(std::getline(lines, with_source));
   REQUIRE(std::getline(lines, without_source));
+  // spdlog ends lines with \r\n on Windows
+  for(auto* const line : {&with_source, &without_source})
+    if(line->ends_with('\r'))
+      line->pop_back();
 
   // `[13:43:05.120] ` is 15 characters wide
   REQUIRE(
@@ -336,11 +340,15 @@ TEST_CASE("create_logger creates rotating file sink folders", "[log]")
     .max_files = 2
   };
 
-  auto const logger = create_logger(config);
-  logger->info("file logger smoke test");
-  logger->flush();
+  {
+    auto const logger = create_logger(config);
+    logger->info("file logger smoke test");
+    logger->flush();
+  }
 
   REQUIRE(std::filesystem::exists(folder));
   REQUIRE(std::filesystem::exists(folder / filename));
+  // Windows does not remove an open file: the registry releases the sink first
+  spdlog::drop(name);
   std::filesystem::remove_all(folder);
 }

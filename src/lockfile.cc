@@ -219,6 +219,8 @@ void LockFile::unlock() noexcept
 
   auto const contents = std::
     string {std::istreambuf_iterator<char> {input}, std::istreambuf_iterator<char> {}};
+  // Windows does not remove a file that is still open
+  input.close();
   if(contents != this->m_token) {
     this->m_locked = false;
     this->m_token.clear();
