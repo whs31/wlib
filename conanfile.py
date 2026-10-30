@@ -4,7 +4,7 @@ from conan.tools.build import check_min_cppstd
 
 class WLibRecipe(ConanFile):
   name = "wlib"
-  version = "8.0.1"
+  version = "8.0.2"
   description = "Common C++23 utility library"
   author = "whs31 <whs31@github.io>"
   settings = "os", "arch", "compiler", "build_type"
