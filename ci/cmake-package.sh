@@ -80,6 +80,10 @@ for component in "${components[@]}"; do
       # shellcheck disable=SC1091
       source "$build_dir/generators/conanrun.sh"
     fi
+    # Windows has no rpath: a shared wlib.dll is found on PATH, from the installed package
+    if [[ -d "$install_dir/bin" ]]; then
+      PATH="$(cygpath -u "$install_dir/bin" 2>/dev/null || echo "$install_dir/bin"):$PATH"
+    fi
     "$consumer_build/wlib_consumer"
   )
 done
