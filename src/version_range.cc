@@ -5,6 +5,7 @@
 #include <compare>
 #include <cctype>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <string>
 #include <system_error>
@@ -80,8 +81,8 @@ namespace
     }
 
     auto value = std::uint64_t {0};
-    auto const* const begin = number.begin();
-    auto const* const end = number.end();
+    auto const* const begin = std::to_address(number.begin());
+    auto const* const end = std::to_address(number.end());
     auto const [ptr, ec] = std::from_chars(begin, end, value);
     if(ec == std::errc::result_out_of_range)
       throw VersionError::

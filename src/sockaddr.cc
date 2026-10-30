@@ -1,6 +1,7 @@
 #include <w/common/sockaddr.h>
 
 #include <charconv>
+#include <memory>
 #include <ostream>
 #include <system_error>
 
@@ -13,8 +14,9 @@ namespace
   [[nodiscard]] std::uint16_t parse_port(std::string_view const text)
   {
     auto port = std::uint32_t {};
-    auto const [position, error] = std::from_chars(text.begin(), text.end(), port);
-    if(error != std::errc {} or position != text.end() or port > 65'535)
+    auto const* const last = std::to_address(text.end());
+    auto const [position, error] = std::from_chars(std::to_address(text.begin()), last, port);
+    if(error != std::errc {} or position != last or port > 65'535)
       throw IpError::invalid_port(text);
     return static_cast<std::uint16_t>(port);
   }

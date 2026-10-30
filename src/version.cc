@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <memory>
 #include <system_error>
 #include <utility>
 
@@ -130,11 +131,12 @@ namespace
         invalid_string(version, fmt::format("{} component is not numeric", field));
 
     auto result = std::uint64_t {0};
-    auto const [position, error] = std::from_chars(number.begin(), number.end(), result);
+    auto const* const last = std::to_address(number.end());
+    auto const [position, error] = std::from_chars(std::to_address(number.begin()), last, result);
     if(error == std::errc::result_out_of_range)
       throw VersionError::
         invalid_string(version, fmt::format("{} component overflows uint64", field));
-    if(error != std::errc {} or position != number.end())
+    if(error != std::errc {} or position != last)
       throw VersionError::invalid_string(version, fmt::format("{} component is invalid", field));
     return result;
   }
