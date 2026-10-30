@@ -42,6 +42,12 @@ endif()
 # them compiles as C++23 too, whatever its own default.
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
 
+# MSVC (and clang-cl) read sources in the system's code page unless told otherwise; the public
+# headers format UTF-8 text (colour.h's degree sign), so UTF-8 is a usage requirement too.
+if(MSVC)
+  target_compile_options(${PROJECT_NAME} PUBLIC /utf-8)
+endif()
+
 set_target_properties(${PROJECT_NAME} PROPERTIES
   CXX_EXTENSIONS OFF
   DEFINE_SYMBOL W_COMMON_LIBRARY

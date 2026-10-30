@@ -29,7 +29,9 @@ TEST_CASE("floor supports constexpr values", "[math]")
 TEST_CASE("floor preserves non-finite and large values", "[math]")
 {
   STATIC_CHECK(w::floor(Inf) == Inf);
-  STATIC_CHECK(std::isnan(w::floor(NaN)));
+  // NaN is the only value unequal to itself; MSVC's std::isnan is not constexpr
+  constexpr auto floored_nan = w::floor(NaN);
+  STATIC_CHECK(floored_nan != floored_nan);
   STATIC_CHECK(w::floor(std::numeric_limits<double>::max()) == std::numeric_limits<double>::max());
 }
 

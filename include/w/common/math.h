@@ -417,8 +417,9 @@ template <Number T>
 template <std::floating_point T>
 [[nodiscard]] constexpr bool is_finite(T const value) noexcept
 {
-  // NaN fails every comparison, and an infinity exceeds the largest finite value
-  return abs(value) <= std::numeric_limits<T>::max();
+  // NaN fails every comparison, and an infinity is outside the finite range. NaN goes on the left
+  // of >= first: MSVC's constant evaluator (19.5x) takes `NaN < x` and `NaN <= x` for true
+  return value >= std::numeric_limits<T>::lowest() and value <= std::numeric_limits<T>::max();
 }
 
 /**

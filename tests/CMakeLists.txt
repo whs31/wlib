@@ -25,6 +25,12 @@ target_link_libraries(${PROJECT_NAME}_tests
 # extensions
 target_compile_definitions(${PROJECT_NAME}_tests PRIVATE GLM_ENABLE_EXPERIMENTAL)
 
+# note: MSVC's traditional preprocessor reads the ' of a digit separator (59.999'999_north) inside
+# a macro argument as the start of a character literal; Catch2's macros need the conforming one
+if(MSVC)
+  target_compile_options(${PROJECT_NAME}_tests PRIVATE /Zc:preprocessor)
+endif()
+
 # note: a second shared library that reads spdlog's registry, as an engine module does
 # (test_log_registry.cc); a static build has one binary and one registry
 if(BUILD_SHARED_LIBS)
