@@ -17,8 +17,7 @@ build:cpp:windows:
   variables:
     CONAN_ARGS: -o &:test=True -o &:with_glaze=True
 
-test:cpp:x86_64:
-  extends: .test:cpp:x86_64
+.test:wlib:
   parallel:
     matrix:
       - WLIB_WITH_GLAZE: ["False", "True"]
@@ -29,21 +28,53 @@ test:cpp:x86_64:
       --build=missing
       -o "&:test=True"
       -o "&:with_glaze=$WLIB_WITH_GLAZE"
+
+test:cpp:x86_64:
+  extends: [.test:cpp:x86_64, .test:wlib]
+  script:
+    - !reference [.test:wlib, script]
     - |
       if [ "$CONAN_LINKAGE" = shared ]; then
         mapfile -t WLIB_LIBRARIES < <(find "$CONAN_BUILD_DIR" -type f -name 'libwlib.so*')
         test "${#WLIB_LIBRARIES[@]}" -gt 0
         WLIB_LINKAGE="$(ldd "${WLIB_LIBRARIES[0]}")"
         # WLib never links Qt; the Qt integration is the separate package wlib_qt
-        ! grep -Fq "libQt6" <<< "$WLIB_LINKAGE"
+        if grep -F "libQt6" <<< "$WLIB_LINKAGE"; then echo "libwlib links Qt" >&2; exit 1; fi
       else
         find "$CONAN_BUILD_DIR" -type f -name 'libwlib.a' | grep -q .
       fi
     - bash ci/cmake-package.sh "$CONAN_BUILD_DIR"
     - ctest --test-dir "$CONAN_BUILD_DIR" --output-on-failure -j "${RUNNER_BUILD_JOBS:-2}" --output-junit "$CI_PROJECT_DIR/ctest.xml"
 
+# MSVC on the windows-native runner: the static runtime (/MT) for static builds, the dynamic one (/MD)
+# for shared builds (CONAN_LINKAGE)
+test:cpp:msvc:
+  extends: [.test:cpp:msvc, .test:wlib]
+  script:
+    - !reference [.test:wlib, script]
+    - |
+      (
+        # MSVC's environment for dumpbin and the package test's CMake, and the DLLs of spdlog and fmt
+        conan_env "$CONAN_BUILD_DIR/generators" conanbuild
+        conan_env "$CONAN_BUILD_DIR/generators" conanrun
+        if [ "$CONAN_LINKAGE" = shared ]; then
+          mapfile -t WLIB_LIBRARIES < <(find "$CONAN_BUILD_DIR" -type f -name 'wlib.dll')
+          test "${#WLIB_LIBRARIES[@]}" -gt 0
+          WLIB_LINKAGE="$(dumpbin -nologo -dependents "${WLIB_LIBRARIES[0]}")"
+          # WLib never links Qt; the Qt integration is the separate package wlib_qt
+          if grep -Fi "Qt6" <<< "$WLIB_LINKAGE"; then echo "wlib.dll links Qt" >&2; exit 1; fi
+        else
+          find "$CONAN_BUILD_DIR" -type f -name 'wlib.lib' | grep -q .
+        fi
+        bash ci/cmake-package.sh "$CONAN_BUILD_DIR"
+        ctest --test-dir "$CONAN_BUILD_DIR" --output-on-failure -j "${RUNNER_BUILD_JOBS:-2}" --output-junit "$CI_PROJECT_DIR/ctest.xml"
+      )
+
 publish:conan:x86_64:
   extends: [.publish:conan:x86_64, .linkage:matrix]
+
+publish:conan:msvc:
+  extends: [.publish:conan:msvc, .linkage:matrix]
 
 publish:conan:windows:
   extends: [.publish:conan:windows, .linkage:matrix]

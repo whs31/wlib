@@ -6,8 +6,13 @@ if [[ $# -ne 1 ]]; then
   exit 2
 fi
 
-build_dir="$(cd "$1" && pwd)"
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Git Bash on Windows: paths as Windows spells them (C:/...), which CMake reads
+native_pwd() {
+  pwd -W 2>/dev/null || pwd
+}
+
+build_dir="$(cd "$1" && native_pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && native_pwd)"
 install_dir="$build_dir/package-smoke/install"
 build_type="$(sed -n 's/^CMAKE_BUILD_TYPE:STRING=//p' "$build_dir/CMakeCache.txt")"
 
@@ -50,17 +55,26 @@ if [[ -d "$install_dir/include/$include_prefix/qt" ]] || [[ -d "$install_dir/inc
   exit 1
 fi
 
+# Conan's toolchain of the build: the consumer uses the same compiler and, with MSVC, the same C++
+# runtime as the package (a /MT package does not link into a /MD consumer)
+toolchain=()
+if [[ -f "$build_dir/generators/conan_toolchain.cmake" ]]; then
+  toolchain=(-DCMAKE_TOOLCHAIN_FILE="$build_dir/generators/conan_toolchain.cmake")
+fi
+
 for component in "${components[@]}"; do
   consumer_build="$build_dir/package-smoke/$component"
   cmake \
     -S "$repo_root/tests/cmake_consumer" \
     -B "$consumer_build" \
     -G Ninja \
+    "${toolchain[@]}" \
     -DWLIB_CONSUMER_COMPONENT="$component" \
     -DCMAKE_BUILD_TYPE="$build_type" \
     -DCMAKE_PREFIX_PATH="$install_dir;$build_dir/generators"
   cmake --build "$consumer_build"
-  # the run environment finds the shared dependencies of libwlib, e.g. spdlog
+  # the run environment finds the shared dependencies of libwlib, e.g. spdlog. Windows has no
+  # conanrun.sh: the caller imports conanrun.bat, and conanbuild.bat for MSVC (devops/ci conan_env)
   (
     if [[ -f "$build_dir/generators/conanrun.sh" ]]; then
       # shellcheck disable=SC1091
