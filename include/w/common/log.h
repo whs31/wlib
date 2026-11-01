@@ -54,21 +54,15 @@ enum class LogTarget : std::uint8_t
 };
 
 /**
- * @brief Fixed-width spdlog pattern for applications that want aligned log columns.
+ * @brief Fixed-width spdlog pattern, the default of LoggerConfig::pattern.
  * @details Produces lines like:
  *
  * `[13:43:05.120] info     helisim.model            parameters.cc:53   loaded VT30 parameters`
  *
  * The level column fits `critical`, the logger name column is 21 characters wide and the source
  * file name is right-aligned to 16 characters. Longer names are not truncated and shift the rest
- * of the line. Messages without a source location leave the file and line columns blank.
- *
- * @code {.cpp}
- * auto logger = w::create_logger({
- *   .name = "core",
- *   .pattern = std::string(w::aligned_log_pattern),
- * });
- * @endcode
+ * of the line. Messages without a source location leave the file and line columns blank: log
+ * through W_LOG_TO() or W_LOG() to fill them.
  * @ingroup core_logging
  */
 inline auto constexpr aligned_log_pattern = std::string_view {
@@ -138,7 +132,7 @@ struct LoggerConfig
   /**
    * @brief spdlog pattern applied to all sinks. Empty keeps spdlog's default pattern.
    */
-  std::string pattern = "[%X] (%n) [%^%l%$] <%-15s %-15! line %-4#> %^%v%$";
+  std::string pattern = std::string(aligned_log_pattern);
 
   /**
    * @brief Filename used by the rotating file sink.

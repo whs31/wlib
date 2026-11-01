@@ -173,13 +173,15 @@ TEST_CASE("create_logger installs additional sinks during construction", "[log]"
   REQUIRE(callback_count == 1);
 }
 
-TEST_CASE("aligned_log_pattern pads every column to a fixed width", "[log]")
+TEST_CASE("The default pattern, aligned_log_pattern, pads every column to a fixed width", "[log]")
 {
+  REQUIRE(LoggerConfig {}.pattern == aligned_log_pattern);
+
   auto const name = std::string {"wlib.pattern"};
   auto const drop = ScopedSpdlogDrop(name);
   auto stream = std::ostringstream();
   auto config = stdout_config(name);
-  config.pattern = std::string(aligned_log_pattern);
+  config.pattern = LoggerConfig {}.pattern;
   config.additional_sinks.push_back(std::make_shared<spdlog::sinks::ostream_sink_mt>(stream));
 
   auto const logger = create_logger(config);
