@@ -69,7 +69,7 @@ auto const range = w::Distance::from_kilometers(2.5);
 auto const climb = 3_mps;               // w::Velocity
 auto const heading = 90_deg;            // w::Angle
 auto const time = range / climb;        // std::chrono::duration<float>, in seconds
-auto const metres = range.as_m();
+auto const meters = range.as_m();
 auto const air = w::Temperature::from_celsius(15.0).as_kelvin();
 ```
 
@@ -131,14 +131,14 @@ auto constexpr pulkovo = w::GeodeticPosition {
 };
 
 auto const plane = w::LocalTangentPlane(pulkovo);
-auto const ned = plane.ned_from_lla(target);  // w::Vector3: metres north, east and down
+auto const ned = plane.ned_from_lla(target);  // w::Vector3: meters north, east and down
 auto const back = plane.lla_from_ned({10'000.0, 0.0, -150.0});
 ```
 
 - `LocalTangentPlane` is a flat NED frame at an origin. It keeps the frame in `double` and gives positions as `float` `Vector3`. Use it for local simulation frames.
 - `ned_from_lla()` throws `w::NumericError` for a position a quarter of the globe or more from the origin.
 - `w::web_mercator` has the XYZ tiles of slippy maps: `project(latitude, longitude, zoom)`, `latitude_at()`, `longitude_at()` and `tiles(zoom)`.
-- `w::wgs84` has the ellipsoid constants in metres.
+- `w::wgs84` has the ellipsoid constants in meters.
 
 ## Identifiers and addresses
 | Type | Make | Invalid text |

@@ -26,7 +26,7 @@ W_COMMON_NAMESPACE_BEGIN
  *
  * auto cruise = w::common::Velocity::from_kmph(90.0);
  * auto text = cruise.to_string();  // "25 m/s"
- * auto travelled = cruise * 2s;    // 50 m
+ * auto traveled = cruise * 2s;    // 50 m
  * auto speed = 100_m / 4s;         // 25 m/s
  * @endcode
  *

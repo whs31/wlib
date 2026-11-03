@@ -122,7 +122,7 @@ TEST_CASE("Mixing precisions computes in double", "[precision]")
 
 TEST_CASE("double keeps the digits that float loses", "[precision]")
 {
-  // a position 10 000 km away with a millimetre offset
+  // a position 10 000 km away with a millimeter offset
   auto constexpr far = 1e7;
   auto constexpr offset = 1e-3;
 

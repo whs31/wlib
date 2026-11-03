@@ -95,7 +95,7 @@ TEST_CASE("WGS84 constants derive from the axis and the flattening", "[geodesy]"
   CHECK_THAT(wgs84::second_eccentricity_squared, WithinAbs(6.739'496'742'28e-3, 1e-14));
 }
 
-TEST_CASE("Geodetic positions format in degrees and metres MSL", "[geodesy]")
+TEST_CASE("Geodetic positions format in degrees and meters MSL", "[geodesy]")
 {
   auto constexpr position = GeodeticPosition {
     .latitude = 59.5_lat,
@@ -209,7 +209,7 @@ TEST_CASE("Tangent plane follows WGS84 geodesics within its documented error", "
   );
 }
 
-TEST_CASE("Tangent plane round trip stays within a millimetre at 50 km", "[geodesy]")
+TEST_CASE("Tangent plane round trip stays within a millimeter at 50 km", "[geodesy]")
 {
   auto const latitude_deg = GENERATE(0.0, 45.0, 60.195964, -70.0, 85.0);
   auto const plane = LocalTangentPlane({

@@ -97,7 +97,7 @@ struct UtmZone
  * @endcode
  *
  * Latitude and Longitude are always `double`; the altitude is a `float` Distance, which resolves it
- * to a millimetre up to 16 km.
+ * to a millimeter up to 16 km.
  *
  * There is no `glz::meta` for it: glaze reflects the aggregate, and with the adapters of Latitude,
  * Longitude and Distance (`glaze/latitude.h`, `glaze/longitude.h`, `glaze/distance.h`) writes
@@ -156,7 +156,7 @@ struct W_COMMON_API GeodeticPosition
   }
 
   /**
-   * @brief Returns the point on the other side of the Earth through its centre, at the same
+   * @brief Returns the point on the other side of the Earth through its center, at the same
    * altitude.
    */
   [[nodiscard]] constexpr GeodeticPosition antipode() const noexcept
@@ -204,7 +204,7 @@ W_COMMON_API std::ostream& operator<<(std::ostream& os, GeodeticPosition const& 
 
 namespace _geodesy_impl  // NOLINT(readability-identifier-naming)
 {
-  /// @brief A point or a direction in earth-centred, earth-fixed axes, always in `double`.
+  /// @brief A point or a direction in earth-centered, earth-fixed axes, always in `double`.
   struct Ecef
   {
     double x = 0.0;
@@ -212,7 +212,7 @@ namespace _geodesy_impl  // NOLINT(readability-identifier-naming)
     double z = 0.0;
   };
 
-  /// @brief The axes north, east and down of a local frame, in earth-centred, earth-fixed axes.
+  /// @brief The axes north, east and down of a local frame, in earth-centered, earth-fixed axes.
   struct NedAxes
   {
     Ecef north;
@@ -235,14 +235,14 @@ namespace _geodesy_impl  // NOLINT(readability-identifier-naming)
  * altitudes, terrain heights and a constant gravity along z agree with each other. The plane
  * passes through the origin at its altitude, so horizontal distances scale with the radius at
  * that altitude. Altitudes above mean sea level stand in for heights above the ellipsoid, which
- * only moves the plane by the geoid undulation (tens of metres, 10⁻⁵ of the scale).
+ * only moves the plane by the geoid undulation (tens of meters, 10⁻⁵ of the scale).
  *
  * lla_from_ned() keeps the latitude and longitude of the positions it was asked for last, per
  * thread, so asking again for the same horizontal position is a lookup.
  *
  * Positions in the frame are `float` Vector3; the frame itself, its origin on the Earth and its
  * axes, is held and applied in `double`, so a position keeps its own resolution (half a
- * millimetre at 10 km) wherever the origin is.
+ * millimeter at 10 km) wherever the origin is.
  *
  * @code {.cpp}
  * using namespace w;
@@ -271,14 +271,14 @@ class W_COMMON_API LocalTangentPlane
 
   /**
    * @brief Latitude, longitude and altitude of a position in the plane's frame.
-   * @param position_ned Metres north, east and down of the origin.
+   * @param position_ned Meters north, east and down of the origin.
    * @throws InvalidArgumentError If the position is not finite.
    */
   [[nodiscard]] GeodeticPosition lla_from_ned(Vector3 const& position_ned) const;
 
   /**
    * @brief Position in the plane's frame of a geodetic position, the inverse of lla_from_ned().
-   * @return Metres north, east and down of the origin.
+   * @return Meters north, east and down of the origin.
    * @throws InvalidArgumentError If the position is not valid: not finite, or its latitude is
    * outside [-90°, 90°].
    * @throws NumericError If the position is a quarter of the globe or more away from the origin,

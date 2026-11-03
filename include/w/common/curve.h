@@ -131,7 +131,7 @@ class Curve
   [[nodiscard]] constexpr bool empty() const noexcept { return this->m_size == 0; }
 
   /**
-   * @brief Interpolates linearly between the neighbouring points, clamped to the end values
+   * @brief Interpolates linearly between the neighboring points, clamped to the end values
    * outside the argument range.
    * @throws InvalidArgumentError if the curve is empty or @p argument is not finite.
    */
@@ -155,7 +155,7 @@ class Curve
     if(at >= curve_magnitude(x.back()))
       return y.back();
 
-    // the end checks above keep the upper bound strictly inside the curve, so both neighbours exist
+    // the end checks above keep the upper bound strictly inside the curve, so both neighbors exist
     auto const x1 = std::ranges::upper_bound(x, at, {}, curve_magnitude<X>);
     auto const y1 = std::next(y.begin(), std::distance(x.begin(), x1));
     auto const x0 = curve_magnitude(*std::prev(x1));

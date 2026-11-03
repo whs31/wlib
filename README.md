@@ -68,7 +68,7 @@ The physical quantities and the linear algebra types are templates over their pr
 
 ```cpp
 auto const heading = w::Angle::from_degrees(90.0);            // w::BasicAngle<float>
-auto const precise = w::BasicVector3<double>(1e7, 0.0, 1e-3);  // keeps the millimetre
+auto const precise = w::BasicVector3<double>(1e7, 0.0, 1e-3);  // keeps the millimeter
 
 w::BasicAngle<double> const widened = heading;               // float widens implicitly
 auto const narrowed = w::Angle(w::BasicAngle<double>(1.0_rad)); // double narrows only explicitly
@@ -95,7 +95,7 @@ With glaze, vectors, quaternions, matrices and planes are arrays, e.g. `[x, y, z
 `[w, x, y, z]` and a matrix its rows; an `Rgba8` is a hex string, so a palette lives in TOML as
 `sand = "#e4a672"`.
 
-Positions on the Earth need more than a `float`, which resolves a longitude to about a metre and a
+Positions on the Earth need more than a `float`, which resolves a longitude to about a meter and a
 half, so geodesy stays in `double`. `Latitude` and `Longitude` are dedicated coordinate
 types rather than angles:
 

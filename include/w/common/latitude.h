@@ -25,8 +25,8 @@ W_COMMON_NAMESPACE_BEGIN
 /**
  * @brief Geodetic latitude on the WGS84 ellipsoid, positive north, stored in degrees as a
  * `double`.
- * @details A `float` resolves a coordinate on the Earth to about a metre; a `double` to
- * nanometres. Degrees are stored, not radians, so a latitude keeps the exact digits it was written
+ * @details A `float` resolves a coordinate on the Earth to about a meter; a `double` to
+ * nanometers. Degrees are stored, not radians, so a latitude keeps the exact digits it was written
  * with, e.g. in a configuration file, and prints them back.
  *
  * A latitude is a position, not an amount, so it is not a quantity: latitudes are never added
@@ -268,7 +268,7 @@ class W_COMMON_API Latitude
 
   /**
    * @brief Returns the geocentric latitude, the angle between the equator and the line from the
-   * centre of the Earth to the point on the ellipsoid, `tan ψ = (1 − e²) tan φ`.
+   * center of the Earth to the point on the ellipsoid, `tan ψ = (1 − e²) tan φ`.
    */
   [[nodiscard]] Latitude geocentric() const noexcept
   {

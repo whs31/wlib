@@ -57,7 +57,7 @@ TEST_CASE("Coordinates are double although quantities are float", "[coordinates]
   STATIC_CHECK_FALSE(std::is_convertible_v<double, Latitude>);
   STATIC_CHECK_FALSE(std::is_convertible_v<Angle, Latitude>);
 
-  // the literal keeps the digits a float would round off: 1e-7 deg is about a centimetre
+  // the literal keeps the digits a float would round off: 1e-7 deg is about a centimeter
   auto constexpr latitude = 60.195'964'1_lat;
   STATIC_CHECK(latitude.degrees() == 60.195'964'1);
   STATIC_CHECK(latitude.degrees() - 60.195'964 > 0.9e-7);

@@ -180,9 +180,9 @@ TEST_CASE("Picking rays start on the near plane", "[bounds][ray]")
         projection = perspective(Angle::from_degrees(90), 1.0, 0.5, far, Handedness::Right, depth);
       auto const inverse = (projection * view).inverse();
 
-      auto const centre = Ray::from_ndc(Vector2::zero(), inverse, depth);
-      CHECK(near(centre.origin(), {0.0, 2.0, 9.5}, 1e-4F));
-      CHECK(near(centre.direction(), -Vector3::unit_z(), 1e-4F));
+      auto const center = Ray::from_ndc(Vector2::zero(), inverse, depth);
+      CHECK(near(center.origin(), {0.0, 2.0, 9.5}, 1e-4F));
+      CHECK(near(center.direction(), -Vector3::unit_z(), 1e-4F));
 
       // with a 90° field of view the corner of the screen is 45° off the axis in x and y
       auto const corner = Ray::from_ndc({1.0, 1.0}, inverse, depth);

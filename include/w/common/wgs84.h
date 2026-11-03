@@ -6,18 +6,18 @@ W_COMMON_NAMESPACE_BEGIN
 
 /**
  * @brief The WGS84 ellipsoid.
- * @details Plain `double` constants in metres.
+ * @details Plain `double` constants in meters.
  * @ingroup core_geodesy
  */
 namespace wgs84
 {
-  /// @brief Equatorial radius in metres.
+  /// @brief Equatorial radius in meters.
   inline auto constexpr semi_major_axis = 6'378'137.0;
 
   /// @brief Flattening `f = (a − b) / a`.
   inline auto constexpr flattening = 1.0 / 298.257'223'563;
 
-  /// @brief Polar radius `b = a (1 − f)` in metres.
+  /// @brief Polar radius `b = a (1 − f)` in meters.
   inline auto constexpr semi_minor_axis = semi_major_axis * (1.0 - flattening);
 
   /// @brief First eccentricity squared, `e² = f (2 − f)`.

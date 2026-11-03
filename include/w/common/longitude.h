@@ -271,7 +271,7 @@ class W_COMMON_API Longitude
 
   /**
    * @brief Returns the offset from UTC of the nautical time zone of the meridian, 15° wide and
-   * centred on a multiple of 15°: −12 to +12 hours, positive east.
+   * centered on a multiple of 15°: −12 to +12 hours, positive east.
    * @details Boundaries belong to the zone east of them.
    */
   [[nodiscard]] constexpr std::chrono::hours nautical_time_zone() const noexcept

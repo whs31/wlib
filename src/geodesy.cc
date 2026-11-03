@@ -20,7 +20,7 @@ namespace
   auto constexpr latitude_iterations = 3;
 
   // note: [whs31 : 2026-10-26]
-  // earth-centred coordinates are millions of metres, where a float steps by half a metre, so the
+  // earth-centered coordinates are millions of meters, where a float steps by half a meter, so the
   // frame is computed in double whatever the precision of Vector3
   using _geodesy_impl::Ecef;
   using _geodesy_impl::NedAxes;
@@ -45,13 +45,13 @@ namespace
     return (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z);
   }
 
-  // the components of an earth-centred vector along the axes
+  // the components of an earth-centered vector along the axes
   [[nodiscard]] Ecef to_ned(NedAxes const& axes, Ecef const& v) noexcept
   {
     return {.x = dot(axes.north, v), .y = dot(axes.east, v), .z = dot(axes.down, v)};
   }
 
-  // the earth-centred vector of components along the axes
+  // the earth-centered vector of components along the axes
   [[nodiscard]] Ecef from_ned(NedAxes const& axes, Ecef const& v) noexcept
   {
     return axes.north * v.x + axes.east * v.y + axes.down * v.z;
