@@ -148,6 +148,18 @@ in.values<w::Vector3>();       // a count the bytes left cannot hold throws w::B
 in.done();                     // true
 ```
 
+`<w/common/file.h>` reads a whole file in binary, and writes one atomically: the bytes go to a
+temporary file beside the target, which replaces the target by a rename, so a failed write leaves
+the old file as it was. Both throw `w::FileError`, or take a `std::error_code&` and do not:
+
+```cpp
+w::write_file(folder / "scene.toml", text);
+auto const same = w::read_file(folder / "scene.toml");
+
+auto error = std::error_code();
+auto const key = w::read_file(folder / "import.key", error);  // empty, and `error` set, if absent
+```
+
 #### Migrating from the previous API
 
 - The quantities and the linear algebra types are templates `BasicX<T>`; the old names are the

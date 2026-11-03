@@ -46,7 +46,7 @@
 /**
  * @defgroup core_filesystem Filesystem
  * @ingroup core
- * @brief Platform path helpers and filesystem-based locking.
+ * @brief Platform path helpers, filesystem-based locking and reading and writing whole files.
  */
 
 #include <w/common/aabb.h>
@@ -75,6 +75,7 @@
 #include <w/common/error.h>
 #include <w/common/euler_angles.h>
 #include <w/common/fatal.h>
+#include <w/common/file.h>
 #include <w/common/force.h>
 #include <w/common/frequency.h>
 #include <w/common/frustum.h>
