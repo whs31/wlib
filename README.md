@@ -137,6 +137,10 @@ auto const longitude = w::Longitude::parse("157°51'36\"W");  // std::optional<w
   are found with `find_package(WLibQt)`; the option `with_qt` of `wlib` is gone.
 - The physical constants in `<w/common/constants.h>` are `double`; cast them to the precision you
   compute in.
+- The spelling is American: `<w/common/color.h>` and `<w/common/glaze/color.h>` replace
+  `colour.h` and `glaze/colour.h`. The old headers only forward to the new ones, are deprecated and
+  stay for existing users. No public type or function was spelled the British way, and the
+  serialized forms are unchanged.
 
 #### Agent skill
 

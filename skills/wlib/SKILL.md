@@ -106,6 +106,7 @@ If an operation can fail:
 - `Quaternion::normalized()` and `Matrix4x4::inverse()` throw `w::NumericError`. If failure is possible, use `try_normalized()` and `try_inverse()`.
 
 Colors:
+- The header is `<w/common/color.h>` (`<w/common/glaze/color.h>` for glaze). `colour.h` and `glaze/colour.h` forward to them and are deprecated: do not write them in new code.
 - `Rgba` is linear `float`. `Rgba8` is sRGB bytes. Do color calculations, for example blends, in `Rgba`.
 - The compiler checks `"#e4a672"_rgba8`. `Rgba8::from_hex(text)` returns `std::optional`.
 - Convert with `Rgba8::to_linear()` and `Rgba::to_srgb8()`. For HSV, use `Hsv`, `from_hsv()` and `to_hsv()`.
