@@ -1,6 +1,6 @@
 ---
 name: wlib
-description: How to use WLib, the C++23 utility library of whs31 (headers `<w/common/...>`, namespace `w`, CMake targets `w::lib` and `w::lib::glaze`). Use when you write, change or review C++ code in a project that depends on wlib, or when C++ code needs physical quantities and units, vectors, matrices, quaternions, geodetic coordinates, colors, UUIDs, semantic versions, IP addresses, spdlog loggers, reproducible random numbers, scope guards, mutex guards, per-user application directories, or glaze serialization of these types.
+description: How to use WLib, the C++23 utility library of whs31 (headers `<w/common/...>`, namespace `w`, CMake targets `w::lib` and `w::lib::glaze`). Use when you write, change or review C++ code in a project that depends on wlib, or when C++ code needs physical quantities and units, vectors, matrices, quaternions, geodetic coordinates, colors, UUIDs, semantic versions, IP addresses, spdlog loggers, reproducible random numbers, scope guards, mutex guards, per-user application directories, binary writers and readers of trivially copyable values, or glaze serialization of these types.
 ---
 
 # WLib
@@ -226,12 +226,17 @@ The headers are below `<w/common/...>`.
 | Per-user directories | `w::application_directory_path(w::ApplicationDirectory::Config, "Vendor", "product")` | `paths.h` |
 | Home and executable paths | `w::user_home_path()`, `w::application_file_path()`, `w::application_dir_path()` | `paths.h` |
 | One process at a time | `w::LockFile(path)`, `try_lock()`, `lock()` | `lockfile.h` |
+| Binary values, counted vectors and text of trivially copyable types | `w::ByteWriter`, `w::ByteReader` | `bytes.h` |
 | Dependency order of UUID nodes | `w::GraphResolver`, `enqueue()`, `resolve(&has_cycle)` | `graph_resolver.h` |
 | ASCII and hexadecimal characters | `w::is_digit()`, `w::is_hex()`, `w::to_lower()` and others | `char_utils.h` |
 | Pointer and number concepts | `w::Number`, `w::Pointer`, `w::SmartPointer`, `w::PointerLike` | `concepts.h` |
 
 - `application_directory_path()` does not create the directory. It throws `w::PathError` if a base directory is not available. `w::ApplicationLayout::Portable` puts all files below `data/` next to the executable.
 - `GraphResolver::resolve()` puts each dependency before its dependents. The order of unrelated nodes is not stable.
+- `ByteWriter` has `value(x)`, `values(range)` (a 32-bit count, then the items), `text(string_view)` (a 32-bit size, then the bytes), `count(n)`, `data()`, `size()` and `release()`. `ByteReader(string_view)` has `value<T>()`, `values<T>()`, `text()`, `count(item_size)`, `remaining()` and `done()`. `T` is trivially copyable.
+- The bytes are the objects as they are in memory: the host's byte order and layout, and any padding. They are not an exchange format. Use types without padding, or write the members one by one.
+- A `ByteReader` throws `w::ByteReadError` if its input ends early, a count is more than the bytes left can hold, or a `bool` is not 0 or 1. It does not own the bytes: do not make it from a temporary `std::string`, which does not compile. Call `done()` at the end and reject trailing bytes if the format has none.
+- Use `reader.count(sizeof(Item))` to size a container of items that you read one by one. A corrupt count cannot then make you allocate more than the input has.
 
 ## glaze
 Set `with_glaze=True` and link `w::lib::glaze`. Include the adapter header of each type, with the same name below `glaze/`. Also include the glaze header of the format.

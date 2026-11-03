@@ -128,6 +128,26 @@ pulkovo.utm_zone()->to_string();      // 36V
 auto const longitude = w::Longitude::parse("157°51'36\"W");  // std::optional<w::Longitude>
 ```
 
+#### Binary data and files
+
+`<w/common/bytes.h>` writes and reads trivially copyable values as they are in memory, with counted
+vectors and counted text, which is what an asset cache or a compiled resource needs. The bytes are in
+the byte order and the layout of the host, so they are read back on the platform that wrote them;
+a reader refuses what is not there instead of overrunning:
+
+```cpp
+auto out = w::ByteWriter();
+out.value(std::uint32_t {1});
+out.text("wheel");
+out.values(std::vector<w::Vector3> {{0.0F, 1.0F, 2.0F}});
+
+auto in = w::ByteReader(out.data());
+in.value<std::uint32_t>();     // 1
+in.text();                     // "wheel"
+in.values<w::Vector3>();       // a count the bytes left cannot hold throws w::ByteReadError
+in.done();                     // true
+```
+
 #### Migrating from the previous API
 
 - The quantities and the linear algebra types are templates `BasicX<T>`; the old names are the

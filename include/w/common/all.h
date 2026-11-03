@@ -5,8 +5,8 @@
  * @brief Foundational types and utilities shared by WLib-based libraries.
  *
  * The core module contains small, dependency-light building blocks: error types, checks, value
- * types, measurement values, adapters, memory wrappers, math helpers, filesystem helpers,
- * threading guards, and functional utilities.
+ * types, measurement values, adapters, memory wrappers, math helpers, filesystem helpers, binary
+ * serialization, threading guards, and functional utilities.
  */
 
 /**
@@ -56,6 +56,7 @@
 #include <w/common/angular_acceleration.h>
 #include <w/common/angular_velocity.h>
 #include <w/common/bit.h>
+#include <w/common/bytes.h>
 #include <w/common/capacitance.h>
 #include <w/common/char_utils.h>
 #include <w/common/charge.h>
