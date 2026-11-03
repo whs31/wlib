@@ -1,7 +1,7 @@
 #include <w/common/aabb.h>
 #include <w/common/angle.h>
 #include <w/common/clip_space.h>
-#include <w/common/colour.h>
+#include <w/common/color.h>
 #include <w/common/euler_angles.h>
 #include <w/common/frustum.h>
 #include <w/common/matrix3x3.h>
@@ -792,7 +792,7 @@ TEST_CASE("Ray intersections match glm", "[linalg][glm][bounds]")
   }
 }
 
-TEST_CASE("Colour conversions match glm", "[colour][glm]")
+TEST_CASE("Color conversions match glm", "[color][glm]")
 {
   auto sampler = Sampler(0x434c'0001);
   for(auto i = 0; i < iterations; ++i) {
@@ -800,13 +800,13 @@ TEST_CASE("Colour conversions match glm", "[colour][glm]")
     CHECK(std::abs(srgb_to_linear(value) - glm::convertSRGBToLinear(glm::vec3(value)).x) < 1e-5);
     CHECK(std::abs(linear_to_srgb(value) - glm::convertLinearToSRGB(glm::vec3(value)).x) < 1e-5);
 
-    auto const colour = Rgba8(
+    auto const color = Rgba8(
       static_cast<std::uint8_t>(sampler.real(0.0, 255.0)),
       static_cast<std::uint8_t>(sampler.real(0.0, 255.0)),
       static_cast<std::uint8_t>(sampler.real(0.0, 255.0))
     );
-    auto const hsv = colour.to_hsv();
-    auto const expected = glm::hsvColor(glm::vec3(colour.r(), colour.g(), colour.b()) / 255.0F);
+    auto const hsv = color.to_hsv();
+    auto const expected = glm::hsvColor(glm::vec3(color.r(), color.g(), color.b()) / 255.0F);
     CHECK(std::abs(hsv.value - expected.z) < 1e-5);
     CHECK(std::abs(hsv.saturation - expected.y) < 1e-5);
     if(hsv.saturation > 1e-3F) {

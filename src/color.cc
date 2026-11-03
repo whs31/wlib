@@ -1,4 +1,4 @@
-#include <w/common/colour.h>
+#include <w/common/color.h>
 
 #include <ostream>
 
@@ -17,8 +17,8 @@ std::string Rgba8::to_hex() const
 
 std::string Rgba8::to_string() const { return this->to_hex(); }
 
-std::ostream& operator<<(std::ostream& os, Rgba const& colour) { return os << colour.to_string(); }
+std::ostream& operator<<(std::ostream& os, Rgba const& color) { return os << color.to_string(); }
 
-std::ostream& operator<<(std::ostream& os, Rgba8 const& colour) { return os << colour.to_string(); }
+std::ostream& operator<<(std::ostream& os, Rgba8 const& color) { return os << color.to_string(); }
 
 W_COMMON_NAMESPACE_END

@@ -1,5 +1,5 @@
 ## Project
-WLib is a general-purpose C++23 utility library: physical quantities, linear algebra and geometry, geodesy, colours, identifiers, networking, logging, deterministic randomness and more, with optional glaze adapters. The Qt and QML integration is the separate package [wlib_qt](https://git.whs31.com/shared/support/wlib-qt).
+WLib is a general-purpose C++23 utility library: physical quantities, linear algebra and geometry, geodesy, colors, identifiers, networking, logging, deterministic randomness and more, with optional glaze adapters. The Qt and QML integration is the separate package [wlib_qt](https://git.whs31.com/shared/support/wlib-qt).
 
 ## Shared development rules
 - Follow `.claude` (or `.agents` if you are not Claude).

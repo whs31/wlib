@@ -61,7 +61,7 @@
 #include <w/common/charge.h>
 #include <w/common/check.h>
 #include <w/common/clip_space.h>
-#include <w/common/colour.h>
+#include <w/common/color.h>
 #include <w/common/concepts.h>
 #include <w/common/conductance.h>
 #include <w/common/constants.h>

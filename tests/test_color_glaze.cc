@@ -1,4 +1,4 @@
-#include <w/common/glaze/colour.h>
+#include <w/common/glaze/color.h>
 #include <w/common/glaze/read.h>
 
 #include <map>
@@ -17,7 +17,7 @@ using namespace glaze_support;
 
 // glaze reflects on the names of the members, which clang rejects for a type without linkage, so
 // this stays out of the anonymous namespace
-namespace colour_glaze_test
+namespace color_glaze_test
 {
   struct Palette  // NOLINT(misc-use-internal-linkage)
   {
@@ -25,11 +25,11 @@ namespace colour_glaze_test
     Rgba8 sea;
     Rgba sky;
   };
-}  // namespace colour_glaze_test
+}  // namespace color_glaze_test
 
-using colour_glaze_test::Palette;
+using color_glaze_test::Palette;
 
-TEST_CASE("Rgba8 glaze adapter writes hex strings and reads bytes too", "[glaze][colour]")
+TEST_CASE("Rgba8 glaze adapter writes hex strings and reads bytes too", "[glaze][color]")
 {
   check_round_trip("#e4a672"_rgba8, R"("#e4a672")");
   check_round_trip("#e4a67280"_rgba8, R"("#e4a67280")");
@@ -45,7 +45,7 @@ TEST_CASE("Rgba8 glaze adapter writes hex strings and reads bytes too", "[glaze]
   CHECK(read_error<Rgba8>("228") != glz::error_code::none);
 }
 
-TEST_CASE("Rgba glaze adapter writes linear arrays and reads hex too", "[glaze][colour]")
+TEST_CASE("Rgba glaze adapter writes linear arrays and reads hex too", "[glaze][color]")
 {
   check_round_trip(Rgba(1.0F, 0.5F, 0.0F, 0.25F), "[1,0.5,0,0.25]");
   CHECK(read<Rgba>("[1,0.5,0]") == Rgba(1.0F, 0.5F, 0.0F));
@@ -57,7 +57,7 @@ TEST_CASE("Rgba glaze adapter writes linear arrays and reads hex too", "[glaze][
   CHECK(read_error<Rgba>(R"("#xyz")") == glz::error_code::constraint_violated);
 }
 
-TEST_CASE("Palettes live in TOML", "[glaze][colour]")
+TEST_CASE("Palettes live in TOML", "[glaze][color]")
 {
   auto const palette = read_glaze<Palette, strict_toml>(
     "sand = \"#e4a672\"\n"
@@ -81,7 +81,7 @@ TEST_CASE("Palettes live in TOML", "[glaze][colour]")
   );
 }
 
-TEST_CASE("Colours round-trip through BEVE", "[glaze][colour]")
+TEST_CASE("Colors round-trip through BEVE", "[glaze][color]")
 {
   auto const palette = std::vector {"#e4a672"_rgba8, "#00000080"_rgba8};
   auto const buffer = glz::write_beve(palette);

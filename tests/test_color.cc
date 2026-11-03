@@ -1,5 +1,5 @@
 #include <w/common/angle.h>
-#include <w/common/colour.h>
+#include <w/common/color.h>
 
 #include <cmath>
 #include <cstdint>
@@ -20,7 +20,7 @@ namespace
   }
 }  // namespace
 
-TEST_CASE("sRGB transfer function matches the standard", "[colour]")
+TEST_CASE("sRGB transfer function matches the standard", "[color]")
 {
   CHECK(srgb_to_linear(0.0F) == 0.0F);
   CHECK(srgb_to_linear(1.0F) == 1.0F);
@@ -35,7 +35,7 @@ TEST_CASE("sRGB transfer function matches the standard", "[colour]")
   }
 }
 
-TEST_CASE("Rgba8 parses and writes hex strings", "[colour]")
+TEST_CASE("Rgba8 parses and writes hex strings", "[color]")
 {
   STATIC_CHECK(Rgba8::from_hex("#e4a672") == Rgba8(0xe4, 0xa6, 0x72));
   STATIC_CHECK(Rgba8::from_hex("E4A672") == Rgba8(0xe4, 0xa6, 0x72));
@@ -64,7 +64,7 @@ TEST_CASE("Rgba8 parses and writes hex strings", "[colour]")
   CHECK(std::hash<Rgba8> {}(Rgba8(1, 2, 3)) != std::hash<Rgba8> {}(Rgba8(3, 2, 1)));
 }
 
-TEST_CASE("Rgba is linear and converts to and from sRGB", "[colour]")
+TEST_CASE("Rgba is linear and converts to and from sRGB", "[color]")
 {
   auto const sand = Rgba::from_srgb8("#e4a672"_rgba8);
   CHECK(near(sand.r(), srgb_to_linear(228.0F / 255.0F)));
@@ -78,8 +78,8 @@ TEST_CASE("Rgba is linear and converts to and from sRGB", "[colour]")
   // every 8-bit value survives decoding and encoding
   for(auto value = 0; value <= 255; ++value) {
     auto const byte = static_cast<std::uint8_t>(value);
-    auto const colour = Rgba8(byte, byte, byte, byte);
-    CHECK(colour.to_linear().to_srgb8() == colour);
+    auto const color = Rgba8(byte, byte, byte, byte);
+    CHECK(color.to_linear().to_srgb8() == color);
   }
 
   STATIC_CHECK(Rgba(0.5F, 0.25F, 1.0F, 0.5F).premultiplied() == Rgba(0.25F, 0.125F, 0.5F, 0.5F));
@@ -99,7 +99,7 @@ TEST_CASE("Rgba is linear and converts to and from sRGB", "[colour]")
   CHECK(std::hash<Rgba> {}(Rgba::black()) != std::hash<Rgba> {}(Rgba::white()));
 }
 
-TEST_CASE("HSV describes the sRGB encoding", "[colour]")
+TEST_CASE("HSV describes the sRGB encoding", "[color]")
 {
   auto const red = Rgba8(255, 0, 0).to_hsv();
   CHECK(near(red.hue.degrees(), 0.0F));
@@ -124,12 +124,12 @@ TEST_CASE("HSV describes the sRGB encoding", "[colour]")
     == Rgba8(0, 255, 0)
   );
 
-  // the 8-bit colours survive a round trip through HSV
-  for(auto const colour :
+  // the 8-bit colors survive a round trip through HSV
+  for(auto const color :
       {"#e4a672"_rgba8, "#123456"_rgba8, "#ffffff"_rgba8, "#000000"_rgba8, "#7f00ff80"_rgba8}) {
-    CHECK(Rgba8::from_hsv(colour.to_hsv()) == colour);
-    auto const linear = Rgba::from_srgb8(colour);
-    CHECK(Rgba::from_hsv(linear.to_hsv()).to_srgb8() == colour);
+    CHECK(Rgba8::from_hsv(color.to_hsv()) == color);
+    auto const linear = Rgba::from_srgb8(color);
+    CHECK(Rgba::from_hsv(linear.to_hsv()).to_srgb8() == color);
   }
   CHECK(
     fmt::format("{}", Hsv {.hue = Angle::from_degrees(30), .saturation = 0.5F, .value = 1.0F})

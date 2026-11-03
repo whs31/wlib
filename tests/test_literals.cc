@@ -1,4 +1,4 @@
-#include <w/common/colour.h>
+#include <w/common/color.h>
 #include <w/common/ip.h>
 #include <w/common/uuid.h>
 #include <w/common/version.h>
@@ -11,7 +11,7 @@
 using namespace w::literals;
 
 TEST_CASE(
-  "The string literals of the colours, identifiers and addresses are in w::literals",
+  "The string literals of the colors, identifiers and addresses are in w::literals",
   "[literals]"
 )
 {

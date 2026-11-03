@@ -24,9 +24,9 @@
 
 /**
  * @file
- * @brief Colours: linear Rgba for lighting and blending, sRGB-encoded Rgba8 for textures and
+ * @brief Colors: linear Rgba for lighting and blending, sRGB-encoded Rgba8 for textures and
  * palettes, and Hsv for palette tooling.
- * @details Shading and blending happen on linear values; 8-bit storage and every colour a person
+ * @details Shading and blending happen on linear values; 8-bit storage and every color a person
  * picks or types, e.g. `"#e4a672"`, are sRGB-encoded. The conversions apply the exact sRGB
  * transfer function (IEC 61966-2-1). Alpha is linear in both.
  */
@@ -60,9 +60,9 @@ class Rgba8;
 }
 
 /**
- * @brief Hue, saturation and value of a colour, as colour pickers show them.
- * @details HSV always describes the sRGB-encoded colour, not linear light, so its value steps look
- * even. The hue is in `[0°, 360°)`, zero for greys; saturation, value and alpha are in `[0, 1]`.
+ * @brief Hue, saturation and value of a color, as color pickers show them.
+ * @details HSV always describes the sRGB-encoded color, not linear light, so its value steps look
+ * even. The hue is in `[0°, 360°)`, zero for grays; saturation, value and alpha are in `[0, 1]`.
  * @ingroup core_math
  * @see Rgba8::to_hsv
  * @see Rgba::to_hsv
@@ -77,7 +77,7 @@ struct Hsv
   [[nodiscard]] constexpr bool operator==(Hsv const&) const noexcept = default;
 };
 
-namespace _colour_impl  // NOLINT(*-identifier-naming)
+namespace _color_impl  // NOLINT(*-identifier-naming)
 {
   struct Components
   {
@@ -142,10 +142,10 @@ namespace _colour_impl  // NOLINT(*-identifier-naming)
   {
     return static_cast<std::uint8_t>(std::lround(std::clamp(value, 0.0F, 1.0F) * 255.0F));
   }
-}  // namespace _colour_impl
+}  // namespace _color_impl
 
 /**
- * @brief Linear-light RGBA colour of `float` components, for lighting, blending and GPU
+ * @brief Linear-light RGBA color of `float` components, for lighting, blending and GPU
  * constants.
  * @details Components are usually in `[0, 1]` but may exceed 1 for HDR. Alpha is straight, not
  * premultiplied; premultiplied() converts. Arithmetic is component-wise, and `a * b` modulates.
@@ -193,7 +193,7 @@ class W_COMMON_API Rgba
   }
 
   /**
-   * @brief Returns the colour with its red, green and blue multiplied by its alpha.
+   * @brief Returns the color with its red, green and blue multiplied by its alpha.
    */
   [[nodiscard]] constexpr Rgba premultiplied() const noexcept
   {
@@ -201,7 +201,7 @@ class W_COMMON_API Rgba
   }
 
   /**
-   * @brief Returns the colour with every component clamped into `[0, 1]`.
+   * @brief Returns the color with every component clamped into `[0, 1]`.
    */
   [[nodiscard]] constexpr Rgba clamped() const noexcept
   {
@@ -240,13 +240,13 @@ class W_COMMON_API Rgba
   [[nodiscard]] Rgba8 to_srgb8() const noexcept;
 
   /**
-   * @brief Returns the hue, saturation and value of the sRGB encoding of the colour, clamped into
+   * @brief Returns the hue, saturation and value of the sRGB encoding of the color, clamped into
    * `[0, 1]`, without rounding to 8 bits.
    */
   [[nodiscard]] Hsv to_hsv() const noexcept
   {
     auto const c = this->clamped();
-    return _colour_impl::to_hsv(
+    return _color_impl::to_hsv(
       {
         .r = linear_to_srgb(c.m_r),
         .g = linear_to_srgb(c.m_g),
@@ -270,12 +270,12 @@ class W_COMMON_API Rgba
   [[nodiscard]] static constexpr Rgba white() noexcept { return {1.0F, 1.0F, 1.0F}; }
 
   /**
-   * @brief Returns the linear colour of the sRGB-encoded @p colour.
+   * @brief Returns the linear color of the sRGB-encoded @p color.
    */
-  [[nodiscard]] static Rgba from_srgb8(Rgba8 const& colour) noexcept;
+  [[nodiscard]] static Rgba from_srgb8(Rgba8 const& color) noexcept;
 
   /**
-   * @brief Returns the linear colour of the sRGB-encoded components @p r, @p g, @p b in
+   * @brief Returns the linear color of the sRGB-encoded components @p r, @p g, @p b in
    * `[0, 1]`, without rounding to 8 bits.
    */
   [[nodiscard]] static Rgba from_srgb(
@@ -289,16 +289,16 @@ class W_COMMON_API Rgba
   }
 
   /**
-   * @brief Returns the linear colour of @p hsv, which describes the sRGB encoding.
+   * @brief Returns the linear color of @p hsv, which describes the sRGB encoding.
    */
   [[nodiscard]] static Rgba from_hsv(Hsv const& hsv) noexcept
   {
-    auto const [r, g, b] = _colour_impl::from_hsv(hsv);
+    auto const [r, g, b] = _color_impl::from_hsv(hsv);
     return from_srgb(r, g, b, hsv.alpha);
   }
 
   /**
-   * @brief Returns the linear colour of the sRGB hex string @p text, as Rgba8::from_hex() reads
+   * @brief Returns the linear color of the sRGB hex string @p text, as Rgba8::from_hex() reads
    * it, or `std::nullopt` if it is malformed.
    */
   [[nodiscard]] static std::optional<Rgba> from_hex(std::string_view text) noexcept;
@@ -401,7 +401,7 @@ class W_COMMON_API Rgba
 }
 
 /**
- * @brief sRGB-encoded RGBA colour of 8-bit components, e.g. a texel or a palette entry.
+ * @brief sRGB-encoded RGBA color of 8-bit components, e.g. a texel or a palette entry.
  * @details The red, green and blue bytes are sRGB-encoded, as an `*_UNORM_SRGB` texture stores
  * them; alpha is linear. Convert to Rgba before blending or lighting. The default value is
  * transparent black.
@@ -450,7 +450,7 @@ class W_COMMON_API Rgba8
   }
 
   /**
-   * @brief Returns the linear colour: red, green and blue decoded from sRGB.
+   * @brief Returns the linear color: red, green and blue decoded from sRGB.
    */
   [[nodiscard]] Rgba to_linear() const noexcept
   {
@@ -463,11 +463,11 @@ class W_COMMON_API Rgba8
   }
 
   /**
-   * @brief Returns the hue, saturation and value of the colour.
+   * @brief Returns the hue, saturation and value of the color.
    */
   [[nodiscard]] Hsv to_hsv() const noexcept
   {
-    return _colour_impl::to_hsv(
+    return _color_impl::to_hsv(
       {
         .r = static_cast<float>(this->m_r) / 255.0F,
         .g = static_cast<float>(this->m_g) / 255.0F,
@@ -478,7 +478,7 @@ class W_COMMON_API Rgba8
   }
 
   /**
-   * @brief Returns `"#rrggbb"`, or `"#rrggbbaa"` unless the colour is opaque, in lowercase.
+   * @brief Returns `"#rrggbb"`, or `"#rrggbbaa"` unless the color is opaque, in lowercase.
    */
   [[nodiscard]] std::string to_hex() const;
 
@@ -497,7 +497,7 @@ class W_COMMON_API Rgba8
   }
 
   /**
-   * @brief Returns the colour of a hex string: `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`, in
+   * @brief Returns the color of a hex string: `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`, in
    * either case, the `#` optional, or `std::nullopt` if it is anything else.
    * @details A missing alpha is opaque. The short forms repeat each digit, so `#e4a` is
    * `#ee44aa`.
@@ -515,7 +515,7 @@ class W_COMMON_API Rgba8
     for(auto index = std::size_t {0}; index * digits < text.size(); ++index) {
       auto value = 0;
       for(auto const c : text.substr(index * digits, digits)) {
-        auto const digit = _colour_impl::hex_digit(c);
+        auto const digit = _color_impl::hex_digit(c);
         if(digit < 0)
           return std::nullopt;
         value = value * 16 + digit;
@@ -527,7 +527,7 @@ class W_COMMON_API Rgba8
   }
 
   /**
-   * @brief Returns the colour `0xRRGGBBAA`.
+   * @brief Returns the color `0xRRGGBBAA`.
    */
   [[nodiscard]] static constexpr Rgba8 from_rgba32(std::uint32_t const rgba) noexcept
   {
@@ -540,16 +540,16 @@ class W_COMMON_API Rgba8
   }
 
   /**
-   * @brief Returns the colour of @p hsv, rounded to 8 bits.
+   * @brief Returns the color of @p hsv, rounded to 8 bits.
    */
   [[nodiscard]] static Rgba8 from_hsv(Hsv const& hsv) noexcept
   {
-    auto const [r, g, b] = _colour_impl::from_hsv(hsv);
+    auto const [r, g, b] = _color_impl::from_hsv(hsv);
     return {
-      _colour_impl::to_byte(r),
-      _colour_impl::to_byte(g),
-      _colour_impl::to_byte(b),
-      _colour_impl::to_byte(hsv.alpha),
+      _color_impl::to_byte(r),
+      _color_impl::to_byte(g),
+      _color_impl::to_byte(b),
+      _color_impl::to_byte(hsv.alpha),
     };
   }
 
@@ -565,14 +565,14 @@ class W_COMMON_API Rgba8
 inline Rgba8 Rgba::to_srgb8() const noexcept
 {
   return {
-    _colour_impl::to_byte(linear_to_srgb(this->m_r)),
-    _colour_impl::to_byte(linear_to_srgb(this->m_g)),
-    _colour_impl::to_byte(linear_to_srgb(this->m_b)),
-    _colour_impl::to_byte(this->m_a),
+    _color_impl::to_byte(linear_to_srgb(this->m_r)),
+    _color_impl::to_byte(linear_to_srgb(this->m_g)),
+    _color_impl::to_byte(linear_to_srgb(this->m_b)),
+    _color_impl::to_byte(this->m_a),
   };
 }
 
-inline Rgba Rgba::from_srgb8(Rgba8 const& colour) noexcept { return colour.to_linear(); }
+inline Rgba Rgba::from_srgb8(Rgba8 const& color) noexcept { return color.to_linear(); }
 
 inline std::optional<Rgba> Rgba::from_hex(std::string_view const text) noexcept
 {
@@ -582,7 +582,7 @@ inline std::optional<Rgba> Rgba::from_hex(std::string_view const text) noexcept
 inline namespace literals
 {
   /**
-   * @brief Creates an sRGB colour from a hex literal, e.g. `"#e4a672"_rgba8`, checked at compile
+   * @brief Creates an sRGB color from a hex literal, e.g. `"#e4a672"_rgba8`, checked at compile
    * time.
    * @ingroup core_math
    * @relates Rgba8
@@ -590,16 +590,16 @@ inline namespace literals
    */
   [[nodiscard]] consteval Rgba8 operator""_rgba8(char const* const text, std::size_t const size)
   {
-    auto const colour = Rgba8::from_hex({text, size});
-    if(not colour.has_value())
-      throw std::invalid_argument("a colour literal is #rgb, #rgba, #rrggbb or #rrggbbaa");
-    return *colour;
+    auto const color = Rgba8::from_hex({text, size});
+    if(not color.has_value())
+      throw std::invalid_argument("a color literal is #rgb, #rgba, #rrggbb or #rrggbbaa");
+    return *color;
   }
 }  // namespace literals
 
-W_COMMON_API std::ostream& operator<<(std::ostream& os, Rgba const& colour);
+W_COMMON_API std::ostream& operator<<(std::ostream& os, Rgba const& color);
 
-W_COMMON_API std::ostream& operator<<(std::ostream& os, Rgba8 const& colour);
+W_COMMON_API std::ostream& operator<<(std::ostream& os, Rgba8 const& color);
 
 static_assert(std::is_standard_layout_v<Rgba>);
 static_assert(std::is_trivially_copyable_v<Rgba>);
@@ -618,18 +618,18 @@ W_COMMON_NAMESPACE_END
 template <>
 struct std::hash<w::common::Rgba>
 {
-  [[nodiscard]] std::size_t operator()(w::common::Rgba const& colour) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::Rgba const& color) const noexcept
   {
-    return w::common::_hash_impl::combine(colour.r(), colour.g(), colour.b(), colour.a());
+    return w::common::_hash_impl::combine(color.r(), color.g(), color.b(), color.a());
   }
 };
 
 template <>
 struct std::hash<w::common::Rgba8>
 {
-  [[nodiscard]] std::size_t operator()(w::common::Rgba8 const& colour) const noexcept
+  [[nodiscard]] std::size_t operator()(w::common::Rgba8 const& color) const noexcept
   {
-    return std::hash<std::uint32_t> {}(colour.to_rgba32());
+    return std::hash<std::uint32_t> {}(color.to_rgba32());
   }
 };
 
@@ -649,12 +649,12 @@ struct std::hash<w::common::Hsv>
 template <>
 struct fmt::formatter<w::common::Rgba> : fmt::formatter<float>
 {
-  format_context::iterator format(w::common::Rgba const& colour, format_context& ctx) const
+  format_context::iterator format(w::common::Rgba const& color, format_context& ctx) const
   {
     auto out = ctx.out();
     *out++ = '(';
     auto first = true;
-    for(auto const value : colour.to_array()) {
+    for(auto const value : color.to_array()) {
       if(not first) {
         *out++ = ',';
         *out++ = ' ';
@@ -674,9 +674,9 @@ struct fmt::formatter<w::common::Rgba> : fmt::formatter<float>
 template <>
 struct fmt::formatter<w::common::Rgba8> : fmt::formatter<std::string_view>
 {
-  format_context::iterator format(w::common::Rgba8 const& colour, format_context& ctx) const
+  format_context::iterator format(w::common::Rgba8 const& color, format_context& ctx) const
   {
-    return fmt::formatter<std::string_view>::format(colour.to_hex(), ctx);
+    return fmt::formatter<std::string_view>::format(color.to_hex(), ctx);
   }
 };
 

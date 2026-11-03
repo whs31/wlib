@@ -76,7 +76,7 @@ auto const sum = w::Distance(1_meters) + w::BasicDistance<double>(2_meters); // 
 ```
 
 A mixed expression computes in `double`, since only the `float` operand converts implicitly.
-`w::Real` is `float`, the precision of the aliases and the literals. Colours store `float` only.
+`w::Real` is `float`, the precision of the aliases and the literals. Colors store `float` only.
 The linear algebra is header-only and covers what a game or a simulation needs:
 
 - `Vector2`, `Vector3` (12 bytes, no SIMD padding), `Vector4`, `Matrix3x3`, `Matrix4x4`,

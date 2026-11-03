@@ -1,6 +1,6 @@
 ---
 name: wlib
-description: How to use WLib, the C++23 utility library of whs31 (headers `<w/common/...>`, namespace `w`, CMake targets `w::lib` and `w::lib::glaze`). Use when you write, change or review C++ code in a project that depends on wlib, or when C++ code needs physical quantities and units, vectors, matrices, quaternions, geodetic coordinates, colours, UUIDs, semantic versions, IP addresses, spdlog loggers, reproducible random numbers, scope guards, mutex guards, per-user application directories, or glaze serialization of these types.
+description: How to use WLib, the C++23 utility library of whs31 (headers `<w/common/...>`, namespace `w`, CMake targets `w::lib` and `w::lib::glaze`). Use when you write, change or review C++ code in a project that depends on wlib, or when C++ code needs physical quantities and units, vectors, matrices, quaternions, geodetic coordinates, colors, UUIDs, semantic versions, IP addresses, spdlog loggers, reproducible random numbers, scope guards, mutex guards, per-user application directories, or glaze serialization of these types.
 ---
 
 # WLib
@@ -105,8 +105,8 @@ If an operation can fail:
 - `Vector3::normalized()` of a zero vector returns the zero vector. `try_normalized()` returns `std::nullopt`.
 - `Quaternion::normalized()` and `Matrix4x4::inverse()` throw `w::NumericError`. If failure is possible, use `try_normalized()` and `try_inverse()`.
 
-Colours:
-- `Rgba` is linear `float`. `Rgba8` is sRGB bytes. Do colour calculations, for example blends, in `Rgba`.
+Colors:
+- `Rgba` is linear `float`. `Rgba8` is sRGB bytes. Do color calculations, for example blends, in `Rgba`.
 - The compiler checks `"#e4a672"_rgba8`. `Rgba8::from_hex(text)` returns `std::optional`.
 - Convert with `Rgba8::to_linear()` and `Rgba::to_srgb8()`. For HSV, use `Hsv`, `from_hsv()` and `to_hsv()`.
 
