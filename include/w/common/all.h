@@ -111,6 +111,7 @@
 #include <w/common/resistance.h>
 #include <w/common/sockaddr.h>
 #include <w/common/sphere.h>
+#include <w/common/stdint.h>
 #include <w/common/temperature.h>
 #include <w/common/threading.h>
 #include <w/common/torque.h>
