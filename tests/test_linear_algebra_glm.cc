@@ -728,13 +728,15 @@ TEST_CASE("Ray intersections match glm", "[linalg][glm][bounds]")
     auto const plane_normal = sampler.direction();
     auto glm_distance = 0.0F;
     auto const plane = Plane::from_point_normal(plane_point, plane_normal);
-    if(glm::intersectRayPlane(
-         glm_origin,
-         glm_direction,
-         to_glm(plane_point),
-         to_glm(plane_normal),
-         glm_distance
-       )) {
+    if(
+      glm::intersectRayPlane(
+        glm_origin,
+        glm_direction,
+        to_glm(plane_point),
+        to_glm(plane_normal),
+        glm_distance
+      )
+    ) {
       REQUIRE(ray.intersect(plane).has_value());
       auto const t = ray.intersect(plane).value_or(0);
       CHECK(std::abs(t - glm_distance) / (1 + glm_distance) < 1e-4);

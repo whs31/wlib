@@ -90,8 +90,10 @@ W_COMMON_NAMESPACE_BEGIN
 spdlog::level::level_enum get_env_log_level() noexcept
 {
   if(char const* env = std::getenv("LOG_LEVEL")) {
-    if(auto const level = spdlog::level::from_str(env);
-       level != spdlog::level::off or std::string_view {env} == "off")
+    if(
+      auto const level = spdlog::level::from_str(env);
+      level != spdlog::level::off or std::string_view {env} == "off"
+    )
       return level;
   }
   return default_log_level();

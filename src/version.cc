@@ -41,8 +41,10 @@ namespace
            return is_identifier_char(value);
          }))
         return false;
-      if(forbid_numeric_leading_zero and identifier.size() > 1 and identifier.front() == '0'
-         and is_numeric_identifier(identifier))
+      if(
+        forbid_numeric_leading_zero and identifier.size() > 1 and identifier.front() == '0'
+        and is_numeric_identifier(identifier)
+      )
         return false;
       if(dot == std::string_view::npos)
         break;
@@ -95,8 +97,10 @@ namespace
       auto const rhs_numeric = is_numeric_identifier(rhs);
 
       if(lhs_numeric and rhs_numeric) {
-        if(auto const result = compare_identifier_numbers(lhs, rhs);
-           result != std::strong_ordering::equal)
+        if(
+          auto const result = compare_identifier_numbers(lhs, rhs);
+          result != std::strong_ordering::equal
+        )
           return result;
       }
       else if(lhs_numeric != rhs_numeric) {
@@ -245,8 +249,10 @@ Version Version::parse(std::string_view const text)
   auto const first_dot = core.find('.');
   auto const second_dot = first_dot == std::string_view::npos ? std::string_view::npos
                                                               : core.find('.', first_dot + 1);
-  if(first_dot == std::string_view::npos or second_dot == std::string_view::npos
-     or core.find('.', second_dot + 1) != std::string_view::npos)
+  if(
+    first_dot == std::string_view::npos or second_dot == std::string_view::npos
+    or core.find('.', second_dot + 1) != std::string_view::npos
+  )
     throw VersionError::invalid_string(text, "version must have exactly three numeric components");
 
   return {

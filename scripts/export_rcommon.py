@@ -62,8 +62,14 @@ TEXT_REPLACEMENTS = (
   ("WLIB", "RCOMMON"),
   ("WLib", "RCommon"),
   ("wlib", "rcommon"),
-  ("W_", "RADAR_"),
 )
+# `W_` only at the start of a word, so that e.g. `ROW_MAJOR` stays as it is.
+REGEX_REPLACEMENTS = (
+  (re.compile(r"(?<![A-Za-z0-9_])W_"), "RADAR_"),
+  (re.compile(r"\busing namespace w(?=;|::)"), "using namespace radar::mms"),
+  (re.compile(r"(?<![A-Za-z0-9_])w::"), "radar::mms::"),
+)
+FORBIDDEN_PATTERN = re.compile(r"\busing namespace w(?=;|::)|(?<![A-Za-z0-9_])w::|(?<![A-Za-z0-9_])W_")
 
 
 def fail(message: str) -> None:
@@ -120,8 +126,8 @@ def translate_path(relative: Path) -> Path:
 def translate_text(text: str, relative: Path) -> str:
   for source, target in TEXT_REPLACEMENTS:
     text = text.replace(source, target)
-  text = re.sub(r"\busing namespace w(?=;|::)", "using namespace radar::mms", text)
-  text = re.sub(r"(?<![A-Za-z0-9_])w::", "radar::mms::", text)
+  for pattern, target in REGEX_REPLACEMENTS:
+    text = pattern.sub(target, text)
 
   if relative == Path("conanfile.py"):
     text = text.replace('components["lib"]', 'components["common"]')
@@ -160,8 +166,8 @@ def stage_tree(stage: Path) -> int:
         for marker in forbidden:
           if marker in translated:
             fail(f"generated {destination} still contains {marker!r}")
-        if re.search(r"\busing namespace w(?=;|::)|(?<![A-Za-z0-9_])w::", translated):
-          fail(f"generated {destination} still contains the WLib namespace")
+        if FORBIDDEN_PATTERN.search(translated):
+          fail(f"generated {destination} still contains the WLib namespace or a W_ macro")
       output.write_text(translated, encoding="utf-8")
 
   cmake = (stage / "CMakeLists.txt").read_text(encoding="utf-8")

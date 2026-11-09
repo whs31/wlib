@@ -167,8 +167,10 @@ class BasicRay
     auto const d = this->m_direction;
     auto const min = box.min();
     auto const max = box.max();
-    if(slab(o.x(), d.x(), min.x(), max.x()) and slab(o.y(), d.y(), min.y(), max.y())
-       and slab(o.z(), d.z(), min.z(), max.z()))
+    if(
+      slab(o.x(), d.x(), min.x(), max.x()) and slab(o.y(), d.y(), min.y(), max.y())
+      and slab(o.z(), d.z(), min.z(), max.z())
+    )
       return enter;
     return std::nullopt;
   }

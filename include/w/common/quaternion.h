@@ -316,9 +316,8 @@ class BasicQuaternion
    * @deprecated The name does not say which order; use to_yaw_pitch_roll(), or to_euler() for
    * another order.
    */
-  [[deprecated(
-    "use to_yaw_pitch_roll(), or to_euler<Order>() for another order"
-  )]] [[nodiscard]] BasicEulerAngles<T>
+  [[deprecated("use to_yaw_pitch_roll(), or to_euler<Order>() for another order")]]
+  [[nodiscard]] BasicEulerAngles<T>
     to_euler_angles() const noexcept
   {
     return this->to_yaw_pitch_roll();
@@ -427,9 +426,8 @@ class BasicQuaternion
    * @deprecated The name does not say which order; use from_yaw_pitch_roll(), or from_euler() for
    * another order.
    */
-  [[deprecated(
-    "use from_yaw_pitch_roll(), or from_euler<Order>() for another order"
-  )]] [[nodiscard]] static BasicQuaternion<T>
+  [[deprecated("use from_yaw_pitch_roll(), or from_euler<Order>() for another order")]]
+  [[nodiscard]] static BasicQuaternion<T>
     from_euler_angles(BasicEulerAngles<T> const& angles) noexcept
   {
     return from_yaw_pitch_roll(angles);

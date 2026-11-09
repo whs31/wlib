@@ -90,10 +90,7 @@ W_COMMON_NAMESPACE_BEGIN
  * @ingroup core_text
  * @see is_digit
  */
-[[nodiscard]] constexpr u16 to_digit(char const c) noexcept
-{
-  return static_cast<u16>(c - '0');
-}
+[[nodiscard]] constexpr u16 to_digit(char const c) noexcept { return static_cast<u16>(c - '0'); }
 
 /**
  * @brief Converts an ASCII hexadecimal digit to its numeric nibble value.

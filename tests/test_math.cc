@@ -108,10 +108,7 @@ TEST_CASE("Euclidean division preserves large integer precision", "[math]")
   auto constexpr divisor = i64 {2};
 
   REQUIRE(div_euclid(dividend, divisor) == 9'007'199'254'740'993);
-  REQUIRE(
-    rem_euclid(i64 {-1}, std::numeric_limits<i64>::min())
-    == std::numeric_limits<i64>::max()
-  );
+  REQUIRE(rem_euclid(i64 {-1}, std::numeric_limits<i64>::min()) == std::numeric_limits<i64>::max());
 }
 
 TEST_CASE("Euclidean division supports floating point values", "[math]")
