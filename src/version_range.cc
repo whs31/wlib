@@ -11,6 +11,7 @@
 #include <system_error>
 
 #include <w/common/char_utils.h>
+#include <w/common/stdint.h>
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -22,9 +23,9 @@ namespace
 
   struct PartialVersion
   {
-    std::uint64_t major = 0;
-    std::uint64_t minor = 0;
-    std::uint64_t patch = 0;
+    u64 major = 0;
+    u64 minor = 0;
+    u64 patch = 0;
     int component_count = 0;
     bool major_wildcard = false;
     bool minor_wildcard = false;
@@ -62,7 +63,7 @@ namespace
     return text == "=" or text == ">" or text == ">=" or text == "<" or text == "<=";
   }
 
-  [[nodiscard]] std::uint64_t parse_number(
+  [[nodiscard]] u64 parse_number(
     std::string_view const range,
     std::string_view const number,
     std::string_view const field_name
@@ -80,7 +81,7 @@ namespace
           invalid_range_string(range, fmt::format("{} component is not numeric", field_name));
     }
 
-    auto value = std::uint64_t {0};
+    auto value = 0_u64;
     auto const* const begin = std::to_address(number.begin());
     auto const* const end = std::to_address(number.end());
     auto const [ptr, ec] = std::from_chars(begin, end, value);
@@ -93,13 +94,13 @@ namespace
     return value;
   }
 
-  [[nodiscard]] std::uint64_t increment(
-    std::uint64_t const value,
+  [[nodiscard]] u64 increment(
+    u64 const value,
     std::string_view const range,
     std::string_view const field_name
   )
   {
-    if(value == std::numeric_limits<std::uint64_t>::max())
+    if(value == std::numeric_limits<u64>::max())
       throw VersionError::
         invalid_range_string(range, fmt::format("{} component overflows uint64", field_name));
     return value + 1;
@@ -108,7 +109,7 @@ namespace
   [[nodiscard]] std::vector<std::string_view> split_dot_parts(std::string_view const text)
   {
     auto result = std::vector<std::string_view>();
-    auto start = std::size_t {0};
+    auto start = 0uz;
     while(start <= text.size()) {
       auto const dot = text.find('.', start);
       auto const end = dot == std::string_view::npos ? text.size() : dot;
@@ -121,9 +122,9 @@ namespace
   }
 
   [[nodiscard]] Version make_version(
-    std::uint64_t const major,
-    std::uint64_t const minor,
-    std::uint64_t const patch,
+    u64 const major,
+    u64 const minor,
+    u64 const patch,
     std::string_view const prerelease = {},
     std::string_view const build = {}
   )
@@ -232,7 +233,7 @@ namespace
       [&](std::string_view const part, std::string_view const name, bool& wildcard) {
         if(is_wildcard(part)) {
           wildcard = true;
-          return std::uint64_t {0};
+          return 0_u64;
         }
         return parse_number(range, part, name);
       };
@@ -376,8 +377,8 @@ namespace
                          }
                        )
                      - text.begin();
-      result.push_back(text.substr(0, static_cast<std::size_t>(end)));
-      text.remove_prefix(static_cast<std::size_t>(end));
+      result.push_back(text.substr(0, static_cast<usize>(end)));
+      text.remove_prefix(static_cast<usize>(end));
     }
     return result;
   }
@@ -417,7 +418,7 @@ namespace
     }
 
     auto const tokens = split_space_tokens(trimmed);
-    for(auto i = std::size_t {0}; i < tokens.size(); ++i) {
+    for(auto i = 0uz; i < tokens.size(); ++i) {
       auto token = tokens.at(i);
       auto op = std::string_view();
       auto mode = char {};
@@ -536,7 +537,7 @@ VersionRange::VersionRange(std::string_view const expression)
 bool VersionRange::contains(Version const& version) const noexcept
 {
   return std::ranges::any_of(this->m_alternatives, [&](Alternative const& alternative) {
-    return ::w::common::contains(alternative, version, this->m_include_prerelease);
+    return common::contains(alternative, version, this->m_include_prerelease);
   });
 }
 

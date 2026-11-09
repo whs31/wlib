@@ -7,4 +7,6 @@ WLib is a general-purpose C++23 utility library: physical quantities, linear alg
 ## Project-specific conventions
 - Preserve the public WLib API unless an API break is intentional.
 - Keep the library free of Qt; Qt support belongs to wlib_qt.
+- Use the fixed-width scalar names from `<w/common/stdint.h>` instead of the standard integer and
+  size names.
 - Keep `skills/wlib/SKILL.md` in step with the public API.

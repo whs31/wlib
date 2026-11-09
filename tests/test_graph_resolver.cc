@@ -1,6 +1,6 @@
+#include <w/common/stdint.h>
 #include <w/common/graph_resolver.h>
 
-#include <cstddef>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -21,10 +21,10 @@ namespace
     return Uuid(fmt::format("00000000-0000-4000-8000-{:012x}", value));
   }
 
-  [[nodiscard]] std::unordered_map<Uuid, std::size_t> positions(std::vector<Uuid> const& nodes)
+  [[nodiscard]] std::unordered_map<Uuid, usize> positions(std::vector<Uuid> const& nodes)
   {
-    auto result = std::unordered_map<Uuid, std::size_t>();
-    for(auto i = std::size_t {0}; i < nodes.size(); ++i)
+    auto result = std::unordered_map<Uuid, usize>();
+    for(auto i = 0uz; i < nodes.size(); ++i)
       result.emplace(nodes.at(i), i);
     return result;
   }

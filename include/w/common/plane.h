@@ -12,6 +12,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
@@ -202,7 +203,7 @@ struct std::hash<w::common::BasicPlane<T>>
  * @brief Formats as `(a, b, c, d)`; the format spec, e.g. `{:.3f}`, applies to every component.
  */
 template <std::floating_point T>
-struct fmt::formatter<w::common::BasicPlane<T>> : fmt::formatter<T>
+struct fmt::formatter<w::common::BasicPlane<T>> : formatter<T>
 {
   format_context::iterator format(w::common::BasicPlane<T> const& plane, format_context& ctx) const
   {

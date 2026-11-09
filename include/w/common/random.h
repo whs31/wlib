@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstdint>
 #include <array>
 #include <bit>
 #include <string_view>
 
+#include <w/common/stdint.h>
 #include <w/common/check.h>
 #include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
@@ -32,7 +32,7 @@ namespace _random_impl  // NOLINT(*-identifier-naming)
    * @details Seeds the generator state, so that seeds differing in a single bit give unrelated
    * streams.
    */
-  [[nodiscard]] constexpr std::uint64_t splitmix64(std::uint64_t& state) noexcept
+  [[nodiscard]] constexpr u64 splitmix64(u64& state) noexcept
   {
     state += 0x9e37'79b9'7f4a'7c15U;
     auto z = state;
@@ -43,9 +43,9 @@ namespace _random_impl  // NOLINT(*-identifier-naming)
 
   // splitmix64 is a bijection of its counter, so four consecutive outputs are never all zero,
   // the one state xoshiro256** cannot leave
-  [[nodiscard]] constexpr std::array<std::uint64_t, 4> seeded_state(std::uint64_t seed) noexcept
+  [[nodiscard]] constexpr std::array<u64, 4> seeded_state(u64 seed) noexcept
   {
-    auto state = std::array<std::uint64_t, 4> {};
+    auto state = std::array<u64, 4> {};
     for(auto& word : state)
       word = splitmix64(seed);
     return state;
@@ -56,29 +56,29 @@ namespace _random_impl  // NOLINT(*-identifier-naming)
   class Fnv1a
   {
    public:
-    constexpr void feed(std::uint64_t const value) noexcept
+    constexpr void feed(u64 const value) noexcept
     {
       for(auto shift = 0U; shift < 64U; shift += 8U)
-        this->feed_byte(static_cast<std::uint8_t>(value >> shift));
+        this->feed_byte(static_cast<u8>(value >> shift));
     }
 
     // length-prefixed, so ("ab", "c") and ("a", "bc") hash differently
     constexpr void feed(std::string_view const text) noexcept
     {
-      this->feed(static_cast<std::uint64_t>(text.size()));
+      this->feed(static_cast<u64>(text.size()));
       for(auto const c : text)
-        this->feed_byte(static_cast<std::uint8_t>(c));
+        this->feed_byte(static_cast<u8>(c));
     }
 
-    [[nodiscard]] constexpr std::uint64_t value() const noexcept { return this->m_hash; }
+    [[nodiscard]] constexpr u64 value() const noexcept { return this->m_hash; }
 
    private:
-    constexpr void feed_byte(std::uint8_t const byte) noexcept
+    constexpr void feed_byte(u8 const byte) noexcept
     {
-      this->m_hash = (this->m_hash ^ byte) * 0x0000'0100'0000'01b3U;
+      this->m_hash = (this->m_hash ^ byte) * 0x00000100000001B3u;
     }
 
-    std::uint64_t m_hash = 0xcbf2'9ce4'8422'2325U;
+    u64 m_hash = 0xCBF29CE484222325u;
   };
 }  // namespace _random_impl
 
@@ -116,8 +116,8 @@ namespace _random_impl  // NOLINT(*-identifier-naming)
  * @ingroup core_random
  * @see RandomStream::derive
  */
-[[nodiscard]] constexpr std::uint64_t stream_seed(
-  std::uint64_t const seed,
+[[nodiscard]] constexpr u64 stream_seed(
+  u64 const seed,
   std::string_view const scope,
   std::string_view const stream
 ) noexcept
@@ -152,12 +152,12 @@ namespace _random_impl  // NOLINT(*-identifier-naming)
  */
 struct W_COMMON_API RandomStream
 {
-  std::array<std::uint64_t, 4> state = _random_impl::seeded_state(0);
+  std::array<u64, 4> state = _random_impl::seeded_state(0);
 
   /**
    * @brief Returns the stream seeded through SplitMix64, e.g. by stream_seed().
    */
-  [[nodiscard]] static constexpr RandomStream from_seed(std::uint64_t const seed) noexcept
+  [[nodiscard]] static constexpr RandomStream from_seed(u64 const seed) noexcept
   {
     return {.state = _random_impl::seeded_state(seed)};
   }
@@ -167,7 +167,7 @@ struct W_COMMON_API RandomStream
    * @see stream_seed
    */
   [[nodiscard]] static constexpr RandomStream derive(
-    std::uint64_t const seed,
+    u64 const seed,
     std::string_view const scope,
     std::string_view const stream
   ) noexcept
@@ -178,7 +178,7 @@ struct W_COMMON_API RandomStream
   /**
    * @brief Returns the next 64 uniformly distributed bits.
    */
-  [[nodiscard]] constexpr std::uint64_t next() noexcept
+  [[nodiscard]] constexpr u64 next() noexcept
   {
     auto& [s0, s1, s2, s3] = this->state;
     auto const result = std::rotl(s1 * 5U, 7) * 9U;
@@ -209,13 +209,13 @@ struct W_COMMON_API RandomStream
    * @brief Returns a uniform whole number in `[0, bound)`, without modulo bias.
    * @throws InvalidArgumentError if @p bound is zero.
    */
-  [[nodiscard]] constexpr std::uint64_t below(std::uint64_t const bound)
+  [[nodiscard]] constexpr u64 below(u64 const bound)
   {
     // NOLINTNEXTLINE(*-avoid-do-while)
     W_HARD_CHECK(bound > 0, InvalidArgumentError, "random bound must be positive");
 
     // the draws below 2^64 mod bound would make the low remainders more likely
-    auto const threshold = (std::uint64_t {0} - bound) % bound;
+    auto const threshold = (0_u64 - bound) % bound;
     while(true) {
       if(auto const bits = this->next(); bits >= threshold)
         return bits % bound;

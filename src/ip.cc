@@ -13,6 +13,8 @@
 #  include <arpa/inet.h>
 #endif
 
+#include <w/common/stdint.h>
+
 namespace
 {
   [[nodiscard]] int parse_address(int const family, char const* const text, void* const output)
@@ -28,7 +30,7 @@ namespace
     int const family,
     void const* const address,
     char* const output,
-    std::size_t const size
+    w::usize const size
   )
   {
 #ifdef _WIN32
@@ -82,7 +84,7 @@ Ipv4Addr Ipv4Addr::parse(std::string_view const text)
   if(parse_address(AF_INET, terminated.c_str(), &native) != 1)
     throw IpError::invalid_v4_string(text);
 
-  auto octets = std::array<std::uint8_t, 4> {};
+  auto octets = std::array<u8, 4> {};
   std::memcpy(octets.data(), &native, octets.size());
   return from_octets(octets.at(0), octets.at(1), octets.at(2), octets.at(3));
 }
@@ -103,7 +105,7 @@ Ipv6Addr Ipv6Addr::parse(std::string_view const text)
   if(parse_address(AF_INET6, terminated.c_str(), &native) != 1)
     throw IpError::invalid_v6_string(text);
 
-  auto octets = std::array<std::uint8_t, 16> {};
+  auto octets = std::array<u8, 16> {};
   std::memcpy(octets.data(), &native, octets.size());
   return Ipv6Addr(octets);
 }

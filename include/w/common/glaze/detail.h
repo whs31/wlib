@@ -5,8 +5,6 @@
 #include <charconv>
 #include <concepts>
 #include <memory>
-#include <cstddef>
-#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -19,6 +17,7 @@
 #include <glaze/core/custom.hpp>
 #include <glaze/core/read.hpp>
 
+#include <w/common/stdint.h>
 #include <w/common/concepts.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/quantity.h>
@@ -118,7 +117,7 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
    * @brief Every way a quantity may be read: its unit keys, its literal suffixes, and the message
    * for a literal with an unknown suffix.
    */
-  template <DerivedQuantity T, typename Fields, std::size_t FieldCount, std::size_t LiteralCount>
+  template <DerivedQuantity T, typename Fields, usize FieldCount, usize LiteralCount>
   struct QuantityReading
   {
     using quantity_type = T;
@@ -155,7 +154,7 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
    * @brief Assigns @p value from the one unit of @p units that @p fields holds, failing the read
    * with `constraint_violated` if it holds none or several.
    */
-  template <DerivedQuantity T, typename Fields, std::size_t FieldCount>
+  template <DerivedQuantity T, typename Fields, usize FieldCount>
   void read_fields(
     T& value,
     glz::context& ctx,
@@ -181,7 +180,7 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
    * @details Fails the read with `constraint_violated` if the string does not start with a number,
    * or with @p unknown_suffix if the rest of it is not one of the suffixes.
    */
-  template <DerivedQuantity T, std::size_t LiteralCount>
+  template <DerivedQuantity T, usize LiteralCount>
   void read_literal(
     T& value,
     glz::context& ctx,
@@ -210,7 +209,7 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
   /**
    * @brief Assigns @p value from @p input as @p reading allows.
    */
-  template <DerivedQuantity T, typename Fields, std::size_t FieldCount, std::size_t LiteralCount>
+  template <DerivedQuantity T, typename Fields, usize FieldCount, usize LiteralCount>
   void read_quantity(
     T& value,
     glz::context& ctx,
@@ -328,7 +327,7 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
    * one is missing or null; a longer array fails with `exceeded_static_array_size`, as for a
    * `std::array`. A binary format reads the `std::array` the adapters write.
    */
-  template <typename T, std::size_t N>
+  template <typename T, usize N>
   class ExactArray
   {
    public:
@@ -339,7 +338,7 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 
     [[nodiscard]] std::array<T, N> const& values() const noexcept { return this->m_values; }
 
-    [[nodiscard]] T const& operator[](std::size_t const index) const noexcept
+    [[nodiscard]] T const& operator[](usize const index) const noexcept
     {
       return this->m_values[index];  // NOLINT(*-pro-bounds-constant-array-index)
     }
@@ -352,14 +351,14 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
    * @brief Copies the elements of @p elements into @p values, or rejects the read where one is
    * missing.
    */
-  template <typename T, std::size_t N>
+  template <typename T, usize N>
   void complete(
     std::array<std::optional<T>, N>& elements,
     std::array<T, N>& values,
     glz::context& ctx
   ) noexcept
   {
-    for(auto index = std::size_t {0}; index < N; ++index) {
+    for(auto index = 0uz; index < N; ++index) {
       if(not elements.at(index).has_value()) {
         reject(ctx, "the array has too few elements");
         return;
@@ -376,7 +375,7 @@ W_COMMON_NAMESPACE_END
  * by the first character of the value; any other format takes the object only, so a binary
  * document reads back what the adapter writes.
  */
-template <std::uint32_t Format, typename Fields>
+template <w::u32 Format, typename Fields>
 struct glz::from<Format, w::common::_glaze_impl::QuantityInput<Fields>>
 {
   template <auto Opts>
@@ -396,7 +395,7 @@ struct glz::from<Format, w::common::_glaze_impl::QuantityInput<Fields>>
  * of the value; any other format takes the number only, so a binary document reads back what the
  * adapter writes.
  */
-template <std::uint32_t Format>
+template <w::u32 Format>
 struct glz::from<Format, w::common::_glaze_impl::CoordinateInput>
 {
   template <auto Opts>
@@ -415,7 +414,7 @@ struct glz::from<Format, w::common::_glaze_impl::CoordinateInput>
  * @brief Reads an ExactArray: a text format rejects a missing element; any other format reads the
  * `std::array` the adapters write.
  */
-template <std::uint32_t Format, typename T, std::size_t N>
+template <w::u32 Format, typename T, w::usize N>
 struct glz::from<Format, w::common::_glaze_impl::ExactArray<T, N>>
 {
   template <auto Opts>

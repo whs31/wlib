@@ -204,13 +204,11 @@ TEST_CASE("The default pattern, aligned_log_pattern, pads every column to a fixe
       line->pop_back();
 
   // `[13:43:05.120] ` is 15 characters wide
+  auto const padded_name = name + std::string(25 - name.size(), ' ');
   REQUIRE(
-    with_source.substr(15)
-    == "info     wlib.pattern             parameters.cc:53   loaded parameters"
+    with_source.substr(15) == "info     " + padded_name + "parameters.cc:53   loaded parameters"
   );
-  REQUIRE(
-    without_source.substr(15) == "critical wlib.pattern                          :     no source"
-  );
+  REQUIRE(without_source.substr(15) == "critical " + padded_name + "             :     no source");
 }
 
 TEST_CASE("Dynamic log sinks can be attached and detached at runtime", "[log]")

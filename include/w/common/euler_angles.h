@@ -1,7 +1,6 @@
 #pragma once
 
 #include <concepts>
-#include <cstdint>
 #include <array>
 #include <bit>
 #include <compare>
@@ -14,6 +13,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <w/common/stdint.h>
 #include <w/common/angle.h>
 #include <w/common/config.h>
 #include <w/common/detail/namespace.h>
@@ -41,7 +41,7 @@ class BasicQuaternion;
  * @see Quaternion::from_euler
  * @see Quaternion::to_euler
  */
-enum class EulerOrder : std::uint8_t
+enum class EulerOrder : u8
 {
   XYZ,
   XZY,
@@ -230,15 +230,15 @@ struct std::hash<w::common::BasicEulerAngles<T>>
   {
     auto hash = std::hash<w::common::BasicAngle<T>> {}(angles.roll());
     hash ^= std::hash<w::common::BasicAngle<T>> {}(angles.pitch()) + 0x9e3779b97f4a7c15ull
-          + (hash << 6) + (hash >> 2);
+          + (hash << 6) + (hash >> 2);  // NOLINT(*-redundant-parentheses)
     hash ^= std::hash<w::common::BasicAngle<T>> {}(angles.yaw()) + 0x9e3779b97f4a7c15ull
-          + (hash << 6) + (hash >> 2);
+          + (hash << 6) + (hash >> 2);  // NOLINT(*-redundant-parentheses)
     return hash;
   }
 };
 
 #ifndef __DOXYGEN__
 template <std::floating_point T>
-struct fmt::formatter<w::common::BasicEulerAngles<T>> : fmt::ostream_formatter
+struct fmt::formatter<w::common::BasicEulerAngles<T>> : ostream_formatter
 {};
 #endif

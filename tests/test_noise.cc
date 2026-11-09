@@ -1,11 +1,10 @@
+#include <w/common/stdint.h>
 #include <w/common/error.h>
 #include <w/common/noise.h>
 #include <w/common/random.h>
 #include <w/common/math.h>
 
 #include <cmath>
-#include <cstddef>
-#include <cstdint>
 #include <chrono>
 #include <iterator>
 #include <limits>
@@ -24,7 +23,7 @@ using Catch::Matchers::WithinRel;
 
 namespace
 {
-  auto constexpr world_seed = std::uint64_t {1};
+  auto constexpr world_seed = u64 {1};
 
   [[nodiscard]] double mean_of(std::vector<double> const& values)
   {
@@ -35,9 +34,9 @@ namespace
   }
 
   // the sample autocovariance at a lag of `lag` samples, about the known mean 0
-  [[nodiscard]] double autocovariance(std::vector<double> const& values, std::size_t const lag)
+  [[nodiscard]] double autocovariance(std::vector<double> const& values, usize const lag)
   {
-    auto const lagged = std::next(values.begin(), static_cast<std::ptrdiff_t>(lag));
+    auto const lagged = std::next(values.begin(), static_cast<isize>(lag));
     auto const sum = std::transform_reduce(lagged, values.end(), values.begin(), 0.0);
     return sum / static_cast<double>(values.size() - lag);
   }
@@ -88,7 +87,7 @@ TEST_CASE("Gauss–Markov autocorrelation matches its correlation time", "[rando
   // of 1.4 %, the correlation coefficients of about 0.01
   auto const variance = autocovariance(samples, 0);
   CHECK_THAT(variance, WithinRel(sigma * sigma, 0.05));
-  for(auto const lag : {std::size_t {1}, std::size_t {10}, std::size_t {50}, std::size_t {200}}) {
+  for(auto const lag : {1uz, 10uz, 50uz, 200uz}) {
     INFO("lag " << lag);
     CHECK_THAT(
       autocovariance(samples, lag) / variance,

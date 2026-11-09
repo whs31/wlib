@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <string_view>
 
+#include <w/common/stdint.h>
 #include <w/common/detail/namespace.h>
 
 /**
@@ -90,9 +90,9 @@ W_COMMON_NAMESPACE_BEGIN
  * @ingroup core_text
  * @see is_digit
  */
-[[nodiscard]] constexpr std::uint16_t to_digit(char const c) noexcept
+[[nodiscard]] constexpr u16 to_digit(char const c) noexcept
 {
-  return static_cast<std::uint16_t>(c - '0');
+  return static_cast<u16>(c - '0');
 }
 
 /**
@@ -119,7 +119,7 @@ W_COMMON_NAMESPACE_BEGIN
  * @ingroup core_text
  * @see hex_to_char
  */
-[[nodiscard]] constexpr char encode_hex(std::uint8_t const value) noexcept
+[[nodiscard]] constexpr char encode_hex(u8 const value) noexcept
 {
   return static_cast<char>((value < 10) ? ('0' + value) : ('a' + value - 10));
 }
@@ -131,7 +131,7 @@ W_COMMON_NAMESPACE_BEGIN
  * @ingroup core_text
  * @see Uuid
  */
-[[nodiscard]] constexpr std::uint8_t hex_byte_join(std::string_view const str, int const idx)
+[[nodiscard]] constexpr u8 hex_byte_join(std::string_view const str, int const idx)
 {
   return ((hex_to_char(str[idx]) << 4) + hex_to_char(str[idx + 1]));  // NOLINT
 }

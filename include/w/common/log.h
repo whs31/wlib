@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -13,6 +11,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <w/common/stdint.h>
 #include <w/common/config.h>
 #include <w/common/error.h>
 #include <w/common/detail/namespace.h>
@@ -46,7 +45,7 @@ class W_COMMON_API LogError final : public Error
  * @brief Sink target bitmask for create_logger().
  * @ingroup core_logging
  */
-enum class LogTarget : std::uint8_t
+enum class LogTarget : u8
 {
   Stdout = 1 << 0,           ///< Add a colored stdout sink.
   File = 1 << 1,             ///< Add a rotating file sink.
@@ -152,7 +151,7 @@ struct LoggerConfig
   /**
    * @brief Number of rotated files to retain.
    */
-  std::size_t max_files = 3;
+  usize max_files = 3;
 
   /**
    * @brief Optional callback sink invoked for warning, error, and critical messages.

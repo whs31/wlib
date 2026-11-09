@@ -2,8 +2,8 @@
 
 #include <concepts>
 #include <array>
-#include <cstdint>
 
+#include <w/common/stdint.h>
 #include <w/common/glaze/detail.h>
 #include <w/common/rect.h>
 
@@ -29,7 +29,7 @@ template <>
 struct glz::meta<w::common::Recti>
 {
   static auto constexpr value = glz::custom<
-    [](w::common::Recti& rect, w::common::_glaze_impl::ExactArray<std::int32_t, 4> const& xywh) {
+    [](w::common::Recti& rect, w::common::_glaze_impl::ExactArray<w::i32, 4> const& xywh) {
       rect = w::common::Recti(xywh[0], xywh[1], xywh[2], xywh[3]);
     },
     [](w::common::Recti const& rect) { return rect.to_array(); }>;

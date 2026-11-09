@@ -2,7 +2,6 @@
 
 #include <concepts>
 #include <ostream>
-#include <cstddef>
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -15,6 +14,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
@@ -93,7 +93,7 @@ class BasicMatrix4x4
    * @brief Returns the row at @p index.
    * @throws std::out_of_range if @p index is not in `[0, 4)`.
    */
-  [[nodiscard]] constexpr BasicVector4<T> row(std::size_t const index) const
+  [[nodiscard]] constexpr BasicVector4<T> row(usize const index) const
   {
     return this->m_rows.at(index);
   }
@@ -102,7 +102,7 @@ class BasicMatrix4x4
    * @brief Returns the column at @p index.
    * @throws std::out_of_range if @p index is not in `[0, 4)`.
    */
-  [[nodiscard]] constexpr BasicVector4<T> column(std::size_t const index) const
+  [[nodiscard]] constexpr BasicVector4<T> column(usize const index) const
   {
     auto const& [a, b, c, d] = this->m_rows;
     return {component(a, index), component(b, index), component(c, index), component(d, index)};
@@ -112,7 +112,7 @@ class BasicMatrix4x4
    * @brief Returns the element in @p row and @p column.
    * @throws std::out_of_range if either index is not in `[0, 4)`.
    */
-  [[nodiscard]] constexpr T at(std::size_t const row, std::size_t const column) const
+  [[nodiscard]] constexpr T at(usize const row, usize const column) const
   {
     return component(this->m_rows.at(row), column);
   }
@@ -380,14 +380,14 @@ class BasicMatrix4x4
 
   constexpr BasicMatrix4x4<T>& operator+=(BasicMatrix4x4<T> const& rhs) noexcept
   {
-    for(auto index = std::size_t {0}; index < this->m_rows.size(); ++index)
+    for(auto index = usize {0}; index < this->m_rows.size(); ++index)
       this->m_rows.at(index) += rhs.m_rows.at(index);
     return *this;
   }
 
   constexpr BasicMatrix4x4<T>& operator-=(BasicMatrix4x4<T> const& rhs) noexcept
   {
-    for(auto index = std::size_t {0}; index < this->m_rows.size(); ++index)
+    for(auto index = usize {0}; index < this->m_rows.size(); ++index)
       this->m_rows.at(index) -= rhs.m_rows.at(index);
     return *this;
   }
@@ -494,7 +494,7 @@ class BasicMatrix4x4
     : m_rows {a, b, c, d}
   {}
 
-  [[nodiscard]] static constexpr T component(BasicVector4<T> const v, std::size_t const index)
+  [[nodiscard]] static constexpr T component(BasicVector4<T> const v, usize const index)
   {
     switch(index) {
       case 0: return v.x();
@@ -628,7 +628,7 @@ struct std::hash<w::common::BasicMatrix4x4<T>>
  * applies to every element.
  */
 template <std::floating_point T>
-struct fmt::formatter<w::common::BasicMatrix4x4<T>> : fmt::formatter<T>
+struct fmt::formatter<w::common::BasicMatrix4x4<T>> : formatter<T>
 {
   format_context::iterator format(
     w::common::BasicMatrix4x4<T> const& matrix,
@@ -637,7 +637,7 @@ struct fmt::formatter<w::common::BasicMatrix4x4<T>> : fmt::formatter<T>
   {
     auto out = ctx.out();
     *out++ = '[';
-    for(auto index = std::size_t {0}; index < 4; ++index) {
+    for(auto index = 0uz; index < 4; ++index) {
       if(index != 0) {
         *out++ = ',';
         *out++ = ' ';

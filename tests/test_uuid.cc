@@ -1,10 +1,9 @@
+#include <w/common/stdint.h>
 #include <w/common/uuid.h>
 
 #include <algorithm>
 #include <array>
 #include <chrono>
-#include <cstddef>
-#include <cstdint>
 #include <span>
 #include <sstream>
 #include <string>
@@ -20,7 +19,7 @@ using namespace w;
 namespace
 {
   auto constexpr uuid_text = "00112233-4455-6677-8899-aAbBcCdDeEfF";
-  auto constexpr uuid_bytes = std::array<std::uint8_t, 16> {
+  auto constexpr uuid_bytes = std::array<u8, 16> {
     0x00,
     0x11,
     0x22,
@@ -38,7 +37,7 @@ namespace
     0xee,
     0xff,
   };
-  auto constexpr field_bytes = std::array<std::uint8_t, 8> {
+  auto constexpr field_bytes = std::array<u8, 8> {
     0x88,
     0x99,
     0xaa,
@@ -49,10 +48,10 @@ namespace
     0xff,
   };
 
-  [[nodiscard]] std::span<std::uint8_t const> bytes(std::string_view const text) noexcept
+  [[nodiscard]] std::span<u8 const> bytes(std::string_view const text) noexcept
   {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): chars may be viewed as bytes
-    return {reinterpret_cast<std::uint8_t const*>(text.data()), text.size()};
+    return {reinterpret_cast<u8 const*>(text.data()), text.size()};
   }
 }  // namespace
 
@@ -73,8 +72,8 @@ TEST_CASE("Uuid supports constexpr construction and inspection", "[uuid]")
   STATIC_CHECK(custom.version() == Uuid::Version::Custom);
   STATIC_CHECK(Uuid::max().is_max());
   STATIC_CHECK("00112233-4455-6677-8899-aabbccddeeff"_uuid == uuid);
-  STATIC_CHECK_FALSE(noexcept(Uuid::new_v3(Uuid::NAMESPACE_DNS, std::span<std::uint8_t const> {})));
-  STATIC_CHECK_FALSE(noexcept(Uuid::new_v5(Uuid::NAMESPACE_DNS, std::span<std::uint8_t const> {})));
+  STATIC_CHECK_FALSE(noexcept(Uuid::new_v3(Uuid::NAMESPACE_DNS, std::span<u8 const> {})));
+  STATIC_CHECK_FALSE(noexcept(Uuid::new_v5(Uuid::NAMESPACE_DNS, std::span<u8 const> {})));
 }
 
 TEST_CASE("Uuid parses and formats every supported representation", "[uuid]")

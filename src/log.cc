@@ -12,6 +12,8 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
+#include <w/common/stdint.h>
+
 namespace
 {
   [[nodiscard]] constexpr spdlog::level::level_enum default_log_level() noexcept
@@ -43,17 +45,17 @@ namespace
     return (target & flag) == flag;
   }
 
-  [[nodiscard]] std::size_t file_size_bytes(float const max_file_size_mb)
+  [[nodiscard]] w::usize file_size_bytes(float const max_file_size_mb)
   {
     if(not std::isfinite(max_file_size_mb) or max_file_size_mb <= 0.0f)
       throw w::common::LogError("max_file_size_mb must be finite and greater than zero");
 
     auto constexpr bytes_per_mebibyte = 1'024.0 * 1'024.0;
     auto const bytes = static_cast<double>(max_file_size_mb) * bytes_per_mebibyte;
-    if(bytes > static_cast<double>(std::numeric_limits<std::size_t>::max()))
+    if(bytes > static_cast<double>(std::numeric_limits<w::usize>::max()))
       throw w::common::LogError("max_file_size_mb is too large");
 
-    return static_cast<std::size_t>(bytes);
+    return static_cast<w::usize>(bytes);
   }
 
   void validate_config(w::common::LoggerConfig const& config)
@@ -88,8 +90,8 @@ W_COMMON_NAMESPACE_BEGIN
 spdlog::level::level_enum get_env_log_level() noexcept
 {
   if(char const* env = std::getenv("LOG_LEVEL")) {
-    auto const level = spdlog::level::from_str(env);
-    if(level != spdlog::level::off or std::string_view {env} == "off")
+    if(auto const level = spdlog::level::from_str(env);
+       level != spdlog::level::off or std::string_view {env} == "off")
       return level;
   }
   return default_log_level();

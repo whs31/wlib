@@ -2,14 +2,13 @@
 
 #include <chrono>
 #include <cmath>
-#include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
 
+#include <w/common/stdint.h>
 #include <w/common/angle.h>
 #include <w/common/config.h>
 #include <w/common/math.h>
@@ -57,7 +56,7 @@ class W_COMMON_API Longitude
    * @brief Side of the prime meridian. The prime meridian counts as east, the antimeridian,
    * −180°, as west.
    */
-  enum class Hemisphere : std::uint8_t
+  enum class Hemisphere : u8
   {
     East,
     West,

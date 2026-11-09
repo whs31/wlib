@@ -1,8 +1,8 @@
 #pragma once
 
 #include <array>
-#include <cstdint>
 
+#include <w/common/stdint.h>
 #include <w/common/glaze/detail.h>
 #include <w/common/random.h>
 
@@ -12,7 +12,7 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
 {
   struct RandomStreamFields
   {
-    std::array<std::uint64_t, 4> state {};
+    std::array<w::u64, 4> state {};
   };
 }  // namespace _glaze_impl
 
@@ -33,7 +33,7 @@ struct glz::meta<w::common::RandomStream>
       w::common::_glaze_impl::RandomStreamFields const& fields,
       glz::context& ctx
     ) {
-      if(fields.state == std::array<std::uint64_t, 4> {}) {
+      if(fields.state == std::array<w::u64, 4> {}) {
         w::common::_glaze_impl::reject(ctx, "invalid random stream: all-zero state");
         return;
       }

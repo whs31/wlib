@@ -11,6 +11,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
@@ -140,7 +141,7 @@ struct std::hash<w::common::BasicSphere<T>>
  * every component.
  */
 template <std::floating_point T>
-struct fmt::formatter<w::common::BasicSphere<T>> : fmt::formatter<T>
+struct fmt::formatter<w::common::BasicSphere<T>> : formatter<T>
 {
   format_context::iterator format(
     w::common::BasicSphere<T> const& sphere,
@@ -148,13 +149,13 @@ struct fmt::formatter<w::common::BasicSphere<T>> : fmt::formatter<T>
   ) const
   {
     auto const center = sphere.center();
-    auto out = fmt::format_to(ctx.out(), "{{center ");
+    auto out = format_to(ctx.out(), "{{center ");
     ctx.advance_to(out);
     out = w::common::_format_impl::
       format_components<3, T>(*this, {center.x(), center.y(), center.z()}, ctx);
-    out = fmt::format_to(out, ", radius ");
+    out = format_to(out, ", radius ");
     ctx.advance_to(out);
-    out = fmt::formatter<T>::format(sphere.radius(), ctx);
+    out = formatter<T>::format(sphere.radius(), ctx);
     *out++ = '}';
     return out;
   }

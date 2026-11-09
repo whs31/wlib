@@ -14,6 +14,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/aabb.h>
 #include <w/common/clip_space.h>
 #include <w/common/detail/format.h>
@@ -166,10 +167,8 @@ class BasicRay
     auto const d = this->m_direction;
     auto const min = box.min();
     auto const max = box.max();
-    if(
-      slab(o.x(), d.x(), min.x(), max.x()) and slab(o.y(), d.y(), min.y(), max.y())
-      and slab(o.z(), d.z(), min.z(), max.z())
-    )
+    if(slab(o.x(), d.x(), min.x(), max.x()) and slab(o.y(), d.y(), min.y(), max.y())
+       and slab(o.z(), d.z(), min.z(), max.z()))
       return enter;
     return std::nullopt;
   }
@@ -284,17 +283,17 @@ struct std::hash<w::common::BasicRay<T>>
  * applies to every component.
  */
 template <std::floating_point T>
-struct fmt::formatter<w::common::BasicRay<T>> : fmt::formatter<T>
+struct fmt::formatter<w::common::BasicRay<T>> : formatter<T>
 {
   format_context::iterator format(w::common::BasicRay<T> const& ray, format_context& ctx) const
   {
     auto const origin = ray.origin();
     auto const direction = ray.direction();
-    auto out = fmt::format_to(ctx.out(), "{{origin ");
+    auto out = format_to(ctx.out(), "{{origin ");
     ctx.advance_to(out);
     out = w::common::_format_impl::
       format_components<3, T>(*this, {origin.x(), origin.y(), origin.z()}, ctx);
-    out = fmt::format_to(out, ", direction ");
+    out = format_to(out, ", direction ");
     ctx.advance_to(out);
     out = w::common::_format_impl::
       format_components<3, T>(*this, {direction.x(), direction.y(), direction.z()}, ctx);

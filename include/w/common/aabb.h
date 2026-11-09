@@ -3,7 +3,6 @@
 #include <concepts>
 #include <ostream>
 #include <limits>
-#include <cstddef>
 #include <array>
 #include <functional>
 #include <iosfwd>
@@ -13,6 +12,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
@@ -181,7 +181,7 @@ class BasicAABB
   [[nodiscard]] constexpr std::array<BasicVector3<T>, 8> corners() const noexcept
   {
     auto result = std::array<BasicVector3<T>, 8> {};
-    for(auto index = std::size_t {0}; index < result.size(); ++index)
+    for(auto index = 0uz; index < result.size(); ++index)
       result.at(index) = {
         (index & 1U) != 0 ? this->m_max.x() : this->m_min.x(),
         (index & 2U) != 0 ? this->m_max.y() : this->m_min.y(),
@@ -275,7 +275,7 @@ W_COMMON_NAMESPACE_END
 template <std::floating_point T>
 struct std::hash<w::common::BasicAABB<T>>
 {
-  [[nodiscard]] std::size_t operator()(w::common::BasicAABB<T> const& box) const noexcept
+  [[nodiscard]] w::usize operator()(w::common::BasicAABB<T> const& box) const noexcept
   {
     return w::common::_hash_impl::combine(box.min(), box.max());
   }

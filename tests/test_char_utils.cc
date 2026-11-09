@@ -1,6 +1,5 @@
+#include <w/common/stdint.h>
 #include <w/common/char_utils.h>
-
-#include <cstdint>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -42,9 +41,9 @@ TEST_CASE("Hexadecimal helpers encode and decode bytes", "[char_utils]")
   STATIC_CHECK(hex_to_char('a') == 10);
   STATIC_CHECK(hex_to_char('F') == 15);
   STATIC_CHECK(hex_to_char('x') == static_cast<unsigned char>(-1));
-  STATIC_CHECK(encode_hex(std::uint8_t {0}) == '0');
-  STATIC_CHECK(encode_hex(std::uint8_t {10}) == 'a');
-  STATIC_CHECK(encode_hex(std::uint8_t {15}) == 'f');
+  STATIC_CHECK(encode_hex(u8 {0}) == '0');
+  STATIC_CHECK(encode_hex(u8 {10}) == 'a');
+  STATIC_CHECK(encode_hex(u8 {15}) == 'f');
   STATIC_CHECK(hex_byte_join("00ff", 0) == 0x00);
   STATIC_CHECK(hex_byte_join("00ff", 2) == 0xff);
 }

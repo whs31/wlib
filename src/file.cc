@@ -1,7 +1,6 @@
 #include <w/common/file.h>
 
 #include <cerrno>
-#include <cstddef>
 
 #include <array>
 #include <filesystem>
@@ -17,6 +16,7 @@
 
 #include <w/common/functional/defer.h>
 #include <w/common/uuid.h>
+#include <w/common/stdint.h>
 
 namespace
 {
@@ -69,12 +69,12 @@ namespace
     // note: [whs31 : 2026-11-03]
     // the size is a hint only: a file may grow or, like those of /proc, claim none
     if(auto const size = std::filesystem::file_size(path, probe); not probe)
-      contents.reserve(static_cast<std::size_t>(size));
+      contents.reserve(static_cast<w::usize>(size));
 
-    auto buffer = std::array<char, std::size_t {64} * 1'024>();
+    auto buffer = std::array<char, w::usize {64} * 1'024>();
     while(true) {
       stream.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
-      contents.append(buffer.data(), static_cast<std::size_t>(stream.gcount()));
+      contents.append(buffer.data(), static_cast<w::usize>(stream.gcount()));
       if(not stream)
         break;
     }

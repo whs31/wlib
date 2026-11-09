@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstddef>
 #include <array>
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/detail/namespace.h>
 
 W_COMMON_NAMESPACE_BEGIN
@@ -15,7 +15,7 @@ namespace _format_impl  // NOLINT(*-identifier-naming)
    * @brief Formats `values` as `(a, b, ...)`, applying the parsed spec of `formatter`, e.g.
    * `{:.3f}`, to every component.
    */
-  template <std::size_t N, typename T>
+  template <usize N, typename T>
   fmt::format_context::iterator format_components(
     fmt::formatter<T> const& formatter,
     std::array<T, N> const& values,

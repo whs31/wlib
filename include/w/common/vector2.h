@@ -16,6 +16,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <w/common/stdint.h>
 #include <w/common/angle.h>
 #include <w/common/config.h>
 #include <w/common/detail/format.h>
@@ -413,7 +414,7 @@ struct std::hash<w::common::BasicVector2<T>>
  * @brief Formats as `(x, y)`; the format spec, e.g. `{:.3f}`, applies to every component.
  */
 template <std::floating_point T>
-struct fmt::formatter<w::common::BasicVector2<T>> : fmt::formatter<T>
+struct fmt::formatter<w::common::BasicVector2<T>> : formatter<T>
 {
   format_context::iterator format(
     w::common::BasicVector2<T> const vector,

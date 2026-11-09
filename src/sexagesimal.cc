@@ -1,7 +1,6 @@
 #include <private/sexagesimal.h>
 
 #include <cmath>
-#include <cstdint>
 
 #include <algorithm>
 #include <array>
@@ -13,6 +12,7 @@
 #include <fmt/format.h>
 
 #include <w/common/detail/geographic.h>
+#include <w/common/stdint.h>
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -236,7 +236,7 @@ namespace _sexagesimal_impl
   )
   {
     auto const decimals = std::clamp(second_decimals, 0, 9);
-    auto scale = std::int64_t {1};
+    auto scale = 1_i64;
     for(auto decimal = 0; decimal < decimals; ++decimal)
       scale *= 10;
     auto const per_second = static_cast<double>(scale);

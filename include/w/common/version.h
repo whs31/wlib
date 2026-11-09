@@ -1,8 +1,6 @@
 #pragma once
 
 #include <compare>
-#include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <ostream>
 #include <string>
@@ -12,6 +10,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <w/common/stdint.h>
 #include <w/common/config.h>
 #include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
@@ -83,31 +82,27 @@ class W_COMMON_API Version
  public:
   Version() noexcept = default;
 
-  constexpr Version(
-    std::uint64_t const major,
-    std::uint64_t const minor,
-    std::uint64_t const patch
-  ) noexcept
+  constexpr Version(u64 const major, u64 const minor, u64 const patch) noexcept
     : m_major(major)
     , m_minor(minor)
     , m_patch(patch)
   {}
 
   Version(
-    std::uint64_t major,
-    std::uint64_t minor,
-    std::uint64_t patch,
+    u64 major,
+    u64 minor,
+    u64 patch,
     Prerelease pre,
     BuildMetadata build = BuildMetadata()
   ) noexcept;
 
   explicit Version(std::string_view text);
 
-  [[nodiscard]] constexpr std::uint64_t major() const noexcept { return this->m_major; }
+  [[nodiscard]] constexpr u64 major() const noexcept { return this->m_major; }
 
-  [[nodiscard]] constexpr std::uint64_t minor() const noexcept { return this->m_minor; }
+  [[nodiscard]] constexpr u64 minor() const noexcept { return this->m_minor; }
 
-  [[nodiscard]] constexpr std::uint64_t patch() const noexcept { return this->m_patch; }
+  [[nodiscard]] constexpr u64 patch() const noexcept { return this->m_patch; }
 
   [[nodiscard]] Prerelease const& pre() const noexcept { return this->m_pre; }
 
@@ -116,9 +111,9 @@ class W_COMMON_API Version
   [[nodiscard]] std::string to_string() const;
 
   [[nodiscard]] static constexpr Version new_version(
-    std::uint64_t const major,
-    std::uint64_t const minor,
-    std::uint64_t const patch
+    u64 const major,
+    u64 const minor,
+    u64 const patch
   ) noexcept
   {
     return {major, minor, patch};
@@ -131,9 +126,9 @@ class W_COMMON_API Version
   [[nodiscard]] std::strong_ordering operator<=>(Version const& other) const noexcept;
 
  private:
-  std::uint64_t m_major = 0;
-  std::uint64_t m_minor = 0;
-  std::uint64_t m_patch = 0;
+  u64 m_major = 0;
+  u64 m_minor = 0;
+  u64 m_patch = 0;
   Prerelease m_pre;
   BuildMetadata m_build;
 };
@@ -146,7 +141,7 @@ inline namespace literals
    * @ingroup core_identifiers
    * @relates Version
    */
-  [[nodiscard]] W_COMMON_API Version operator""_version(char const* text, std::size_t length);
+  [[nodiscard]] W_COMMON_API Version operator""_version(char const* text, usize length);
 }  // namespace literals
 
 W_COMMON_API std::ostream& operator<<(std::ostream& stream, Prerelease const& value);
@@ -178,12 +173,12 @@ struct std::hash<w::common::Version>
 {
   [[nodiscard]] std::size_t operator()(w::common::Version const& version) const noexcept
   {
-    auto hash = std::hash<std::uint64_t> {}(version.major());
-    auto const combine = [&hash](std::size_t const value) {
+    auto hash = std::hash<w::u64> {}(version.major());
+    auto const combine = [&hash](w::usize const value) {
       hash ^= value + 0x9e3779b97f4a7c15ull + (hash << 6U) + (hash >> 2U);
     };
-    combine(std::hash<std::uint64_t> {}(version.minor()));
-    combine(std::hash<std::uint64_t> {}(version.patch()));
+    combine(std::hash<w::u64> {}(version.minor()));
+    combine(std::hash<w::u64> {}(version.patch()));
     combine(std::hash<w::common::Prerelease> {}(version.pre()));
     combine(std::hash<w::common::BuildMetadata> {}(version.build()));
     return hash;
@@ -192,14 +187,14 @@ struct std::hash<w::common::Version>
 
 #ifndef __DOXYGEN__
 template <>
-struct fmt::formatter<w::common::Prerelease> : fmt::ostream_formatter
+struct fmt::formatter<w::common::Prerelease> : ostream_formatter
 {};
 
 template <>
-struct fmt::formatter<w::common::BuildMetadata> : fmt::ostream_formatter
+struct fmt::formatter<w::common::BuildMetadata> : ostream_formatter
 {};
 
 template <>
-struct fmt::formatter<w::common::Version> : fmt::ostream_formatter
+struct fmt::formatter<w::common::Version> : ostream_formatter
 {};
 #endif

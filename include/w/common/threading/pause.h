@@ -1,12 +1,12 @@
 #pragma once
 
-#include <cstddef>
 #include <thread>
 
 #ifdef _MSC_VER
 #  include <intrin.h>
 #endif
 
+#include <w/common/stdint.h>
 #include <w/common/detail/namespace.h>
 
 W_COMMON_NAMESPACE_BEGIN
@@ -22,7 +22,7 @@ W_COMMON_NAMESPACE_BEGIN
  * yielding the CPU may be used instead.
  *
  * @ingroup core_threading
- * @see yield(std::size_t)
+ * @see yield(usize)
  */
 inline void yield()
 {
@@ -56,7 +56,7 @@ inline void yield()
  * @ingroup core_threading
  * @see yield()
  */
-inline void yield(std::size_t count)
+inline void yield(usize count)
 {
   while(count-- > 0)
     yield();

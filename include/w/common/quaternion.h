@@ -1,7 +1,6 @@
 #pragma once
 
 #include <concepts>
-#include <cstddef>
 #include <array>
 #include <bit>
 #include <cmath>
@@ -16,6 +15,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/angle.h>
 #include <w/common/config.h>
 #include <w/common/detail/format.h>
@@ -316,8 +316,9 @@ class BasicQuaternion
    * @deprecated The name does not say which order; use to_yaw_pitch_roll(), or to_euler() for
    * another order.
    */
-  [[deprecated("use to_yaw_pitch_roll(), or to_euler<Order>() for another order")]]
-  [[nodiscard]] BasicEulerAngles<T>
+  [[deprecated(
+    "use to_yaw_pitch_roll(), or to_euler<Order>() for another order"
+  )]] [[nodiscard]] BasicEulerAngles<T>
     to_euler_angles() const noexcept
   {
     return this->to_yaw_pitch_roll();
@@ -426,8 +427,9 @@ class BasicQuaternion
    * @deprecated The name does not say which order; use from_yaw_pitch_roll(), or from_euler() for
    * another order.
    */
-  [[deprecated("use from_yaw_pitch_roll(), or from_euler<Order>() for another order")]]
-  [[nodiscard]] static BasicQuaternion<T>
+  [[deprecated(
+    "use from_yaw_pitch_roll(), or from_euler<Order>() for another order"
+  )]] [[nodiscard]] static BasicQuaternion<T>
     from_euler_angles(BasicEulerAngles<T> const& angles) noexcept
   {
     return from_yaw_pitch_roll(angles);
@@ -727,9 +729,9 @@ namespace _euler_impl  // NOLINT(*-identifier-naming)
    */
   struct Axes
   {
-    std::size_t first = 0;
-    std::size_t second = 0;
-    std::size_t third = 0;
+    usize first = 0;
+    usize second = 0;
+    usize third = 0;
     int sign = 1;
   };
 
@@ -767,7 +769,7 @@ BasicQuaternion<T> BasicQuaternion<T>::from_euler(
 {
   auto constexpr axes = _euler_impl::axes(Order);
   auto const angles = std::array {about_x, about_y, about_z};
-  auto const about = [&angles](std::size_t const axis) {
+  auto const about = [&angles](usize const axis) {
     auto const half = angles.at(axis) / 2;
     auto vector = std::array<T, 3> {};
     vector.at(axis) = half.sin();
@@ -783,7 +785,7 @@ std::array<BasicAngle<T>, 3> BasicQuaternion<T>::to_euler() const noexcept
   auto constexpr axes = _euler_impl::axes(Order);
   auto const [i, j, k, sign] = axes;
   auto const elements = std::bit_cast<std::array<T, 9>>(this->to_rotation_matrix());
-  auto const m = [&elements](std::size_t const row, std::size_t const column) {
+  auto const m = [&elements](usize const row, usize const column) {
     return elements.at(3 * row + column);
   };
 
@@ -842,7 +844,7 @@ struct std::hash<w::common::BasicQuaternion<T>>
  * @brief Formats as `(w, x, y, z)`; the format spec, e.g. `{:.3f}`, applies to every component.
  */
 template <std::floating_point T>
-struct fmt::formatter<w::common::BasicQuaternion<T>> : fmt::formatter<T>
+struct fmt::formatter<w::common::BasicQuaternion<T>> : formatter<T>
 {
   format_context::iterator format(w::common::BasicQuaternion<T> const& q, format_context& ctx) const
   {

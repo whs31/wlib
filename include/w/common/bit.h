@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <bit>
 
+#include <w/common/stdint.h>
 #include <w/common/detail/namespace.h>
 
 W_COMMON_NAMESPACE_BEGIN
@@ -17,18 +17,18 @@ W_COMMON_NAMESPACE_BEGIN
 template <typename T>
   requires(
     std::is_trivially_copyable_v<T>
-    and (sizeof(T) == sizeof(std::uint8_t) or sizeof(T) == sizeof(std::uint16_t) or sizeof(T) == sizeof(std::uint32_t) or sizeof(T) == sizeof(std::uint64_t))
+    and (sizeof(T) == sizeof(u8) or sizeof(T) == sizeof(u16) or sizeof(T) == sizeof(u32) or sizeof(T) == sizeof(u64))
   )
 [[nodiscard]] constexpr auto bits_of(T const value) noexcept
 {
-  if constexpr(sizeof(T) == sizeof(std::uint8_t))
-    return std::bit_cast<std::uint8_t>(value);
-  else if constexpr(sizeof(T) == sizeof(std::uint16_t))
-    return std::bit_cast<std::uint16_t>(value);
-  else if constexpr(sizeof(T) == sizeof(std::uint32_t))
-    return std::bit_cast<std::uint32_t>(value);
+  if constexpr(sizeof(T) == sizeof(u8))
+    return std::bit_cast<u8>(value);
+  else if constexpr(sizeof(T) == sizeof(u16))
+    return std::bit_cast<u16>(value);
+  else if constexpr(sizeof(T) == sizeof(u32))
+    return std::bit_cast<u32>(value);
   else
-    return std::bit_cast<std::uint64_t>(value);
+    return std::bit_cast<u64>(value);
 }
 
 W_COMMON_NAMESPACE_END

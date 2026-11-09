@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <algorithm>
 #include <array>
 #include <concepts>
@@ -8,6 +7,7 @@
 #include <iterator>
 #include <span>
 
+#include <w/common/stdint.h>
 #include <w/common/check.h>
 #include <w/common/concepts.h>
 #include <w/common/error.h>
@@ -64,7 +64,7 @@ namespace _curve_impl  // NOLINT(*-identifier-naming)
  * @tparam MaxPoints Maximum number of points the curve can hold.
  * @ingroup core_math
  */
-template <CurveAxis X, CurveAxis Y, std::size_t MaxPoints>
+template <CurveAxis X, CurveAxis Y, usize MaxPoints>
   requires(MaxPoints > 0)
 class Curve
 {
@@ -72,7 +72,7 @@ class Curve
   using argument_type = X;
   using value_type = Y;
 
-  static constexpr std::size_t max_points = MaxPoints;
+  static constexpr usize max_points = MaxPoints;
 
   /**
    * @brief Creates an empty curve, which cannot be interpolated.
@@ -126,7 +126,7 @@ class Curve
     return {this->m_values.data(), this->m_size};
   }
 
-  [[nodiscard]] constexpr std::size_t size() const noexcept { return this->m_size; }
+  [[nodiscard]] constexpr usize size() const noexcept { return this->m_size; }
 
   [[nodiscard]] constexpr bool empty() const noexcept { return this->m_size == 0; }
 
@@ -159,15 +159,18 @@ class Curve
     auto const x1 = std::ranges::upper_bound(x, at, {}, curve_magnitude<X>);
     auto const y1 = std::next(y.begin(), std::distance(x.begin(), x1));
     auto const x0 = curve_magnitude(*std::prev(x1));
-    auto const fraction = (at - x0) / (curve_magnitude(*x1) - x0);
+    auto const fraction = (at - x0)                              // NOLINT(*-redundant-parentheses)
+                        / (curve_magnitude(*x1) - x0);           // NOLINT(*-redundant-parentheses)
     if constexpr(std::floating_point<Y>) {
-      return *std::prev(y1) + static_cast<Y>(fraction) * (*y1 - *std::prev(y1));
+      return *std::prev(y1)
+           + static_cast<Y>(fraction) * (*y1 - *std::prev(y1));  // NOLINT(*-redundant-parentheses)
     }
     else {
       using S = QuantityScalar<Y>;
       auto const y0 = curve_magnitude(*std::prev(y1));
       return QuantityTraits<Y>::from_si(
-        y0 + static_cast<S>(fraction) * (curve_magnitude(*y1) - y0)
+        y0
+        + static_cast<S>(fraction) * (curve_magnitude(*y1) - y0)  // NOLINT(*-redundant-parentheses)
       );
     }
   }
@@ -184,7 +187,7 @@ class Curve
  private:
   std::array<X, MaxPoints> m_arguments {};
   std::array<Y, MaxPoints> m_values {};
-  std::size_t m_size = 0;
+  usize m_size = 0;
 };
 
 W_COMMON_NAMESPACE_END
