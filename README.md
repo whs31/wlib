@@ -175,6 +175,19 @@ auto const key = w::read_file(folder / "import.key", error);  // empty, and `err
 [`skills/wlib/SKILL.md`](skills/wlib/SKILL.md) teaches coding agents to use WLib. Copy it to
 `.claude/skills/wlib/` or `.agents/skills/wlib/` of a project that depends on `wlib`.
 
+#### Mirroring RCommon
+
+RCommon is generated from this repository with namespace, include-path, package and CMake identity
+translations. The target checkout must be clean. Its Git metadata and `.gitlab-ci.yml` are preserved;
+all other tracked files are replaced and the translated C++ tree is formatted. The preserved CI file
+must not rely on rcommon-only files or options removed by the mirror.
+
+```console
+just mirror /path/to/rcommon
+# or
+wkit x export /path/to/rcommon
+```
+
 #### Licensing
 
 *WLib* library is distributed under the MIT license. See [LICENSE](./LICENSE) for details.
