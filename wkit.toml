@@ -22,4 +22,4 @@ runner = "ctest"
 
 [scripts]
 ci = { run = ["bash", "ci/matrix.sh"], description = "Build and test every Conan configuration with and without glaze" }
-export = { run = ["python3", "scripts/export_rcommon.py"], description = "Replace an rcommon checkout with the namespace-adjusted WLib tree" }
+export = { run = ["python3", "scripts/export_rcommon.py"], description = "Mirror WLib to Git or export the namespace-adjusted RCommon tree" }

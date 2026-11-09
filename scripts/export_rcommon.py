@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Replace an rcommon checkout with the namespace-adjusted WLib tree."""
+"""Mirror WLib to Git or replace an rcommon checkout with its translated tree."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from pathlib import Path
 
 
 SOURCE_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_GIT_MIRROR_URL = "https://github.com/whs31/wlib"
 SOURCE_DIRECTORIES = (
   ".agents",
   ".claude",
@@ -67,6 +68,16 @@ TEXT_REPLACEMENTS = (
 
 def fail(message: str) -> None:
   raise SystemExit(f"error: {message}")
+
+
+def is_git_url(destination: str) -> bool:
+  return "://" in destination or re.fullmatch(r"[^/\\\s]+@[^:\s]+:.+", destination) is not None
+
+
+def push_mirror(destination: str) -> None:
+  result = subprocess.run(("git", "push", "--mirror", destination), cwd=SOURCE_ROOT)
+  if result.returncode != 0:
+    raise SystemExit(result.returncode)
 
 
 def git(*args: str, cwd: Path) -> str:
@@ -251,10 +262,15 @@ def replace_target(stage: Path, target: Path) -> tuple[int, int]:
 
 
 def main() -> None:
-  if len(sys.argv) != 2:
-    fail(f"usage: {Path(sys.argv[0]).name} PATH_TO_RCOMMON_REPO")
+  if len(sys.argv) > 2:
+    fail(f"usage: {Path(sys.argv[0]).name} [PATH_TO_RCOMMON_REPO|GIT_URL]")
 
-  target = Path(sys.argv[1]).expanduser().resolve()
+  destination = sys.argv[1] if len(sys.argv) == 2 else DEFAULT_GIT_MIRROR_URL
+  if is_git_url(destination):
+    push_mirror(destination)
+    return
+
+  target = Path(destination).expanduser().resolve()
   validate_target(target)
   with tempfile.TemporaryDirectory(prefix="wlib-rcommon-") as temporary:
     staged = stage_tree(Path(temporary))

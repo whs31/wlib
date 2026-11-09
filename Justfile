@@ -1,6 +1,6 @@
 default:
     @just --list
 
-# Replace an rcommon checkout with the namespace-adjusted WLib tree.
-mirror target:
-    wkit x export "{{target}}"
+# Mirror WLib to Git, or replace an rcommon checkout when given a path.
+mirror destination="https://github.com/whs31/wlib":
+    wkit x export "{{destination}}"

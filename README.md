@@ -175,7 +175,17 @@ auto const key = w::read_file(folder / "import.key", error);  // empty, and `err
 [`skills/wlib/SKILL.md`](skills/wlib/SKILL.md) teaches coding agents to use WLib. Copy it to
 `.claude/skills/wlib/` or `.agents/skills/wlib/` of a project that depends on `wlib`.
 
-#### Mirroring RCommon
+#### Mirroring
+
+With no destination, the mirror command pushes every local Git ref to
+`https://github.com/whs31/wlib`. A different Git URL can be supplied. This uses `git push --mirror`,
+so remote refs that do not exist locally are deleted:
+
+```console
+just mirror
+wkit x export
+just mirror https://github.com/whs31/wlib
+```
 
 RCommon is generated from this repository with namespace, include-path, package and CMake identity
 translations. The target checkout must be clean. Its Git metadata and `.gitlab-ci.yml` are preserved;
@@ -184,7 +194,6 @@ must not rely on rcommon-only files or options removed by the mirror.
 
 ```console
 just mirror /path/to/rcommon
-# or
 wkit x export /path/to/rcommon
 ```
 
