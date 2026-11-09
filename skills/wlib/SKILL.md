@@ -299,7 +299,7 @@ The headers are below `<w/common/...>`.
 | Home and executable paths                                           | `w::user_home_path()`, `w::application_file_path()`, `w::application_dir_path()`                                       | `paths.h`               |
 | One process at a time                                               | `w::LockFile(path)`, `try_lock()`, `lock()`                                                                            | `lockfile.h`            |
 | Read a whole file, write one atomically                             | `w::read_file(path)`, `w::write_file(path, contents)`                                                                  | `file.h`                |
-| Binary values, counted vectors and text of trivially copyable types | `w::ByteWriter`, `w::ByteReader`                                                                                       | `bytes.h`               |
+| Binary values and byte spans                                        | `w::ByteWriter`, `w::ByteReader`                                                                                       | `bytes.h`               |
 | Dependency order of UUID nodes                                      | `w::GraphResolver`, `enqueue()`, `resolve(&has_cycle)`                                                                 | `graph_resolver.h`      |
 | ASCII and hexadecimal characters                                    | `w::is_digit()`, `w::is_hex()`, `w::to_lower()` and others                                                             | `char_utils.h`          |
 | Pointer and number concepts                                         | `w::Number`, `w::Pointer`, `w::SmartPointer`, `w::PointerLike`                                                         | `concepts.h`            |
@@ -313,16 +313,13 @@ The headers are below `<w/common/...>`.
   throw, and `read_file()` returns an empty string. The directory of the target must exist.
 - `write_file()` does not call `fsync`, keeps neither the permissions of the old file nor a symbolic link, and leaves a
   `<path>.<8 hex digits>.tmp` file behind if the program is killed in the middle of a write.
-- `ByteWriter` has `value(x)`, `values(range)` (a 32-bit count, then the items), `text(string_view)` (a 32-bit size,
-  then the bytes), `count(n)`, `data()`, `size()` and `release()`. `ByteReader(string_view)` has `value<T>()`,
-  `values<T>()`, `text()`, `count(item_size)`, `remaining()` and `done()`. `T` is trivially copyable.
-- The bytes are the objects as they are in memory: the host's byte order and layout, and any padding. They are not an
-  exchange format. Use types without padding, or write the members one by one.
-- A `ByteReader` throws `w::ByteReadError` if its input ends early, a count is more than the bytes left can hold, or a
-  `bool` is not 0 or 1. It does not own the bytes: do not make it from a temporary `std::string`, which does not
-  compile. Call `done()` at the end and reject trailing bytes if the format has none.
-- Use `reader.count(sizeof(Item))` to size a container of items that you read one by one. A corrupt count cannot then
-  make you allocate more than the input has.
+- `ByteWriter` has fluent `write(value)`, `append(bytes)` and `align<N>()`; call
+  `std::move(writer).finish()` for its `std::vector<std::byte>`. `ByteReader(span)` has `read<T>()`, `take(count)`,
+  `align<N>()`, `remaining()` and `expect_end()`. `T` is trivially copyable and need not be default-constructible.
+- The bytes are the objects as they are in memory on the supported little-endian platforms, including any padding.
+  They are not an exchange format. Use types without padding, or write the members one by one.
+- A `ByteReader` throws `w::ByteReadError` if its input ends early, has bytes left at `expect_end()`, or stores a
+  `bool` as anything other than 0 or 1. It does not own the bytes; its input must outlive it.
 
 ## glaze
 

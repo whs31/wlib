@@ -130,22 +130,22 @@ auto const longitude = w::Longitude::parse("157°51'36\"W");  // std::optional<w
 
 #### Binary data and files
 
-`<w/common/bytes.h>` writes and reads trivially copyable values as they are in memory, with counted
-vectors and counted text, which is what an asset cache or a compiled resource needs. The bytes are in
-the byte order and the layout of the host, so they are read back on the platform that wrote them;
+`<w/common/bytes.h>` writes and reads trivially copyable values and byte spans as they are in memory,
+which is what an asset cache or a compiled resource needs. The supported platforms are little-endian;
 a reader refuses what is not there instead of overrunning:
 
 ```cpp
 auto out = w::ByteWriter();
-out.value(std::uint32_t {1});
-out.text("wheel");
-out.values(std::vector<w::Vector3> {{0.0F, 1.0F, 2.0F}});
+out.write(std::uint32_t {1})
+  .align<16>()
+  .append(payload);
+auto const bytes = std::move(out).finish();
 
-auto in = w::ByteReader(out.data());
-in.value<std::uint32_t>();     // 1
-in.text();                     // "wheel"
-in.values<w::Vector3>();       // a count the bytes left cannot hold throws w::ByteReadError
-in.done();                     // true
+auto in = w::ByteReader(bytes);
+in.read<std::uint32_t>();      // 1
+in.align<16>();
+auto const same = in.take(payload.size());
+in.expect_end();               // trailing bytes throw w::ByteReadError
 ```
 
 `<w/common/file.h>` reads a whole file in binary, and writes one atomically: the bytes go to a
