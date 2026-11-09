@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cstdint>
 #include <optional>
 #include <string>
 
+#include <w/common/stdint.h>
 #include <w/common/glaze/detail.h>
 #include <w/common/glaze/ip.h>
 #include <w/common/sockaddr.h>
@@ -15,24 +15,24 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
   struct SockAddrV4Fields
   {
     Ipv4Addr ip;
-    std::uint16_t port = 0;
+    u16 port = 0;
   };
 
   struct SockAddrV6Fields
   {
     Ipv6Addr ip;
-    std::uint16_t port = 0;
-    std::uint32_t flow_info = 0;
-    std::uint32_t scope_id = 0;
+    u16 port = 0;
+    u32 flow_info = 0;
+    u32 scope_id = 0;
   };
 
   // The address of a SockAddr, whose IP version is given by the sibling "family" key.
   struct SockAddrAddressFields
   {
     std::string ip;
-    std::uint16_t port = 0;
-    std::optional<std::uint32_t> flow_info;
-    std::optional<std::uint32_t> scope_id;
+    u16 port = 0;
+    std::optional<u32> flow_info;
+    std::optional<u32> scope_id;
   };
 
   struct SockAddrFields
@@ -58,7 +58,7 @@ struct glz::meta<w::common::SockAddrV4>
     [](w::common::SockAddrV4 const& address) {
       return w::common::_glaze_impl::SockAddrV4Fields {
         .ip = address.ip(),
-        .port = static_cast<std::uint16_t>(address.port()),
+        .port = static_cast<w::u16>(address.port()),
       };
     }>;
 };
@@ -78,7 +78,7 @@ struct glz::meta<w::common::SockAddrV6>
     [](w::common::SockAddrV6 const& address) {
       return w::common::_glaze_impl::SockAddrV6Fields {
         .ip = address.ip(),
-        .port = static_cast<std::uint16_t>(address.port()),
+        .port = static_cast<w::u16>(address.port()),
         .flow_info = address.flow_info(),
         .scope_id = address.scope_id(),
       };
@@ -133,7 +133,7 @@ struct glz::meta<w::common::SockAddr>
         auto const& v4 = address.as_v4();
         return rc::_glaze_impl::SockAddrFields {
           .family = "ipv4",
-          .address = {.ip = v4.ip().to_string(), .port = static_cast<std::uint16_t>(v4.port())},
+          .address = {.ip = v4.ip().to_string(), .port = static_cast<w::u16>(v4.port())},
         };
       }
       auto const& v6 = address.as_v6();
@@ -141,7 +141,7 @@ struct glz::meta<w::common::SockAddr>
         .family = "ipv6",
         .address = {
           .ip = v6.ip().to_string(),
-          .port = static_cast<std::uint16_t>(v6.port()),
+          .port = static_cast<w::u16>(v6.port()),
           .flow_info = v6.flow_info(),
           .scope_id = v6.scope_id(),
         },

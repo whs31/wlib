@@ -7,18 +7,20 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
+
 W_COMMON_NAMESPACE_BEGIN
 
 namespace
 {
-  [[nodiscard]] std::uint16_t parse_port(std::string_view const text)
+  [[nodiscard]] u16 parse_port(std::string_view const text)
   {
-    auto port = std::uint32_t {};
+    auto port = 0_u32;
     auto const* const last = std::to_address(text.end());
     auto const [position, error] = std::from_chars(std::to_address(text.begin()), last, port);
     if(error != std::errc {} or position != last or port > 65'535)
       throw IpError::invalid_port(text);
-    return static_cast<std::uint16_t>(port);
+    return static_cast<u16>(port);
   }
 }  // namespace
 
@@ -65,7 +67,7 @@ SockAddr::Family SockAddr::family() const noexcept
   return this->is_ipv4() ? Family::Ipv4 : Family::Ipv6;
 }
 
-std::uint32_t SockAddr::port() const noexcept
+u32 SockAddr::port() const noexcept
 {
   if(auto const* address = std::get_if<SockAddrV4>(&this->m_address))
     return address->port();

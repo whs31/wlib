@@ -1,13 +1,12 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
 #include <algorithm>
 #include <array>
 #include <string>
 #include <variant>
 #include <vector>
 
+#include <w/common/stdint.h>
 #include <w/common/color.h>
 #include <w/common/glaze/angle.h>
 #include <w/common/glaze/detail.h>
@@ -37,7 +36,7 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
     Value m_value;
   };
 
-  using Rgba8Input = ColorInput<std::string, std::vector<std::int64_t>>;
+  using Rgba8Input = ColorInput<std::string, std::vector<w::i64>>;
   using RgbaInput = ColorInput<std::vector<float>, std::string>;
 
   inline void read_rgba8(Rgba8& color, Rgba8Input const& input, glz::context& ctx) noexcept
@@ -49,16 +48,16 @@ namespace _glaze_impl  // NOLINT(readability-identifier-naming)
         reject(ctx, "a color string is #rgb, #rgba, #rrggbb or #rrggbbaa");
       return;
     }
-    auto const& bytes = std::get<std::vector<std::int64_t>>(input.value());
-    auto const in_range = std::ranges::all_of(bytes, [](std::int64_t const byte) {
+    auto const& bytes = std::get<std::vector<i64>>(input.value());
+    auto const in_range = std::ranges::all_of(bytes, [](i64 const byte) {
       return byte >= 0 and byte <= 255;
     });
     if((bytes.size() != 3 and bytes.size() != 4) or not in_range) {
       reject(ctx, "an 8-bit color array is [r, g, b] or [r, g, b, a], each in [0, 255]");
       return;
     }
-    auto const byte = [&bytes](std::size_t const index) {
-      return index < bytes.size() ? static_cast<std::uint8_t>(bytes.at(index)) : std::uint8_t {255};
+    auto const byte = [&bytes](usize const index) {
+      return index < bytes.size() ? static_cast<u8>(bytes.at(index)) : u8 {255};
     };
     color = Rgba8(byte(0), byte(1), byte(2), byte(3));
   }
@@ -93,7 +92,7 @@ W_COMMON_NAMESPACE_END
  * value; any other format takes the written form only, so a binary document reads back what the
  * adapter writes.
  */
-template <std::uint32_t Format, typename Written, typename Other>
+template <w::u32 Format, typename Written, typename Other>
 struct glz::from<Format, w::common::_glaze_impl::ColorInput<Written, Other>>
 {
   template <auto Opts>

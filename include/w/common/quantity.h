@@ -2,7 +2,6 @@
 
 #include <compare>
 #include <concepts>
-#include <cstddef>
 #include <functional>
 #include <ostream>
 #include <string>
@@ -11,6 +10,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/concepts.h>
 #include <w/common/config.h>
 #include <w/common/detail/namespace.h>

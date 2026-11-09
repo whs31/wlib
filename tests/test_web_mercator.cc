@@ -1,7 +1,6 @@
+#include <w/common/stdint.h>
 #include <w/common/distance.h>
 #include <w/common/web_mercator.h>
-
-#include <cstdint>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -56,7 +55,7 @@ TEST_CASE("Web Mercator inverts its projection", "[web_mercator]")
 {
   auto const latitude_deg = GENERATE(-85.0, -45.5, 0.0, 30.25, 60.195964, 85.0);
   auto const longitude_deg = GENERATE(-180.0, -73.5, 0.0, 30.323451, 179.75);
-  auto const zoom = GENERATE(std::uint8_t {0}, std::uint8_t {9}, std::uint8_t {17});
+  auto const zoom = GENERATE(u8 {0}, u8 {9}, u8 {17});
   CAPTURE(latitude_deg, longitude_deg, zoom);
 
   auto const at = web_mercator::

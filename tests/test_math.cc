@@ -1,8 +1,8 @@
+#include <w/common/stdint.h>
 #include <w/common/constants.h>
 #include <w/common/math.h>
 
 #include <cmath>
-#include <cstdint>
 #include <limits>
 #include <numbers>
 
@@ -104,13 +104,13 @@ TEST_CASE("Euclidean division returns a nonnegative remainder", "[math]")
 
 TEST_CASE("Euclidean division preserves large integer precision", "[math]")
 {
-  auto constexpr dividend = std::int64_t {18'014'398'509'481'987};
-  auto constexpr divisor = std::int64_t {2};
+  auto constexpr dividend = i64 {18'014'398'509'481'987};
+  auto constexpr divisor = i64 {2};
 
   REQUIRE(div_euclid(dividend, divisor) == 9'007'199'254'740'993);
   REQUIRE(
-    rem_euclid(std::int64_t {-1}, std::numeric_limits<std::int64_t>::min())
-    == std::numeric_limits<std::int64_t>::max()
+    rem_euclid(i64 {-1}, std::numeric_limits<i64>::min())
+    == std::numeric_limits<i64>::max()
   );
 }
 

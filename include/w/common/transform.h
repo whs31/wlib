@@ -10,6 +10,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/math.h>
@@ -308,7 +309,7 @@ struct std::hash<w::common::BasicTransform<T>>
  * spec, e.g. `{:.3f}`, applies to every component.
  */
 template <std::floating_point T>
-struct fmt::formatter<w::common::BasicTransform<T>> : fmt::formatter<T>
+struct fmt::formatter<w::common::BasicTransform<T>> : formatter<T>
 {
   format_context::iterator format(
     w::common::BasicTransform<T> const& transform,
@@ -318,15 +319,15 @@ struct fmt::formatter<w::common::BasicTransform<T>> : fmt::formatter<T>
     auto const position = transform.position();
     auto const rotation = transform.rotation();
     auto const scale = transform.scale();
-    auto out = fmt::format_to(ctx.out(), "{{position ");
+    auto out = format_to(ctx.out(), "{{position ");
     ctx.advance_to(out);
     out = w::common::_format_impl::
       format_components<3, T>(*this, {position.x(), position.y(), position.z()}, ctx);
-    out = fmt::format_to(out, ", rotation ");
+    out = format_to(out, ", rotation ");
     ctx.advance_to(out);
     out = w::common::_format_impl::
       format_components<4, T>(*this, {rotation.w(), rotation.x(), rotation.y(), rotation.z()}, ctx);
-    out = fmt::format_to(out, ", scale ");
+    out = format_to(out, ", scale ");
     ctx.advance_to(out);
     out = w::common::_format_impl::
       format_components<3, T>(*this, {scale.x(), scale.y(), scale.z()}, ctx);

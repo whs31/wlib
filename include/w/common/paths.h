@@ -1,12 +1,11 @@
 #pragma once
 
-#include <cstdint>
-
 #include <filesystem>
 #include <string_view>
 #include <system_error>
 #include <utility>
 
+#include <w/common/stdint.h>
 #include <w/common/error.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/detail/export.h>
@@ -150,7 +149,7 @@ class W_COMMON_API PathError : public Error
  * @ingroup core_filesystem
  * @see application_directory_path()
  */
-enum class ApplicationDirectory : std::uint8_t
+enum class ApplicationDirectory : u8
 {
   Root,     ///< Parent of the other categories where they share one; the data directory on Linux.
   Config,   ///< Configuration the user may edit, e.g. settings.
@@ -164,7 +163,7 @@ enum class ApplicationDirectory : std::uint8_t
  * @brief Where application_directory_path() places the per-user files of an application.
  * @ingroup core_filesystem
  */
-enum class ApplicationLayout : std::uint8_t
+enum class ApplicationLayout : u8
 {
   Portable,  ///< Under `data/` next to the executable.
   Standard,  ///< The platform's per-user folders: AppData on Windows, XDG base directories on

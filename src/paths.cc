@@ -26,6 +26,8 @@
 #  include <unistd.h>
 #endif
 
+#include <w/common/stdint.h>
+
 namespace
 {
   template <typename Fn>
@@ -282,8 +284,8 @@ std::filesystem::path application_file_path()
         "failed to get application file path: {}",
         std::system_error(errno, std::generic_category()).what()
       );
-    if(static_cast<std::size_t>(len) < buffer.size())
-      return {std::string {buffer.data(), static_cast<std::size_t>(len)}};
+    if(static_cast<usize>(len) < buffer.size())
+      return {std::string {buffer.data(), static_cast<usize>(len)}};
     buffer.resize(buffer.size() * 2);
   }
 #endif

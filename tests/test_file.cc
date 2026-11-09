@@ -1,8 +1,6 @@
+#include <w/common/stdint.h>
 #include <w/common/file.h>
 #include <w/common/uuid.h>
-
-#include <cstddef>
-#include <cstdint>
 
 #include <algorithm>
 #include <array>
@@ -95,10 +93,10 @@ namespace
   };
 
   // a pattern that shows a byte out of place, whatever the size
-  [[nodiscard]] std::string pattern(std::size_t const size)
+  [[nodiscard]] std::string pattern(usize const size)
   {
     auto result = std::string(size, '\0');
-    auto i = std::size_t {0};
+    auto i = 0uz;
     for(auto& byte : result) {
       byte = static_cast<char>((i * 31 + i / 251) % 256);
       ++i;
@@ -292,7 +290,7 @@ TEST_CASE("Writers of one file at the same time each write a whole file", "[file
   auto const file = folder / "shared.bin";
   auto constexpr writers = 4;
   auto constexpr writes = 20;
-  auto constexpr size = std::size_t {200'000};
+  auto constexpr size = 200'000uz;
 
   {
     auto threads = std::vector<std::jthread>();

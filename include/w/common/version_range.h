@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <functional>
 #include <ostream>
 #include <string>
@@ -9,6 +8,7 @@
 
 #include <fmt/ostream.h>
 
+#include <w/common/stdint.h>
 #include <w/common/config.h>
 #include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
@@ -44,7 +44,7 @@ class W_COMMON_API VersionRange
 
   [[nodiscard]] bool operator==(VersionRange const&) const noexcept = default;
 
-  enum class Comparison : std::uint8_t
+  enum class Comparison : u8
   {
     Equal,
     Greater,
@@ -89,6 +89,6 @@ struct std::hash<w::common::VersionRange>
 
 #ifndef __DOXYGEN__
 template <>
-struct fmt::formatter<w::common::VersionRange> : fmt::ostream_formatter
+struct fmt::formatter<w::common::VersionRange> : ostream_formatter
 {};
 #endif

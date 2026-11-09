@@ -1,9 +1,8 @@
+#include <w/common/stdint.h>
 #include <w/common/bytes.h>
 #include <w/common/error.h>
 #include <w/common/vector3.h>
 
-#include <cstddef>
-#include <cstdint>
 #include <cstring>
 
 #include <array>
@@ -21,7 +20,7 @@ using namespace w;
 
 namespace
 {
-  enum class Kind : std::uint8_t
+  enum class Kind : u8
   {
     Box = 1,
     Sphere = 2,
@@ -31,11 +30,11 @@ namespace
   // trivially copyable, and with no default constructor: a value of it is read all the same
   struct Label
   {
-    explicit Label(std::uint16_t const value)
+    explicit Label(u16 const value)
       : id(value)
     {}
 
-    std::uint16_t id;
+    u16 id;
   };
 
   template <typename T>
@@ -51,7 +50,7 @@ namespace
   {
     auto out = ByteWriter();
     out.value(std::array {'W', 'R', 'E', 'C'});
-    out.value(std::uint32_t {7});
+    out.value(u32 {7});
     out.value(Kind::Sphere);
     out.value(true);
     out.value(-1.5F);
@@ -60,15 +59,15 @@ namespace
     out.text("");
     out.text(std::string_view("a\0b", 3));
     out.values(std::vector<Vector3> {{0.0F, 1.0F, 2.0F}, {3.0F, 4.0F, 5.0F}});
-    out.values(std::vector<std::uint8_t> {});
-    out.values(std::vector<std::uint32_t> {10, 20, 30});
+    out.values(std::vector<u8> {});
+    out.values(std::vector<u32> {10, 20, 30});
     return out.release();
   }
 
   void read_record(ByteReader& in)
   {
     static_cast<void>(in.value<std::array<char, 4>>());
-    static_cast<void>(in.value<std::uint32_t>());
+    static_cast<void>(in.value<u32>());
     static_cast<void>(in.value<Kind>());
     static_cast<void>(in.value<bool>());
     static_cast<void>(in.value<float>());
@@ -77,8 +76,8 @@ namespace
     static_cast<void>(in.text());
     static_cast<void>(in.text());
     static_cast<void>(in.values<Vector3>());
-    static_cast<void>(in.values<std::uint8_t>());
-    static_cast<void>(in.values<std::uint32_t>());
+    static_cast<void>(in.values<u8>());
+    static_cast<void>(in.values<u32>());
   }
 }  // namespace
 
@@ -88,7 +87,7 @@ TEST_CASE("Written values, vectors and text read back unchanged", "[bytes]")
   auto in = ByteReader(bytes);
 
   CHECK(in.value<std::array<char, 4>>() == std::array {'W', 'R', 'E', 'C'});
-  CHECK(in.value<std::uint32_t>() == 7);
+  CHECK(in.value<u32>() == 7);
   CHECK(in.value<Kind>() == Kind::Sphere);
   CHECK(in.value<bool>());
   CHECK(in.value<float>() == -1.5F);
@@ -97,8 +96,8 @@ TEST_CASE("Written values, vectors and text read back unchanged", "[bytes]")
   CHECK(in.text().empty());
   CHECK(in.text() == std::string_view("a\0b", 3));
   CHECK(in.values<Vector3>() == std::vector<Vector3> {{0.0F, 1.0F, 2.0F}, {3.0F, 4.0F, 5.0F}});
-  CHECK(in.values<std::uint8_t>().empty());
-  CHECK(in.values<std::uint32_t>() == std::vector<std::uint32_t> {10, 20, 30});
+  CHECK(in.values<u8>().empty());
+  CHECK(in.values<u32>() == std::vector<u32> {10, 20, 30});
 
   CHECK(in.done());
   CHECK(in.remaining() == 0);
@@ -110,35 +109,34 @@ TEST_CASE("A value is written as it is in memory, a vector after its count", "[b
   CHECK(out.size() == 0);
   CHECK(out.data().empty());
 
-  out.value(std::uint32_t {0x0102'0304});
-  CHECK(out.data() == bytes_of(std::uint32_t {0x0102'0304}));
+  out.value(u32 {0x0102'0304});
+  CHECK(out.data() == bytes_of(u32 {0x0102'0304}));
 
   out.values(std::vector<float> {1.0F, 2.0F});
-  CHECK(out.size() == 2 * sizeof(std::uint32_t) + 2 * sizeof(float));
+  CHECK(out.size() == 2 * sizeof(u32) + 2 * sizeof(float));
   CHECK(
     out.data()
-    == bytes_of(std::uint32_t {0x0102'0304}) + bytes_of(std::uint32_t {2}) + bytes_of(1.0F)
-         + bytes_of(2.0F)
+    == bytes_of(u32 {0x0102'0304}) + bytes_of(u32 {2}) + bytes_of(1.0F) + bytes_of(2.0F)
   );
 
   out.text("ab");
-  CHECK(out.data().ends_with(bytes_of(std::uint32_t {2}) + "ab"));
+  CHECK(out.data().ends_with(bytes_of(u32 {2}) + "ab"));
 }
 
 TEST_CASE("Vectors are written from any contiguous range of values", "[bytes]")
 {
-  auto const items = std::vector<std::int16_t> {-1, 2, 300};
+  auto const items = std::vector<i16> {-1, 2, 300};
   auto from_vector = ByteWriter();
   from_vector.values(items);
 
   auto from_array = ByteWriter();
-  from_array.values(std::array<std::int16_t, 3> {-1, 2, 300});
+  from_array.values(std::array<i16, 3> {-1, 2, 300});
   auto from_span = ByteWriter();
-  from_span.values(std::span<std::int16_t const>(items));
+  from_span.values(std::span<i16 const>(items));
 
   CHECK(from_array.data() == from_vector.data());
   CHECK(from_span.data() == from_vector.data());
-  CHECK(ByteReader(from_vector.data()).values<std::int16_t>() == items);
+  CHECK(ByteReader(from_vector.data()).values<i16>() == items);
 }
 
 TEST_CASE("A value of a type without a default constructor reads back", "[bytes]")
@@ -165,14 +163,14 @@ TEST_CASE("Releasing the writer hands over its bytes and starts again", "[bytes]
 TEST_CASE("A reader of a part of the bytes reads that part", "[bytes]")
 {
   auto out = ByteWriter();
-  out.value(std::uint8_t {1});
-  out.value(std::uint8_t {2});
+  out.value(u8 {1});
+  out.value(u8 {2});
   auto const bytes = out.release();
 
   auto in = ByteReader(std::string_view(bytes).substr(1));
   CHECK(in.remaining() == 1);
   CHECK_FALSE(in.done());
-  CHECK(in.value<std::uint8_t>() == 2);
+  CHECK(in.value<u8>() == 2);
   CHECK(in.done());
 }
 
@@ -182,9 +180,9 @@ TEST_CASE("A reader refuses a read past the end of its input", "[bytes]")
   {
     auto const bytes = std::string(3, '\x01');
     auto in = ByteReader(bytes);
-    CHECK_THROWS_AS(in.value<std::uint32_t>(), ByteReadError);
+    CHECK_THROWS_AS(in.value<u32>(), ByteReadError);
     CHECK_THROWS_WITH(
-      in.value<std::uint32_t>(),
+      in.value<u32>(),
       Catch::Matchers::ContainsSubstring("input ends early: 4 bytes needed, 3 left")
     );
   }
@@ -193,7 +191,7 @@ TEST_CASE("A reader refuses a read past the end of its input", "[bytes]")
   {
     auto in = ByteReader(std::string_view());
     CHECK(in.done());
-    CHECK_THROWS_AS(in.value<std::uint8_t>(), ByteReadError);
+    CHECK_THROWS_AS(in.value<u8>(), ByteReadError);
     CHECK_THROWS_AS(in.text(), ByteReadError);
     CHECK_THROWS_AS(in.count(), ByteReadError);
   }
@@ -201,7 +199,7 @@ TEST_CASE("A reader refuses a read past the end of its input", "[bytes]")
   SECTION("of a text that is longer than the bytes left")
   {
     auto out = ByteWriter();
-    out.value(std::uint32_t {10});
+    out.value(u32 {10});
     out.value(std::array {'o', 'n', 'l', 'y'});
     auto const bytes = out.release();
     auto in = ByteReader(bytes);
@@ -219,7 +217,7 @@ TEST_CASE("A reader refuses a read past the end of its input", "[bytes]")
       REQUIRE_NOTHROW(read_record(in));
       REQUIRE(in.done());
     }
-    for(auto length = std::size_t {0}; length < bytes.size(); ++length) {
+    for(auto length = 0uz; length < bytes.size(); ++length) {
       INFO("the input is cut after " << length << " of " << bytes.size() << " bytes");
       auto in = ByteReader(std::string_view(bytes).substr(0, length));
       CHECK_THROWS_AS(read_record(in), ByteReadError);
@@ -230,8 +228,8 @@ TEST_CASE("A reader refuses a read past the end of its input", "[bytes]")
 TEST_CASE("A reader refuses a count that the bytes left cannot hold", "[bytes]")
 {
   auto out = ByteWriter();
-  out.value(std::numeric_limits<std::uint32_t>::max());
-  out.value(std::uint32_t {0});
+  out.value(std::numeric_limits<u32>::max());
+  out.value(u32 {0});
   auto const bytes = out.release();
 
   SECTION("of a vector, without allocating it")
@@ -255,7 +253,7 @@ TEST_CASE("A count is at most what the bytes left hold of items of the given siz
 {
   auto out = ByteWriter();
   out.count(2);
-  out.value(std::array<std::uint8_t, 16> {});
+  out.value(std::array<u8, 16> {});
   auto const bytes = out.release();
 
   CHECK(ByteReader(bytes).count() == 2);
@@ -268,9 +266,9 @@ TEST_CASE("A count is at most what the bytes left hold of items of the given siz
 TEST_CASE("A bool is read from a byte that is 0 or 1", "[bytes]")
 {
   auto out = ByteWriter();
-  out.value(std::uint8_t {0});
-  out.value(std::uint8_t {1});
-  out.value(std::uint8_t {2});
+  out.value(u8 {0});
+  out.value(u8 {1});
+  out.value(u8 {2});
   auto const bytes = out.release();
 
   auto in = ByteReader(bytes);
@@ -285,14 +283,14 @@ TEST_CASE("A bool is read from a byte that is 0 or 1", "[bytes]")
 TEST_CASE("A writer refuses a count that does not fit in 32 bits", "[bytes]")
 {
   auto out = ByteWriter();
-  CHECK_NOTHROW(out.count(std::numeric_limits<std::uint32_t>::max()));
-  CHECK(out.size() == sizeof(std::uint32_t));
+  CHECK_NOTHROW(out.count(std::numeric_limits<u32>::max()));
+  CHECK(out.size() == sizeof(u32));
 
-  if constexpr(sizeof(std::size_t) > sizeof(std::uint32_t)) {
-    auto const too_many = static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())
-                        + static_cast<std::size_t>(1);
+  if constexpr(sizeof(usize) > sizeof(u32)) {
+    auto const too_many = static_cast<usize>(std::numeric_limits<u32>::max())
+                        + static_cast<usize>(1);
     CHECK_THROWS_AS(out.count(too_many), InvalidArgumentError);
-    CHECK(out.size() == sizeof(std::uint32_t));
+    CHECK(out.size() == sizeof(u32));
   }
 }
 
@@ -312,7 +310,7 @@ TEST_CASE("A read error is an Error", "[bytes][error]")
 
   auto in = ByteReader(std::string_view());
   try {
-    static_cast<void>(in.value<std::uint32_t>());
+    static_cast<void>(in.value<u32>());
     FAIL("the read must throw");
   } catch(Error const& error) {
     CHECK(std::string_view(error.what()) == "input ends early: 4 bytes needed, 0 left");

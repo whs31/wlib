@@ -1,7 +1,6 @@
 #pragma once
 
 #include <compare>
-#include <cstdint>
 #include <functional>
 #include <ostream>
 #include <string>
@@ -11,6 +10,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <w/common/stdint.h>
 #include <w/common/config.h>
 #include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
@@ -27,15 +27,12 @@ class W_COMMON_API SockAddrV4
  public:
   constexpr SockAddrV4() noexcept = default;
 
-  constexpr SockAddrV4(Ipv4Addr const ip, std::uint16_t const port) noexcept
+  constexpr SockAddrV4(Ipv4Addr const ip, u16 const port) noexcept
     : m_ip(ip)
     , m_port(port)
   {}
 
-  [[nodiscard]] static constexpr SockAddrV4 from_parts(
-    Ipv4Addr const ip,
-    std::uint16_t const port
-  ) noexcept
+  [[nodiscard]] static constexpr SockAddrV4 from_parts(Ipv4Addr const ip, u16 const port) noexcept
   {
     return {ip, port};
   }
@@ -44,7 +41,7 @@ class W_COMMON_API SockAddrV4
 
   [[nodiscard]] constexpr Ipv4Addr ip() const noexcept { return this->m_ip; }
 
-  [[nodiscard]] constexpr std::uint32_t port() const noexcept { return this->m_port; }
+  [[nodiscard]] constexpr u32 port() const noexcept { return this->m_port; }
 
   [[nodiscard]] std::string to_string() const;
 
@@ -54,7 +51,7 @@ class W_COMMON_API SockAddrV4
 
  private:
   Ipv4Addr m_ip;
-  std::uint16_t m_port = 0;
+  u16 m_port = 0;
 };
 
 /**
@@ -68,9 +65,9 @@ class W_COMMON_API SockAddrV6
 
   constexpr SockAddrV6(
     Ipv6Addr const ip,
-    std::uint16_t const port,
-    std::uint32_t const flow_info = 0,
-    std::uint32_t const scope_id = 0
+    u16 const port,
+    u32 const flow_info = 0,
+    u32 const scope_id = 0
   ) noexcept
     : m_ip(ip)
     , m_port(port)
@@ -80,9 +77,9 @@ class W_COMMON_API SockAddrV6
 
   [[nodiscard]] static constexpr SockAddrV6 from_parts(
     Ipv6Addr const ip,
-    std::uint16_t const port,
-    std::uint32_t const flow_info = 0,
-    std::uint32_t const scope_id = 0
+    u16 const port,
+    u32 const flow_info = 0,
+    u32 const scope_id = 0
   ) noexcept
   {
     return {ip, port, flow_info, scope_id};
@@ -92,11 +89,11 @@ class W_COMMON_API SockAddrV6
 
   [[nodiscard]] constexpr Ipv6Addr ip() const noexcept { return this->m_ip; }
 
-  [[nodiscard]] constexpr std::uint32_t port() const noexcept { return this->m_port; }
+  [[nodiscard]] constexpr u32 port() const noexcept { return this->m_port; }
 
-  [[nodiscard]] constexpr std::uint32_t flow_info() const noexcept { return this->m_flow_info; }
+  [[nodiscard]] constexpr u32 flow_info() const noexcept { return this->m_flow_info; }
 
-  [[nodiscard]] constexpr std::uint32_t scope_id() const noexcept { return this->m_scope_id; }
+  [[nodiscard]] constexpr u32 scope_id() const noexcept { return this->m_scope_id; }
 
   [[nodiscard]] std::string to_string() const;
 
@@ -106,9 +103,9 @@ class W_COMMON_API SockAddrV6
 
  private:
   Ipv6Addr m_ip;
-  std::uint16_t m_port = 0;
-  std::uint32_t m_flow_info = 0;
-  std::uint32_t m_scope_id = 0;
+  u16 m_port = 0;
+  u32 m_flow_info = 0;
+  u32 m_scope_id = 0;
 };
 
 /**
@@ -118,7 +115,7 @@ class W_COMMON_API SockAddrV6
 class W_COMMON_API SockAddr
 {
  public:
-  enum class Family : std::uint8_t
+  enum class Family : u8
   {
     Ipv4,
     Ipv6,
@@ -142,7 +139,7 @@ class W_COMMON_API SockAddr
 
   [[nodiscard]] Family family() const noexcept;
 
-  [[nodiscard]] std::uint32_t port() const noexcept;
+  [[nodiscard]] u32 port() const noexcept;
 
   [[nodiscard]] SockAddrV4 const& as_v4() const;
 
@@ -169,7 +166,7 @@ struct std::hash<w::common::SockAddrV4>
   [[nodiscard]] std::size_t operator()(w::common::SockAddrV4 const& address) const noexcept
   {
     auto hash = std::hash<w::common::Ipv4Addr> {}(address.ip());
-    hash ^= std::hash<std::uint32_t> {}(address.port()) + 0x9e3779b97f4a7c15ULL + (hash << 6)
+    hash ^= std::hash<w::u32> {}(address.port()) + 0x9e3779b97f4a7c15ULL + (hash << 6)
           + (hash >> 2);
     return hash;
   }
@@ -182,8 +179,7 @@ struct std::hash<w::common::SockAddrV6>
   {
     auto hash = std::hash<w::common::Ipv6Addr> {}(address.ip());
     for(auto const value : {address.port(), address.flow_info(), address.scope_id()}) {
-      hash ^= std::hash<std::uint32_t> {}(value) + 0x9e3779b97f4a7c15ULL + (hash << 6)
-            + (hash >> 2);
+      hash ^= std::hash<w::u32> {}(value) + 0x9e3779b97f4a7c15ULL + (hash << 6) + (hash >> 2);
     }
     return hash;
   }
@@ -201,14 +197,14 @@ struct std::hash<w::common::SockAddr>
 
 #ifndef __DOXYGEN__
 template <>
-struct fmt::formatter<w::common::SockAddrV4> : fmt::ostream_formatter
+struct fmt::formatter<w::common::SockAddrV4> : ostream_formatter
 {};
 
 template <>
-struct fmt::formatter<w::common::SockAddrV6> : fmt::ostream_formatter
+struct fmt::formatter<w::common::SockAddrV6> : ostream_formatter
 {};
 
 template <>
-struct fmt::formatter<w::common::SockAddr> : fmt::ostream_formatter
+struct fmt::formatter<w::common::SockAddr> : ostream_formatter
 {};
 #endif

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstddef>
 #include <vector>
 
+#include <w/common/stdint.h>
 #include <w/common/curve.h>
 #include <w/common/error.h>
 #include <w/common/glaze/detail.h>
@@ -27,7 +27,7 @@ W_COMMON_NAMESPACE_END
  * valid curve. Quantity axes need their own glaze adapters, e.g. `w/common/glaze/angle.h`.
  * @ingroup core_glaze
  */
-template <w::common::CurveAxis X, w::common::CurveAxis Y, std::size_t MaxPoints>
+template <w::common::CurveAxis X, w::common::CurveAxis Y, w::usize MaxPoints>
   requires(MaxPoints > 0)
 struct glz::meta<w::common::Curve<X, Y, MaxPoints>>
 {

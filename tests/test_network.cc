@@ -1,9 +1,9 @@
+#include <w/common/stdint.h>
 #include <w/common/ip.h>
 #include <w/common/sockaddr.h>
 
 #include <array>
 #include <compare>
-#include <cstdint>
 #include <sstream>
 #include <string_view>
 #include <type_traits>
@@ -22,7 +22,7 @@ TEST_CASE("IP address value operations are constexpr", "[network][ip]")
   STATIC_CHECK(Ipv6Addr {}.is_unspecified());
   STATIC_CHECK(Ipv4Addr::from_octets(127, 0, 0, 1).address() == 0x7f000001U);
   STATIC_CHECK(
-    Ipv4Addr::from_octets(192, 168, 1, 10).octets() == std::array<std::uint8_t, 4> {192, 168, 1, 10}
+    Ipv4Addr::from_octets(192, 168, 1, 10).octets() == std::array<u8, 4> {192, 168, 1, 10}
   );
   STATIC_CHECK(Ipv4Addr::from_octets(127, 42, 0, 1).is_loopback());
   STATIC_CHECK(Ipv4Addr::from_octets(10, 1, 2, 3).is_private());
@@ -38,7 +38,7 @@ TEST_CASE("IP address value operations are constexpr", "[network][ip]")
   STATIC_CHECK(Ipv6Addr::from_segments(0xff02, 0, 0, 0, 0, 0, 0, 1).is_multicast());
   STATIC_CHECK(
     Ipv6Addr::from_segments(0x2001, 0x0db8, 0, 0, 0, 0, 0, 1).segments()
-    == std::array<std::uint16_t, 8> {0x2001, 0x0db8, 0, 0, 0, 0, 0, 1}
+    == std::array<u16, 8> {0x2001, 0x0db8, 0, 0, 0, 0, 0, 1}
   );
 
   STATIC_CHECK(std::is_copy_constructible_v<Ipv4Addr>);
@@ -67,7 +67,7 @@ TEST_CASE("IPv4 addresses parse, format and expose octets", "[network][ip]")
   auto const address = Ipv4Addr::parse("192.168.1.10");
 
   CHECK(address == Ipv4Addr::from_octets(192, 168, 1, 10));
-  CHECK(address.octets() == std::array<std::uint8_t, 4> {192, 168, 1, 10});
+  CHECK(address.octets() == std::array<u8, 4> {192, 168, 1, 10});
   CHECK(address.to_string() == "192.168.1.10");
   CHECK(address.is_private());
   CHECK_FALSE(address.is_loopback());
@@ -101,7 +101,7 @@ TEST_CASE("IPv6 addresses parse, format and expose segments", "[network][ip]")
 {
   auto const address = Ipv6Addr::parse("2001:0db8:0:0:0:0:0:1");
 
-  CHECK(address.segments() == std::array<std::uint16_t, 8> {0x2001, 0x0db8, 0, 0, 0, 0, 0, 1});
+  CHECK(address.segments() == std::array<u16, 8> {0x2001, 0x0db8, 0, 0, 0, 0, 0, 1});
   CHECK(address.to_string() == "2001:db8::1");
   CHECK_FALSE(address.is_loopback());
   CHECK_FALSE(address.is_unspecified());

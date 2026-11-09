@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -16,6 +14,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/angle.h>
 #include <w/common/detail/export.h>
 #include <w/common/detail/hash.h>
@@ -138,9 +137,9 @@ namespace _color_impl  // NOLINT(*-identifier-naming)
     return -1;
   }
 
-  [[nodiscard]] inline std::uint8_t to_byte(float const value) noexcept
+  [[nodiscard]] inline u8 to_byte(float const value) noexcept
   {
-    return static_cast<std::uint8_t>(std::lround(std::clamp(value, 0.0F, 1.0F) * 255.0F));
+    return static_cast<u8>(std::lround(std::clamp(value, 0.0F, 1.0F) * 255.0F));
   }
 }  // namespace _color_impl
 
@@ -424,27 +423,22 @@ class W_COMMON_API Rgba8
  public:
   constexpr Rgba8() noexcept = default;
 
-  constexpr Rgba8(
-    std::uint8_t const r,
-    std::uint8_t const g,
-    std::uint8_t const b,
-    std::uint8_t const a = 255
-  ) noexcept
+  constexpr Rgba8(u8 const r, u8 const g, u8 const b, u8 const a = 255) noexcept
     : m_r(r)
     , m_g(g)
     , m_b(b)
     , m_a(a)
   {}
 
-  [[nodiscard]] constexpr std::uint8_t r() const noexcept { return this->m_r; }
+  [[nodiscard]] constexpr u8 r() const noexcept { return this->m_r; }
 
-  [[nodiscard]] constexpr std::uint8_t g() const noexcept { return this->m_g; }
+  [[nodiscard]] constexpr u8 g() const noexcept { return this->m_g; }
 
-  [[nodiscard]] constexpr std::uint8_t b() const noexcept { return this->m_b; }
+  [[nodiscard]] constexpr u8 b() const noexcept { return this->m_b; }
 
-  [[nodiscard]] constexpr std::uint8_t a() const noexcept { return this->m_a; }
+  [[nodiscard]] constexpr u8 a() const noexcept { return this->m_a; }
 
-  [[nodiscard]] constexpr Rgba8 with_alpha(std::uint8_t const a) const noexcept
+  [[nodiscard]] constexpr Rgba8 with_alpha(u8 const a) const noexcept
   {
     return {this->m_r, this->m_g, this->m_b, a};
   }
@@ -490,10 +484,10 @@ class W_COMMON_API Rgba8
   /**
    * @brief Returns the components as `0xRRGGBBAA`.
    */
-  [[nodiscard]] constexpr std::uint32_t to_rgba32() const noexcept
+  [[nodiscard]] constexpr u32 to_rgba32() const noexcept
   {
-    return (std::uint32_t {this->m_r} << 24U) | (std::uint32_t {this->m_g} << 16U)
-         | (std::uint32_t {this->m_b} << 8U) | std::uint32_t {this->m_a};
+    return (u32 {this->m_r} << 24U) | (u32 {this->m_g} << 16U) | (u32 {this->m_b} << 8U)
+         | u32 {this->m_a};
   }
 
   /**
@@ -510,9 +504,9 @@ class W_COMMON_API Rgba8
     if(not short_form and text.size() != 6 and text.size() != 8)
       return std::nullopt;
 
-    auto components = std::array<std::uint8_t, 4> {0, 0, 0, 255};
-    auto const digits = short_form ? std::size_t {1} : std::size_t {2};
-    for(auto index = std::size_t {0}; index * digits < text.size(); ++index) {
+    auto components = std::array<u8, 4> {0, 0, 0, 255};
+    auto const digits = short_form ? usize {1} : usize {2};
+    for(auto index = usize {0}; index * digits < text.size(); ++index) {
       auto value = 0;
       for(auto const c : text.substr(index * digits, digits)) {
         auto const digit = _color_impl::hex_digit(c);
@@ -520,7 +514,7 @@ class W_COMMON_API Rgba8
           return std::nullopt;
         value = value * 16 + digit;
       }
-      components.at(index) = static_cast<std::uint8_t>(short_form ? value * 17 : value);
+      components.at(index) = static_cast<u8>(short_form ? value * 17 : value);
     }
     auto const [r, g, b, a] = components;
     return Rgba8(r, g, b, a);
@@ -529,13 +523,13 @@ class W_COMMON_API Rgba8
   /**
    * @brief Returns the color `0xRRGGBBAA`.
    */
-  [[nodiscard]] static constexpr Rgba8 from_rgba32(std::uint32_t const rgba) noexcept
+  [[nodiscard]] static constexpr Rgba8 from_rgba32(u32 const rgba) noexcept
   {
     return {
-      static_cast<std::uint8_t>(rgba >> 24U),
-      static_cast<std::uint8_t>(rgba >> 16U),
-      static_cast<std::uint8_t>(rgba >> 8U),
-      static_cast<std::uint8_t>(rgba),
+      static_cast<u8>(rgba >> 24U),
+      static_cast<u8>(rgba >> 16U),
+      static_cast<u8>(rgba >> 8U),
+      static_cast<u8>(rgba),
     };
   }
 
@@ -556,10 +550,10 @@ class W_COMMON_API Rgba8
   [[nodiscard]] constexpr bool operator==(Rgba8 const&) const noexcept = default;
 
  private:
-  std::uint8_t m_r = 0;
-  std::uint8_t m_g = 0;
-  std::uint8_t m_b = 0;
-  std::uint8_t m_a = 0;
+  u8 m_r = 0;
+  u8 m_g = 0;
+  u8 m_b = 0;
+  u8 m_a = 0;
 };
 
 inline Rgba8 Rgba::to_srgb8() const noexcept
@@ -588,7 +582,7 @@ inline namespace literals
    * @relates Rgba8
    * @see Rgba8::from_hex
    */
-  [[nodiscard]] consteval Rgba8 operator""_rgba8(char const* const text, std::size_t const size)
+  [[nodiscard]] consteval Rgba8 operator""_rgba8(char const* const text, usize const size)
   {
     auto const color = Rgba8::from_hex({text, size});
     if(not color.has_value())
@@ -608,8 +602,7 @@ static_assert(std::is_standard_layout_v<Rgba8>);
 static_assert(std::is_trivially_copyable_v<Rgba8>);
 static_assert(sizeof(Rgba8) == 4);
 static_assert(
-  std::bit_cast<std::array<std::uint8_t, 4>>(Rgba8(1, 2, 3, 4))
-    == std::array<std::uint8_t, 4> {1, 2, 3, 4},
+  std::bit_cast<std::array<u8, 4>>(Rgba8(1, 2, 3, 4)) == std::array<u8, 4> {1, 2, 3, 4},
   "Rgba8 must store r, g, b, a bytes in order"
 );
 
@@ -647,7 +640,7 @@ struct std::hash<w::common::Hsv>
  * @brief Formats as `(r, g, b, a)`; the format spec, e.g. `{:.3f}`, applies to every component.
  */
 template <>
-struct fmt::formatter<w::common::Rgba> : fmt::formatter<float>
+struct fmt::formatter<w::common::Rgba> : formatter<float>
 {
   format_context::iterator format(w::common::Rgba const& color, format_context& ctx) const
   {
@@ -661,7 +654,7 @@ struct fmt::formatter<w::common::Rgba> : fmt::formatter<float>
       }
       first = false;
       ctx.advance_to(out);
-      out = fmt::formatter<float>::format(value, ctx);
+      out = formatter<float>::format(value, ctx);
     }
     *out++ = ')';
     return out;
@@ -672,11 +665,11 @@ struct fmt::formatter<w::common::Rgba> : fmt::formatter<float>
  * @brief Formats as the hex string of Rgba8::to_hex(); the format spec applies to the string.
  */
 template <>
-struct fmt::formatter<w::common::Rgba8> : fmt::formatter<std::string_view>
+struct fmt::formatter<w::common::Rgba8> : formatter<std::string_view>
 {
   format_context::iterator format(w::common::Rgba8 const& color, format_context& ctx) const
   {
-    return fmt::formatter<std::string_view>::format(color.to_hex(), ctx);
+    return formatter<std::string_view>::format(color.to_hex(), ctx);
   }
 };
 
@@ -684,11 +677,11 @@ struct fmt::formatter<w::common::Rgba8> : fmt::formatter<std::string_view>
  * @brief Formats as `hsv(hue°, saturation, value, alpha)`.
  */
 template <>
-struct fmt::formatter<w::common::Hsv> : fmt::formatter<float>
+struct fmt::formatter<w::common::Hsv> : formatter<float>
 {
-  format_context::iterator format(w::common::Hsv const& hsv, format_context& ctx) const
+  static format_context::iterator format(w::common::Hsv const& hsv, format_context const& ctx)
   {
-    return fmt::format_to(
+    return format_to(
       ctx.out(),
       "hsv({}°, {}, {}, {})",
       hsv.hue.degrees(),

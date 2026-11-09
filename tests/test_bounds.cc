@@ -1,3 +1,4 @@
+#include <w/common/stdint.h>
 #include <w/common/aabb.h>
 #include <w/common/angle.h>
 #include <w/common/clip_space.h>
@@ -14,7 +15,6 @@
 
 #include <cmath>
 #include <array>
-#include <cstdint>
 #include <functional>
 #include <limits>
 #include <vector>

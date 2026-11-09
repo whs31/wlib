@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
 #include <cstring>
 
 #include <array>
@@ -15,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include <w/common/stdint.h>
 #include <w/common/error.h>
 #include <w/common/detail/namespace.h>
 
@@ -60,7 +59,7 @@ class ByteReadError final : public Error
  * using namespace w;
  *
  * auto out = ByteWriter();
- * out.value(std::uint32_t {2});
+ * out.value(u32 {2});
  * out.text("wheel");
  * out.values(std::vector<Vector3> {{0.0F, 1.0F, 2.0F}, {3.0F, 4.0F, 5.0F}});
  * write_file("part.bin", out.data());
@@ -89,11 +88,11 @@ class ByteWriter
    * @param items Number of the items that follow.
    * @throws InvalidArgumentError If @p items does not fit in 32 bits.
    */
-  void count(std::size_t const items)
+  void count(usize const items)
   {
-    if(items > std::numeric_limits<std::uint32_t>::max())
+    if(items > std::numeric_limits<u32>::max())
       throw InvalidArgumentError("a count of {} does not fit in 32 bits", items);
-    this->value(static_cast<std::uint32_t>(items));
+    this->value(static_cast<u32>(items));
   }
 
   /**
@@ -136,7 +135,7 @@ class ByteWriter
   /**
    * @brief Returns the number of bytes written so far.
    */
-  [[nodiscard]] std::size_t size() const noexcept { return this->m_data.size(); }
+  [[nodiscard]] usize size() const noexcept { return this->m_data.size(); }
 
   /**
    * @brief Hands over the bytes written so far and starts again from none.
@@ -144,7 +143,7 @@ class ByteWriter
   [[nodiscard]] std::string release() noexcept { return std::exchange(this->m_data, {}); }
 
  private:
-  void append(void const* const bytes, std::size_t const size)
+  void append(void const* const bytes, usize const size)
   {
     // note: [whs31 : 2026-11-03]
     // an empty vector's data() may be null
@@ -170,7 +169,7 @@ class ByteWriter
  *
  * auto const bytes = read_file("part.bin");
  * auto in = ByteReader(bytes);
- * auto const version = in.value<std::uint32_t>();
+ * auto const version = in.value<u32>();
  * auto const name = in.text();
  * auto const points = in.values<Vector3>();
  * if(not in.done())
@@ -210,13 +209,13 @@ class ByteReader
   [[nodiscard]] T value()
   {
     if constexpr(std::same_as<T, bool>) {
-      auto const byte = this->value<std::uint8_t>();
+      auto const byte = this->value<u8>();
       if(byte > 1)
         throw ByteReadError("a bool is stored as the byte {}, not 0 or 1", byte);
       return byte == 1;
     }
     else {
-      auto bytes = std::array<std::byte, sizeof(T)>();
+      auto bytes = std::array<byte, sizeof(T)>();
       this->read(bytes.data(), bytes.size());
       return std::bit_cast<T>(bytes);
     }
@@ -251,11 +250,10 @@ class ByteReader
    * @return Number of the items that follow, at most the bytes left divided by @p size.
    * @throws ByteReadError If the count does not fit in the bytes left, or they end early.
    */
-  [[nodiscard]] std::uint32_t count(std::size_t const size = 1)
+  [[nodiscard]] u32 count(usize const size = 1)
   {
-    auto const items = this->value<std::uint32_t>();
-    auto const each = size == 0 ? std::size_t {1} : size;
-    if(items > this->m_data.size() / each)
+    auto const items = this->value<u32>();
+    if(auto const each = size == 0 ? 1uz : size; items > this->m_data.size() / each)
       throw ByteReadError(
         "a count of {} items of {} bytes or more does not fit in the {} bytes left",
         items,
@@ -272,14 +270,14 @@ class ByteReader
    */
   [[nodiscard]] std::string text()
   {
-    auto const size = this->value<std::uint32_t>();
+    auto const size = this->value<u32>();
     return std::string(this->take(size));
   }
 
   /**
    * @brief Returns the number of bytes not read yet.
    */
-  [[nodiscard]] std::size_t remaining() const noexcept { return this->m_data.size(); }
+  [[nodiscard]] usize remaining() const noexcept { return this->m_data.size(); }
 
   /**
    * @brief Returns true if every byte has been read.
@@ -287,7 +285,7 @@ class ByteReader
   [[nodiscard]] bool done() const noexcept { return this->m_data.empty(); }
 
  private:
-  [[nodiscard]] std::string_view take(std::size_t const size)
+  [[nodiscard]] std::string_view take(usize const size)
   {
     if(size > this->m_data.size())
       throw ByteReadError("input ends early: {} bytes needed, {} left", size, this->m_data.size());
@@ -296,7 +294,7 @@ class ByteReader
     return result;
   }
 
-  void read(void* const bytes, std::size_t const size)
+  void read(void* const bytes, usize const size)
   {
     auto const taken = this->take(size);
     // note: [whs31 : 2026-11-03]

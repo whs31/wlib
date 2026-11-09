@@ -1,11 +1,11 @@
 #pragma once
 
 #include <cmath>
-#include <cstdint>
 
 #include <algorithm>
 #include <numbers>
 
+#include <w/common/stdint.h>
 #include <w/common/distance.h>
 #include <w/common/latitude.h>
 #include <w/common/longitude.h>
@@ -24,8 +24,8 @@ W_COMMON_NAMESPACE_BEGIN
  * using namespace w;
  *
  * auto const at = web_mercator::project(60.2_north, 30.3_east, 12);
- * auto const tile_x = static_cast<std::uint32_t>(at.x);
- * auto const tile_y = static_cast<std::uint32_t>(at.y);
+ * auto const tile_x = static_cast<u32>(at.x);
+ * auto const tile_y = static_cast<u32>(at.y);
  * auto const north_edge = web_mercator::latitude_at(std::floor(at.y), 12);
  * @endcode
  *
@@ -49,15 +49,15 @@ namespace web_mercator
   };
 
   /// @brief Tiles along either side of the map at `zoom`, `2^zoom`.
-  [[nodiscard]] constexpr double tiles(std::uint8_t const zoom) noexcept
+  [[nodiscard]] constexpr double tiles(u8 const zoom) noexcept
   {
-    return static_cast<double>(std::uint64_t {1} << zoom);
+    return static_cast<double>(1_u64 << zoom);
   }
 
   /// @brief The latitude in radians, clamped into the map.
   [[nodiscard]] inline double clamped_radians(Latitude const latitude) noexcept
   {
-    auto const limit = max_latitude.degrees();
+    auto constexpr limit = max_latitude.degrees();
     return std::clamp(latitude.degrees(), -limit, limit) * std::numbers::pi / 180.0;
   }
 
@@ -70,7 +70,7 @@ namespace web_mercator
   [[nodiscard]] inline Point project(
     Latitude const latitude,
     Longitude const longitude,
-    std::uint8_t const zoom
+    u8 const zoom
   ) noexcept
   {
     auto const phi = clamped_radians(latitude);
@@ -82,7 +82,7 @@ namespace web_mercator
   }
 
   /// @brief The latitude of row `y` of the map at `zoom`, the inverse of project().
-  [[nodiscard]] inline Latitude latitude_at(double const y, std::uint8_t const zoom) noexcept
+  [[nodiscard]] inline Latitude latitude_at(double const y, u8 const zoom) noexcept
   {
     return Latitude::from_radians(
       std::atan(std::sinh(std::numbers::pi * (1.0 - 2.0 * y / tiles(zoom))))
@@ -91,7 +91,7 @@ namespace web_mercator
 
   /// @brief The longitude of column `x` of the map at `zoom`, the inverse of project(); the right
   /// edge of the map is the antimeridian again.
-  [[nodiscard]] constexpr Longitude longitude_at(double const x, std::uint8_t const zoom) noexcept
+  [[nodiscard]] constexpr Longitude longitude_at(double const x, u8 const zoom) noexcept
   {
     return Longitude::from_degrees(x / tiles(zoom) * 360.0 - 180.0);
   }
@@ -100,7 +100,7 @@ namespace web_mercator
    * @brief The ground size of a tile of `zoom` at a latitude, clamped into the map.
    * @details Web Mercator is conformal, so a tile is as tall as it is wide.
    */
-  [[nodiscard]] inline Distance tile_size(Latitude const latitude, std::uint8_t const zoom) noexcept
+  [[nodiscard]] inline Distance tile_size(Latitude const latitude, u8 const zoom) noexcept
   {
     return Distance::from_meters(
       static_cast<Real>(

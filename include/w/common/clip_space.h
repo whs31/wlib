@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cstdint>
-
+#include <w/common/stdint.h>
 #include <w/common/detail/namespace.h>
 
 W_COMMON_NAMESPACE_BEGIN
@@ -17,7 +16,7 @@ W_COMMON_NAMESPACE_BEGIN
  * conventions.
  * @ingroup core_math
  */
-enum class Handedness : std::uint8_t
+enum class Handedness : u8
 {
   Right,
   Left,
@@ -33,7 +32,7 @@ enum class Handedness : std::uint8_t
  *   and perspective() accepts an infinite far plane.
  * @ingroup core_math
  */
-enum class ClipDepth : std::uint8_t
+enum class ClipDepth : u8
 {
   Standard,
   Reversed,

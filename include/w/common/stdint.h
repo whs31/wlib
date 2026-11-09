@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <cstddef>
-#include <limits>
+#include <cstdint>
+#include <utility>
 
 #include <w/common/detail/namespace.h>
 
@@ -60,7 +60,7 @@ inline namespace literals
   W_DECLARE_INT_LITERAL(i32)
   W_DECLARE_INT_LITERAL(i64)
 
-#undef W_ADD_INT_LITERAL
+#undef W_DECLARE_INT_LITERAL
 
 }  // namespace literals
 

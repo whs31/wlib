@@ -1,8 +1,8 @@
+#include <w/common/stdint.h>
 #include <w/common/error.h>
 #include <w/common/random.h>
 
 #include <cmath>
-#include <cstdint>
 #include <cstdlib>
 #include <array>
 #include <bit>
@@ -16,12 +16,12 @@ using namespace w;
 
 namespace
 {
-  auto constexpr world_seed = std::uint64_t {1};
+  auto constexpr world_seed = u64 {1};
 
   // distance in units in the last place between two finite doubles of the same sign
-  [[nodiscard]] std::int64_t ulps_between(double const a, double const b)
+  [[nodiscard]] i64 ulps_between(double const a, double const b)
   {
-    return std::abs(std::bit_cast<std::int64_t>(a) - std::bit_cast<std::int64_t>(b));
+    return std::abs(std::bit_cast<i64>(a) - std::bit_cast<i64>(b));
   }
 }  // namespace
 
@@ -35,21 +35,21 @@ TEST_CASE("Random stream is a trivially copyable aggregate", "[random]")
 
 TEST_CASE("SplitMix64 matches its reference implementation", "[random]")
 {
-  auto constexpr expected = std::array<std::uint64_t, 5> {
+  auto constexpr expected = std::array<u64, 5> {
     6'457'827'717'110'365'317U,
     3'203'168'211'198'807'973U,
     9'817'491'932'198'370'423U,
     4'593'380'528'125'082'431U,
     16'408'922'859'458'223'821U,
   };
-  auto state = std::uint64_t {1'234'567};
+  auto state = u64 {1'234'567};
   for(auto const value : expected)
     CHECK(_random_impl::splitmix64(state) == value);
 }
 
 TEST_CASE("xoshiro256** matches its reference implementation", "[random]")
 {
-  auto constexpr expected = std::array<std::uint64_t, 6> {
+  auto constexpr expected = std::array<u64, 6> {
     11'520U,
     0U,
     1'509'978'240U,
@@ -152,7 +152,7 @@ TEST_CASE("Whole numbers below a bound are uniform", "[random]")
   for(auto const count : counts)
     CHECK(std::abs(count - 10'000) < 500);
 
-  auto constexpr huge = (std::uint64_t {1} << 63U) + 1U;
+  auto constexpr huge = (u64 {1} << 63U) + 1U;
   for(auto draw = 0; draw < 1'000; ++draw)
     REQUIRE(stream.below(huge) < huge);
   CHECK(stream.below(1) == 0);
@@ -192,7 +192,7 @@ TEST_CASE("Portable logarithm stays within one ulp of the C runtime", "[random]"
   CHECK(portable_log(1.0) == 0.0);
   CHECK(portable_log(2.0) == std::log(2.0));
 
-  auto worst_ulps = std::int64_t {0};
+  auto worst_ulps = i64 {0};
   auto worst_x = 0.0;
   auto const check = [&worst_ulps, &worst_x](double const x) {
     auto const ulps = ulps_between(portable_log(x), std::log(x));
@@ -221,7 +221,7 @@ TEST_CASE("Portable exponential stays within one ulp of the C runtime", "[random
 {
   CHECK(portable_exp(0.0) == 1.0);
 
-  auto worst_ulps = std::int64_t {0};
+  auto worst_ulps = i64 {0};
   auto worst_x = 0.0;
   auto const check = [&worst_ulps, &worst_x](double const x) {
     auto const ulps = ulps_between(portable_exp(x), std::exp(x));

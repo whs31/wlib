@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <iosfwd>
 #include <optional>
 #include <string>
@@ -8,6 +7,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <w/common/stdint.h>
 #include <w/common/config.h>
 #include <w/common/distance.h>
 #include <w/common/latitude.h>
@@ -31,7 +31,7 @@ W_COMMON_NAMESPACE_BEGIN
  * x east and y north.
  * @ingroup core_geodesy
  */
-enum class Quadrant : std::uint8_t
+enum class Quadrant : u8
 {
   NorthEast,
   NorthWest,

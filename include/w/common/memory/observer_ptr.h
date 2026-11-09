@@ -1,12 +1,12 @@
 #pragma once
 
 #include <algorithm>
-#include <cstddef>
 #include <functional>
 #include <memory>
 #include <type_traits>
 #include <utility>
 
+#include <w/common/stdint.h>
 #include <w/common/config.h>
 #include <w/common/check.h>
 #include <w/common/concepts.h>

@@ -1,5 +1,7 @@
 #include <w/common/graph_resolver.h>
 
+#include <w/common/stdint.h>
+
 W_COMMON_NAMESPACE_BEGIN
 
 void GraphResolver::enqueue(Uuid const& node, std::unordered_set<Uuid> const& leafs)
@@ -9,7 +11,7 @@ void GraphResolver::enqueue(Uuid const& node, std::unordered_set<Uuid> const& le
 
 std::vector<Uuid> GraphResolver::resolve(bool* has_cycle) const
 {
-  auto dependency_count = std::unordered_map<Uuid, std::size_t>();
+  auto dependency_count = std::unordered_map<Uuid, usize>();
   auto dependents = std::unordered_map<Uuid, std::vector<Uuid>>();
   auto ready = std::vector<Uuid>();
   auto result = std::vector<Uuid>();

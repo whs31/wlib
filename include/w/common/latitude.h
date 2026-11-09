@@ -2,14 +2,13 @@
 
 #include <cmath>
 #include <compare>
-#include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
 
+#include <w/common/stdint.h>
 #include <w/common/angle.h>
 #include <w/common/config.h>
 #include <w/common/distance.h>
@@ -61,7 +60,7 @@ class W_COMMON_API Latitude
   /**
    * @brief Side of the equator. The equator itself counts as north.
    */
-  enum class Hemisphere : std::uint8_t
+  enum class Hemisphere : u8
   {
     North,
     South,
@@ -346,8 +345,9 @@ class W_COMMON_API Latitude
   {
     if(not(this->m_degrees >= -80.0 and this->m_degrees <= 84.0))
       return std::nullopt;
+
     auto constexpr bands = std::string_view("CDEFGHJKLMNPQRSTUVWX");
-    auto const band = static_cast<std::size_t>(floor((this->m_degrees + 80.0) / 8.0));
+    auto const band = static_cast<usize>(floor((this->m_degrees + 80.0) / 8.0));
     return bands.at(band < bands.size() ? band : bands.size() - 1);
   }
 

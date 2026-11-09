@@ -2,7 +2,6 @@
 
 #include <concepts>
 #include <ostream>
-#include <cstdint>
 #include <algorithm>
 #include <array>
 #include <functional>
@@ -12,6 +11,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/aabb.h>
 #include <w/common/clip_space.h>
 #include <w/common/detail/hash.h>
@@ -29,7 +29,7 @@ W_COMMON_NAMESPACE_BEGIN
  * @brief How a shape lies relative to a Frustum.
  * @ingroup core_math
  */
-enum class Containment : std::uint8_t
+enum class Containment : u8
 {
   Outside,
   Intersecting,

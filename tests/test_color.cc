@@ -1,8 +1,8 @@
+#include <w/common/stdint.h>
 #include <w/common/angle.h>
 #include <w/common/color.h>
 
 #include <cmath>
-#include <cstdint>
 #include <functional>
 #include <sstream>
 
@@ -77,7 +77,7 @@ TEST_CASE("Rgba is linear and converts to and from sRGB", "[color]")
 
   // every 8-bit value survives decoding and encoding
   for(auto value = 0; value <= 255; ++value) {
-    auto const byte = static_cast<std::uint8_t>(value);
+    auto const byte = static_cast<u8>(value);
     auto const color = Rgba8(byte, byte, byte, byte);
     CHECK(color.to_linear().to_srgb8() == color);
   }
@@ -92,7 +92,7 @@ TEST_CASE("Rgba is linear and converts to and from sRGB", "[color]")
   // values beyond [0, 1] encode clamped
   CHECK(
     Rgba(2.0F, -1.0F, 0.5F).to_srgb8()
-    == Rgba8(255, 0, static_cast<std::uint8_t>(std::lround(linear_to_srgb(0.5F) * 255.0F)))
+    == Rgba8(255, 0, static_cast<u8>(std::lround(linear_to_srgb(0.5F) * 255.0F)))
   );
   CHECK(fmt::format("{}", Rgba(1.0F, 0.5F, 0.0F)) == "(1, 0.5, 0, 1)");
   CHECK(Rgba(1.0F, 0.5F, 0.0F).to_string() == "(1, 0.5, 0, 1)");

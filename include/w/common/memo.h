@@ -1,12 +1,10 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-
 #include <array>
 #include <bit>
 #include <concepts>
 
+#include <w/common/stdint.h>
 #include <w/common/bit.h>
 #include <w/common/detail/namespace.h>
 
@@ -24,14 +22,14 @@ W_COMMON_NAMESPACE_BEGIN
  * @tparam Words 64-bit words of a key.
  * @tparam Size Places, a power of two above one.
  */
-template <std::size_t Words, typename Value, std::size_t Size>
+template <usize Words, typename Value, usize Size>
   requires(
     Words > 0 and Size > 1 and std::has_single_bit(Size) and std::default_initializable<Value>
   )
 class Memo
 {
  public:
-  using Key = std::array<std::uint64_t, Words>;
+  using Key = std::array<u64, Words>;
 
   /**
    * @brief The value kept for `key`, null if its place holds another key or none.
@@ -66,15 +64,13 @@ class Memo
     bool used = false;
   };
 
-  [[nodiscard]] static std::size_t place_of(Key const& key) noexcept
+  [[nodiscard]] static usize place_of(Key const& key) noexcept
   {
-    auto constexpr multiplier = std::uint64_t {0x9e37'79b9'7f4a'7c15};
-    auto hash = std::uint64_t {0};
+    auto constexpr multiplier = 0x9E3779B97F4A7C15_u64;
+    auto hash = 0_u64;
     for(auto const word : key)
       hash = hash ^ word * multiplier;
-    return static_cast<std::size_t>(
-             hash >> (64 - std::countr_zero(Size))
-           )  // NOLINT(*-signed-bitwise)
+    return static_cast<usize>(hash >> (64 - std::countr_zero(Size)))  // NOLINT(*-signed-bitwise)
          & (Size - 1);
   }
 

@@ -1,3 +1,4 @@
+#include <w/common/stdint.h>
 #include <w/common/aabb.h>
 #include <w/common/angle.h>
 #include <w/common/clip_space.h>
@@ -20,8 +21,6 @@
 #include <cmath>
 #include <algorithm>
 #include <array>
-#include <cstddef>
-#include <cstdint>
 #include <limits>
 #include <utility>
 
@@ -67,7 +66,7 @@ namespace
     auto g = glm::mat3();
     for(auto r = 0; r < 3; ++r)
       for(auto c = 0; c < 3; ++c)
-        g[c][r] = m.at(static_cast<std::size_t>(r), static_cast<std::size_t>(c));
+        g[c][r] = m.at(static_cast<usize>(r), static_cast<usize>(c));
     return g;
   }
 
@@ -76,7 +75,7 @@ namespace
     auto g = glm::mat4();
     for(auto r = 0; r < 4; ++r)
       for(auto c = 0; c < 4; ++c)
-        g[c][r] = m.at(static_cast<std::size_t>(r), static_cast<std::size_t>(c));
+        g[c][r] = m.at(static_cast<usize>(r), static_cast<usize>(c));
     return g;
   }
 
@@ -157,7 +156,7 @@ namespace
   class Sampler
   {
    public:
-    explicit Sampler(std::uint64_t const seed)
+    explicit Sampler(u64 const seed)
       : m_stream(RandomStream::from_seed(seed))
     {}
 
@@ -243,14 +242,14 @@ namespace
     std::unreachable();
   }
 
-  [[nodiscard]] constexpr std::size_t middle_axis(EulerOrder const order) noexcept
+  [[nodiscard]] constexpr usize middle_axis(EulerOrder const order) noexcept
   {
     switch(order) {
-      case EulerOrder::YXZ:
+      case EulerOrder::YXZ: [[fallthrough]];
       case EulerOrder::ZXY: return 0;
-      case EulerOrder::XYZ:
+      case EulerOrder::XYZ: [[fallthrough]];
       case EulerOrder::ZYX: return 1;
-      case EulerOrder::XZY:
+      case EulerOrder::XZY: [[fallthrough]];
       case EulerOrder::YZX: return 2;
     }
     std::unreachable();
@@ -275,7 +274,7 @@ namespace
 
       auto const ours = q.template to_euler<Order>();
       auto const theirs = glm_extract_by_axis(Order, expected);
-      for(auto axis = std::size_t {0}; axis < 3; ++axis) {
+      for(auto axis = 0uz; axis < 3; ++axis) {
         CHECK(std::abs((ours.at(axis) - Angle::from_radians(theirs.at(axis))).radians()) < 1e-3);
         CHECK(std::abs((ours.at(axis) - angles.at(axis)).radians()) < 1e-3);
       }
@@ -729,15 +728,13 @@ TEST_CASE("Ray intersections match glm", "[linalg][glm][bounds]")
     auto const plane_normal = sampler.direction();
     auto glm_distance = 0.0F;
     auto const plane = Plane::from_point_normal(plane_point, plane_normal);
-    if(
-      glm::intersectRayPlane(
-        glm_origin,
-        glm_direction,
-        to_glm(plane_point),
-        to_glm(plane_normal),
-        glm_distance
-      )
-    ) {
+    if(glm::intersectRayPlane(
+         glm_origin,
+         glm_direction,
+         to_glm(plane_point),
+         to_glm(plane_normal),
+         glm_distance
+       )) {
       REQUIRE(ray.intersect(plane).has_value());
       auto const t = ray.intersect(plane).value_or(0);
       CHECK(std::abs(t - glm_distance) / (1 + glm_distance) < 1e-4);
@@ -801,9 +798,9 @@ TEST_CASE("Color conversions match glm", "[color][glm]")
     CHECK(std::abs(linear_to_srgb(value) - glm::convertLinearToSRGB(glm::vec3(value)).x) < 1e-5);
 
     auto const color = Rgba8(
-      static_cast<std::uint8_t>(sampler.real(0.0, 255.0)),
-      static_cast<std::uint8_t>(sampler.real(0.0, 255.0)),
-      static_cast<std::uint8_t>(sampler.real(0.0, 255.0))
+      static_cast<u8>(sampler.real(0.0, 255.0)),
+      static_cast<u8>(sampler.real(0.0, 255.0)),
+      static_cast<u8>(sampler.real(0.0, 255.0))
     );
     auto const hsv = color.to_hsv();
     auto const expected = glm::hsvColor(glm::vec3(color.r(), color.g(), color.b()) / 255.0F);

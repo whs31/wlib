@@ -7,6 +7,7 @@
 #include <utility>
 
 #include <w/common/char_utils.h>
+#include <w/common/stdint.h>
 
 W_COMMON_NAMESPACE_BEGIN
 
@@ -31,7 +32,7 @@ namespace
     if(text.empty())
       return true;
 
-    auto start = std::size_t {0};
+    auto start = 0uz;
     while(start <= text.size()) {
       auto const dot = text.find('.', start);
       auto const end = dot == std::string_view::npos ? text.size() : dot;
@@ -40,10 +41,8 @@ namespace
            return is_identifier_char(value);
          }))
         return false;
-      if(
-        forbid_numeric_leading_zero and identifier.size() > 1 and identifier.front() == '0'
-        and is_numeric_identifier(identifier)
-      )
+      if(forbid_numeric_leading_zero and identifier.size() > 1 and identifier.front() == '0'
+         and is_numeric_identifier(identifier))
         return false;
       if(dot == std::string_view::npos)
         break;
@@ -78,8 +77,8 @@ namespace
     std::string_view const right
   ) noexcept
   {
-    auto left_start = std::size_t {0};
-    auto right_start = std::size_t {0};
+    auto left_start = 0uz;
+    auto right_start = 0uz;
     while(left_start < left.size() or right_start < right.size()) {
       if(left_start >= left.size())
         return std::strong_ordering::less;
@@ -96,10 +95,8 @@ namespace
       auto const rhs_numeric = is_numeric_identifier(rhs);
 
       if(lhs_numeric and rhs_numeric) {
-        if(
-          auto const result = compare_identifier_numbers(lhs, rhs);
-          result != std::strong_ordering::equal
-        )
+        if(auto const result = compare_identifier_numbers(lhs, rhs);
+           result != std::strong_ordering::equal)
           return result;
       }
       else if(lhs_numeric != rhs_numeric) {
@@ -115,7 +112,7 @@ namespace
     return std::strong_ordering::equal;
   }
 
-  [[nodiscard]] std::uint64_t parse_core_number(
+  [[nodiscard]] u64 parse_core_number(
     std::string_view const version,
     std::string_view const number,
     std::string_view const field
@@ -130,7 +127,7 @@ namespace
       throw VersionError::
         invalid_string(version, fmt::format("{} component is not numeric", field));
 
-    auto result = std::uint64_t {0};
+    auto result = 0_u64;
     auto const* const last = std::to_address(number.end());
     auto const [position, error] = std::from_chars(std::to_address(number.begin()), last, result);
     if(error == std::errc::result_out_of_range)
@@ -196,9 +193,9 @@ std::strong_ordering BuildMetadata::operator<=>(BuildMetadata const& other) cons
 }
 
 Version::Version(
-  std::uint64_t const major,
-  std::uint64_t const minor,
-  std::uint64_t const patch,
+  u64 const major,
+  u64 const minor,
+  u64 const patch,
   Prerelease pre,
   BuildMetadata build
 ) noexcept
@@ -248,10 +245,8 @@ Version Version::parse(std::string_view const text)
   auto const first_dot = core.find('.');
   auto const second_dot = first_dot == std::string_view::npos ? std::string_view::npos
                                                               : core.find('.', first_dot + 1);
-  if(
-    first_dot == std::string_view::npos or second_dot == std::string_view::npos
-    or core.find('.', second_dot + 1) != std::string_view::npos
-  )
+  if(first_dot == std::string_view::npos or second_dot == std::string_view::npos
+     or core.find('.', second_dot + 1) != std::string_view::npos)
     throw VersionError::invalid_string(text, "version must have exactly three numeric components");
 
   return {
@@ -283,7 +278,7 @@ std::strong_ordering Version::operator<=>(Version const& other) const noexcept
   return this->m_build <=> other.m_build;
 }
 
-Version literals::operator""_version(char const* const text, std::size_t const length)
+Version literals::operator""_version(char const* const text, usize const length)
 {
   return Version(std::string_view {text, length});
 }

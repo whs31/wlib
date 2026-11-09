@@ -1,7 +1,7 @@
+#include <w/common/stdint.h>
 #include <w/common/glaze/chrono.h>
 
 #include <chrono>
-#include <cstdint>
 #include <string>
 
 #include <glaze/beve.hpp>
@@ -40,7 +40,7 @@ TEST_CASE("Duration glaze adapter writes and reads the count", "[glaze][chrono]"
 {
   check_round_trip(42s, "42");
   check_round_trip(Milliseconds(7.5), "7.5");
-  check_round_trip(std::chrono::duration<std::uint16_t, std::milli>(65'535), "65535");
+  check_round_trip(std::chrono::duration<w::u16, std::milli>(65'535), "65535");
   check_round_trip(
     Timing {.latency = 2.5ms, .timeout = 30s, .period = 20'000us},
     R"({"latency":2.5,"timeout":30,"period":20000})"
@@ -87,14 +87,12 @@ TEST_CASE("Duration glaze adapter keeps integer counts exact", "[glaze][chrono]"
     read_error<std::chrono::hours>(R"({"minutes":90})") == glz::error_code::constraint_violated
   );
   CHECK(
-    read_error<std::chrono::duration<std::uint8_t>>(R"("256s")")
-    == glz::error_code::constraint_violated
+    read_error<std::chrono::duration<w::u8>>(R"("256s")") == glz::error_code::constraint_violated
   );
   CHECK(
-    read_error<std::chrono::duration<std::uint8_t>>(R"("-1s")")
-    == glz::error_code::constraint_violated
+    read_error<std::chrono::duration<w::u8>>(R"("-1s")") == glz::error_code::constraint_violated
   );
-  CHECK(read<std::chrono::duration<std::uint8_t>>(R"("255s")").count() == 255);
+  CHECK(read<std::chrono::duration<w::u8>>(R"("255s")").count() == 255);
   CHECK(
     read_error<std::chrono::nanoseconds>(R"("1e300h")") == glz::error_code::constraint_violated
   );

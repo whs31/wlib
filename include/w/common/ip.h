@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <array>
 #include <compare>
-#include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <iosfwd>
 #include <ostream>
@@ -15,6 +13,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <w/common/stdint.h>
 #include <w/common/config.h>
 #include <w/common/detail/export.h>
 #include <w/common/detail/namespace.h>
@@ -55,34 +54,34 @@ class W_COMMON_API Ipv4Addr
 
   constexpr Ipv4Addr() noexcept = default;
 
-  explicit constexpr Ipv4Addr(std::uint32_t const address) noexcept
+  explicit constexpr Ipv4Addr(u32 const address) noexcept
     : m_address(address)
   {}
 
   [[nodiscard]] static constexpr Ipv4Addr from_octets(
-    std::uint8_t const a,
-    std::uint8_t const b,
-    std::uint8_t const c,
-    std::uint8_t const d
+    u8 const a,
+    u8 const b,
+    u8 const c,
+    u8 const d
   ) noexcept
   {
     return Ipv4Addr(
-      static_cast<std::uint32_t>(a) << 24 | static_cast<std::uint32_t>(b) << 16
-      | static_cast<std::uint32_t>(c) << 8 | static_cast<std::uint32_t>(d)
+      static_cast<u32>(a) << 24 | static_cast<u32>(b) << 16 | static_cast<u32>(c) << 8
+      | static_cast<u32>(d)
     );
   }
 
   [[nodiscard]] static Ipv4Addr parse(std::string_view text);
 
-  [[nodiscard]] constexpr std::uint32_t address() const noexcept { return this->m_address; }
+  [[nodiscard]] constexpr u32 address() const noexcept { return this->m_address; }
 
-  [[nodiscard]] constexpr std::array<std::uint8_t, 4> octets() const noexcept
+  [[nodiscard]] constexpr std::array<u8, 4> octets() const noexcept
   {
     return {
-      static_cast<std::uint8_t>((this->m_address >> 24) & 0xffU),
-      static_cast<std::uint8_t>((this->m_address >> 16) & 0xffU),
-      static_cast<std::uint8_t>((this->m_address >> 8) & 0xffU),
-      static_cast<std::uint8_t>(this->m_address & 0xffU),
+      static_cast<u8>((this->m_address >> 24) & 0xffU),
+      static_cast<u8>((this->m_address >> 16) & 0xffU),
+      static_cast<u8>((this->m_address >> 8) & 0xffU),
+      static_cast<u8>(this->m_address & 0xffU),
     };
   }
 
@@ -112,7 +111,7 @@ class W_COMMON_API Ipv4Addr
     default;
 
  private:
-  std::uint32_t m_address = 0;
+  u32 m_address = 0;
 };
 
 /**
@@ -127,55 +126,55 @@ class W_COMMON_API Ipv6Addr
 
   constexpr Ipv6Addr() noexcept = default;
 
-  explicit constexpr Ipv6Addr(std::array<std::uint8_t, 16> const& octets) noexcept
+  explicit constexpr Ipv6Addr(std::array<u8, 16> const& octets) noexcept
     : m_octets(octets)
   {}
 
   [[nodiscard]] static constexpr Ipv6Addr from_segments(
-    std::uint16_t const a,
-    std::uint16_t const b,
-    std::uint16_t const c,
-    std::uint16_t const d,
-    std::uint16_t const e,
-    std::uint16_t const f,
-    std::uint16_t const g,
-    std::uint16_t const h
+    u16 const a,
+    u16 const b,
+    u16 const c,
+    u16 const d,
+    u16 const e,
+    u16 const f,
+    u16 const g,
+    u16 const h
   ) noexcept
   {
     return Ipv6Addr({
-      static_cast<std::uint8_t>(a >> 8),
-      static_cast<std::uint8_t>(a & 0xffU),
-      static_cast<std::uint8_t>(b >> 8),
-      static_cast<std::uint8_t>(b & 0xffU),
-      static_cast<std::uint8_t>(c >> 8),
-      static_cast<std::uint8_t>(c & 0xffU),
-      static_cast<std::uint8_t>(d >> 8),
-      static_cast<std::uint8_t>(d & 0xffU),
-      static_cast<std::uint8_t>(e >> 8),
-      static_cast<std::uint8_t>(e & 0xffU),
-      static_cast<std::uint8_t>(f >> 8),
-      static_cast<std::uint8_t>(f & 0xffU),
-      static_cast<std::uint8_t>(g >> 8),
-      static_cast<std::uint8_t>(g & 0xffU),
-      static_cast<std::uint8_t>(h >> 8),
-      static_cast<std::uint8_t>(h & 0xffU),
+      static_cast<u8>(a >> 8),
+      static_cast<u8>(a & 0xFFu),
+      static_cast<u8>(b >> 8),
+      static_cast<u8>(b & 0xFFu),
+      static_cast<u8>(c >> 8),
+      static_cast<u8>(c & 0xFFu),
+      static_cast<u8>(d >> 8),
+      static_cast<u8>(d & 0xFFu),
+      static_cast<u8>(e >> 8),
+      static_cast<u8>(e & 0xFFu),
+      static_cast<u8>(f >> 8),
+      static_cast<u8>(f & 0xFFu),
+      static_cast<u8>(g >> 8),
+      static_cast<u8>(g & 0xFFu),
+      static_cast<u8>(h >> 8),
+      static_cast<u8>(h & 0xFFu),
     });
   }
 
   [[nodiscard]] static Ipv6Addr parse(std::string_view text);
 
-  [[nodiscard]] constexpr std::array<std::uint8_t, 16> const& octets() const noexcept
+  [[nodiscard]] constexpr std::array<u8, 16> const& octets() const noexcept
   {
     return this->m_octets;
   }
 
-  [[nodiscard]] constexpr std::array<std::uint16_t, 8> segments() const noexcept
+  [[nodiscard]] constexpr std::array<u16, 8> segments() const noexcept
   {
-    auto result = std::array<std::uint16_t, 8> {};
-    for(auto i = std::size_t {0}; i < result.size(); ++i) {
-      result.at(i) = static_cast<std::uint16_t>(
-        static_cast<std::uint16_t>(this->m_octets.at(i * 2)) << 8
-        | static_cast<std::uint16_t>(this->m_octets.at(i * 2 + 1))
+    auto result = std::array<u16, 8> {};
+    for(auto i = 0uz; i < result.size(); ++i) {
+      result.at(i) = static_cast<u16>(
+        static_cast<u16>(this->m_octets.at(i * 2)) << 8
+        | static_cast<u16>(this->m_octets.at(i * 2 + 1))
       );
     }
     return result;
@@ -188,7 +187,7 @@ class W_COMMON_API Ipv6Addr
 
   [[nodiscard]] constexpr bool is_loopback() const noexcept
   {
-    auto constexpr localhost = std::array<std::uint8_t, 16> {
+    auto constexpr localhost = std::array<u8, 16> {
       0,
       0,
       0,
@@ -211,7 +210,7 @@ class W_COMMON_API Ipv6Addr
 
   [[nodiscard]] constexpr bool is_multicast() const noexcept
   {
-    return this->m_octets.front() == 0xff;
+    return this->m_octets.front() == 0xFF;
   }
 
   [[nodiscard]] std::string to_string() const;
@@ -221,7 +220,7 @@ class W_COMMON_API Ipv6Addr
     default;
 
  private:
-  std::array<std::uint8_t, 16> m_octets {};
+  std::array<u8, 16> m_octets {};
 };
 
 W_COMMON_API std::ostream& operator<<(std::ostream& stream, Ipv4Addr const& address);
@@ -235,7 +234,7 @@ inline namespace literals
    * @ingroup core_networking
    * @relates Ipv4Addr
    */
-  [[nodiscard]] inline Ipv4Addr operator""_ipv4(char const* text, std::size_t const length)
+  [[nodiscard]] inline Ipv4Addr operator""_ipv4(char const* text, usize const length)
   {
     return Ipv4Addr::parse(std::string_view {text, length});
   }
@@ -246,7 +245,7 @@ inline namespace literals
    * @ingroup core_networking
    * @relates Ipv6Addr
    */
-  [[nodiscard]] inline Ipv6Addr operator""_ipv6(char const* text, std::size_t const length)
+  [[nodiscard]] inline Ipv6Addr operator""_ipv6(char const* text, usize const length)
   {
     return Ipv6Addr::parse(std::string_view {text, length});
   }
@@ -259,7 +258,7 @@ struct std::hash<w::common::Ipv4Addr>
 {
   [[nodiscard]] std::size_t operator()(w::common::Ipv4Addr const& address) const noexcept
   {
-    return std::hash<std::uint32_t> {}(address.address());
+    return std::hash<w::u32> {}(address.address());
   }
 };
 
@@ -268,9 +267,9 @@ struct std::hash<w::common::Ipv6Addr>
 {
   [[nodiscard]] std::size_t operator()(w::common::Ipv6Addr const& address) const noexcept
   {
-    auto hash = std::size_t {};
+    auto hash = 0uz;
     for(auto const byte : address.octets()) {
-      hash ^= std::hash<std::uint8_t> {}(byte) + 0x9e3779b97f4a7c15ULL + (hash << 6) + (hash >> 2);
+      hash ^= std::hash<w::u8> {}(byte) + 0x9e3779b97f4a7c15ULL + (hash << 6) + (hash >> 2);
     }
     return hash;
   }
@@ -278,10 +277,10 @@ struct std::hash<w::common::Ipv6Addr>
 
 #ifndef __DOXYGEN__
 template <>
-struct fmt::formatter<w::common::Ipv4Addr> : fmt::ostream_formatter
+struct fmt::formatter<w::common::Ipv4Addr> : ostream_formatter
 {};
 
 template <>
-struct fmt::formatter<w::common::Ipv6Addr> : fmt::ostream_formatter
+struct fmt::formatter<w::common::Ipv6Addr> : ostream_formatter
 {};
 #endif

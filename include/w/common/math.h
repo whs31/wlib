@@ -1,12 +1,12 @@
 #pragma once
 
 #include <cmath>
-#include <cstdint>
 #include <limits>
 #include <numbers>
 #include <type_traits>
 #include <utility>
 
+#include <w/common/stdint.h>
 #include <w/common/concepts.h>
 #include <w/common/detail/namespace.h>
 #include <w/common/precision.h>
@@ -59,7 +59,7 @@ template <std::floating_point T>
     auto constexpr integral_bound = T(1) / std::numeric_limits<T>::epsilon();
     if(val == T(0) or not(val > -integral_bound and val < integral_bound))
       return val;
-    auto const truncated = static_cast<T>(static_cast<std::int64_t>(val));
+    auto const truncated = static_cast<T>(static_cast<i64>(val));
     return truncated > val ? truncated - T(1) : truncated;
   }
   else {

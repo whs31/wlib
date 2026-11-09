@@ -4,8 +4,6 @@
 #include <bit>
 #include <chrono>
 #include <compare>
-#include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <ios>
 #include <ostream>
@@ -17,6 +15,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/char_utils.h>
 #include <w/common/config.h>
 #include <w/common/detail/export.h>
@@ -43,7 +42,7 @@ class W_COMMON_API UuidError final : public Error
 class W_COMMON_API Uuid
 {
  public:
-  enum class Version : std::uint8_t
+  enum class Version : u8
   {
     Nil = 0,
     Mac = 1,
@@ -58,7 +57,7 @@ class W_COMMON_API Uuid
     None = 255,
   };
 
-  enum class Format : std::uint8_t
+  enum class Format : u8
   {
     Simple,
     Hyphenated,
@@ -66,9 +65,9 @@ class W_COMMON_API Uuid
   };
 
   // NOLINTNEXTLINE(readability-identifier-naming)
-  constexpr static std::size_t SHORT_STRING_LEN = 36;
+  constexpr static usize SHORT_STRING_LEN = 36;
   // NOLINTNEXTLINE(readability-identifier-naming)
-  constexpr static std::size_t LONG_STRING_LEN = 38;
+  constexpr static usize LONG_STRING_LEN = 38;
 
   static Uuid const NAMESPACE_DNS;   // NOLINT(readability-identifier-naming)
   static Uuid const NAMESPACE_OID;   // NOLINT(readability-identifier-naming)
@@ -77,12 +76,12 @@ class W_COMMON_API Uuid
 
   constexpr Uuid() noexcept = default;
 
-  explicit Uuid(std::span<std::byte const, 16> bytes) noexcept;
+  explicit Uuid(std::span<byte const, 16> bytes) noexcept;
 
   explicit constexpr Uuid(unsigned char const (&bytes)[16]) noexcept  // NOLINT(*-avoid-c-arrays)
   {
-    for(auto i = std::size_t {0}; i < this->m_bytes.size(); ++i)
-      this->m_bytes.at(i) = static_cast<std::uint8_t>(bytes[i]);  // NOLINT(*-constant-array-index)
+    for(auto i = usize {0}; i < this->m_bytes.size(); ++i)
+      this->m_bytes.at(i) = static_cast<u8>(bytes[i]);  // NOLINT(*-constant-array-index)
   }
 
   explicit constexpr Uuid(std::string_view const text)
@@ -97,7 +96,7 @@ class W_COMMON_API Uuid
     if(value.at(8) != '-' or value.at(13) != '-' or value.at(18) != '-' or value.at(23) != '-')
       throw UuidError::invalid_string(text);
 
-    auto constexpr offsets = std::array<std::size_t, 16> {
+    auto constexpr offsets = std::array<usize, 16> {
       0,
       2,
       4,
@@ -115,7 +114,7 @@ class W_COMMON_API Uuid
       32,
       34,
     };
-    for(auto i = std::size_t {0}; i < offsets.size(); ++i) {
+    for(auto i = 0uz; i < offsets.size(); ++i) {
       auto const offset = offsets.at(i);
       if(not is_hex(value.at(offset)) or not is_hex(value.at(offset + 1)))
         throw UuidError::invalid_string(text);
@@ -127,12 +126,9 @@ class W_COMMON_API Uuid
 
   [[nodiscard]] constexpr bool is_max() const noexcept { return *this == max(); }
 
-  [[nodiscard]] constexpr std::span<std::uint8_t const, 16> bytes() const noexcept
-  {
-    return this->m_bytes;
-  }
+  [[nodiscard]] constexpr std::span<u8 const, 16> bytes() const noexcept { return this->m_bytes; }
 
-  [[nodiscard]] constexpr std::span<std::uint8_t, 16> bytes() noexcept { return this->m_bytes; }
+  [[nodiscard]] constexpr std::span<u8, 16> bytes() noexcept { return this->m_bytes; }
 
   [[nodiscard]] std::string to_string(Format format = Format::Hyphenated) const;
 
@@ -145,69 +141,68 @@ class W_COMMON_API Uuid
     return uuid;
   }
 
-  [[nodiscard]] static Uuid new_v3(Uuid const& namespace_uuid, std::span<std::uint8_t const> name);
+  [[nodiscard]] static Uuid new_v3(Uuid const& namespace_uuid, std::span<u8 const> name);
   [[nodiscard]] static Uuid new_v4();
-  [[nodiscard]] static Uuid new_v5(Uuid const& namespace_uuid, std::span<std::uint8_t const> name);
+  [[nodiscard]] static Uuid new_v5(Uuid const& namespace_uuid, std::span<u8 const> name);
   [[nodiscard]] static Uuid new_v7(std::chrono::system_clock::time_point timestamp);
   [[nodiscard]] static Uuid now_v7();
 
-  [[nodiscard]] constexpr static Uuid new_v8(std::array<std::uint8_t, 16> const bytes) noexcept
+  [[nodiscard]] constexpr static Uuid new_v8(std::array<u8, 16> const bytes) noexcept
   {
     auto uuid = Uuid();
     uuid.m_bytes = bytes;
-    uuid.m_bytes.at(6) = static_cast<std::uint8_t>((uuid.m_bytes.at(6) & 0x0fU) | 0x80U);
-    uuid.m_bytes.at(8) = static_cast<std::uint8_t>((uuid.m_bytes.at(8) & 0x3fU) | 0x80U);
+    uuid.m_bytes.at(6) = static_cast<u8>((uuid.m_bytes.at(6) & 0x0fU) | 0x80U);
+    uuid.m_bytes.at(8) = static_cast<u8>((uuid.m_bytes.at(8) & 0x3fU) | 0x80U);
     return uuid;
   }
 
   [[nodiscard]] constexpr static Uuid from_fields(
-    std::uint32_t const d1,
-    std::uint16_t const d2,
-    std::uint16_t const d3,
-    std::span<std::uint8_t const, 8> const d4
+    u32 const d1,
+    u16 const d2,
+    u16 const d3,
+    std::span<u8 const, 8> const d4
   ) noexcept
   {
     return from_parts(d1, d2, d3, d4, false);
   }
 
   [[nodiscard]] constexpr static Uuid from_fields_le(
-    std::uint32_t const d1,
-    std::uint16_t const d2,
-    std::uint16_t const d3,
-    std::span<std::uint8_t const, 8> const d4
+    u32 const d1,
+    u16 const d2,
+    u16 const d3,
+    std::span<u8 const, 8> const d4
   ) noexcept
   {
     return from_parts(d1, d2, d3, d4, true);
   }
 
   [[nodiscard]] constexpr static Uuid from_u64_pair(
-    std::uint64_t const high_bits,
-    std::uint64_t const low_bits
+    u64 const high_bits,
+    u64 const low_bits
   ) noexcept
   {
     auto uuid = Uuid();
-    for(auto i = std::size_t {0}; i < 8; ++i) {
-      uuid.m_bytes.at(i) = static_cast<std::uint8_t>(high_bits >> ((7 - i) * 8));
-      uuid.m_bytes.at(i + 8) = static_cast<std::uint8_t>(low_bits >> ((7 - i) * 8));
+    for(auto i = 0uz; i < 8; ++i) {
+      uuid.m_bytes.at(i) = static_cast<u8>(high_bits >> ((7 - i) * 8));
+      uuid.m_bytes.at(i + 8) = static_cast<u8>(low_bits >> ((7 - i) * 8));
     }
     return uuid;
   }
 
-  [[nodiscard]] constexpr std::
-    tuple<std::uint32_t, std::uint16_t, std::uint16_t, std::span<std::uint8_t const, 8>>
+  [[nodiscard]] constexpr std::tuple<u32, u16, u16, std::span<u8 const, 8>>
     as_fields() const noexcept
   {
     return {
-      this->read_be<std::uint32_t, 0>(),
-      this->read_be<std::uint16_t, 4>(),
-      this->read_be<std::uint16_t, 6>(),
-      std::span<std::uint8_t const, 16> {this->m_bytes}.template subspan<8, 8>(),
+      this->read_be<u32, 0>(),
+      this->read_be<u16, 4>(),
+      this->read_be<u16, 6>(),
+      std::span<u8 const, 16> {this->m_bytes}.template subspan<8, 8>(),
     };
   }
 
-  [[nodiscard]] constexpr std::size_t version_num() const noexcept
+  [[nodiscard]] constexpr usize version_num() const noexcept
   {
-    return static_cast<std::size_t>((this->m_bytes.at(6) >> 4U) & 0x0fU);
+    return static_cast<usize>((this->m_bytes.at(6) >> 4U) & 0x0fU);
   }
 
   [[nodiscard]] constexpr Version version() const noexcept
@@ -233,17 +228,17 @@ class W_COMMON_API Uuid
   [[nodiscard]] constexpr std::strong_ordering operator<=>(Uuid const&) const noexcept = default;
 
  private:
-  template <std::size_t ByteIndex, typename Num>
-  [[nodiscard]] constexpr static std::uint8_t byte(Num const value) noexcept
+  template <usize ByteIndex, typename Num>
+  [[nodiscard]] constexpr static u8 byte(Num const value) noexcept
   {
-    return static_cast<std::uint8_t>(value >> (ByteIndex * 8));
+    return static_cast<u8>(value >> (ByteIndex * 8));
   }
 
   [[nodiscard]] constexpr static Uuid from_parts(
-    std::uint32_t const d1,
-    std::uint16_t const d2,
-    std::uint16_t const d3,
-    std::span<std::uint8_t const, 8> const d4,
+    u32 const d1,
+    u16 const d2,
+    u16 const d3,
+    std::span<u8 const, 8> const d4,
     bool const little_endian
   ) noexcept
   {
@@ -272,16 +267,16 @@ class W_COMMON_API Uuid
     return uuid;
   }
 
-  template <typename Num, std::size_t Offset>
+  template <typename Num, usize Offset>
   [[nodiscard]] constexpr Num read_be() const noexcept
   {
     auto value = Num {0};
-    for(auto i = std::size_t {0}; i < sizeof(Num); ++i)
+    for(auto i = 0uz; i < sizeof(Num); ++i)
       value = static_cast<Num>((value << 8U) | this->m_bytes.at(Offset + i));
     return value;
   }
 
-  std::array<std::uint8_t, 16> m_bytes {};
+  std::array<u8, 16> m_bytes {};
 };
 
 inline namespace literals
@@ -293,7 +288,7 @@ inline namespace literals
    * @ingroup core_identifiers
    * @relates Uuid
    */
-  [[nodiscard]] constexpr Uuid operator""_uuid(char const* const text, std::size_t const length)
+  [[nodiscard]] constexpr Uuid operator""_uuid(char const* const text, usize const length)
   {
     return Uuid(std::string_view {text, length});
   }
@@ -310,10 +305,10 @@ struct std::hash<w::common::Uuid>
 {
   [[nodiscard]] std::size_t operator()(w::common::Uuid const& uuid) const noexcept
   {
-    auto hash = static_cast<std::size_t>(14'695'981'039'346'656'037ull);
+    auto hash = static_cast<w::usize>(14'695'981'039'346'656'037ull);
     for(auto const byte : uuid.bytes()) {
-      hash ^= static_cast<std::size_t>(byte);
-      hash *= static_cast<std::size_t>(1'099'511'628'211ull);
+      hash ^= static_cast<w::usize>(byte);
+      hash *= static_cast<w::usize>(1'099'511'628'211ull);
     }
     return hash;
   }
@@ -325,7 +320,7 @@ struct fmt::formatter<w::common::Uuid>
 {
   w::common::Uuid::Format output_format = w::common::Uuid::Format::Hyphenated;
 
-  auto constexpr parse(fmt::format_parse_context& context)
+  auto constexpr parse(format_parse_context& context)
   {
     // fmt exposes its parse position as an iterator; advancing it is the required API.
     // NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic,readability-qualified-auto)
@@ -336,11 +331,11 @@ struct fmt::formatter<w::common::Uuid>
       case 's': output_format = w::common::Uuid::Format::Simple; break;
       case 'h': output_format = w::common::Uuid::Format::Hyphenated; break;
       case 'b': output_format = w::common::Uuid::Format::Braced; break;
-      default: throw fmt::format_error("invalid UUID format specifier");
+      default: throw format_error("invalid UUID format specifier");
     }
     ++iterator;
     if(iterator != context.end() and *iterator != '}')
-      throw fmt::format_error("invalid UUID format specifier");
+      throw format_error("invalid UUID format specifier");
     return iterator;
     // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic,readability-qualified-auto)
   }

@@ -2,7 +2,6 @@
 
 #include <concepts>
 #include <ostream>
-#include <cstdint>
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -14,6 +13,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/hash.h>
 #include <w/common/detail/namespace.h>
@@ -251,7 +251,7 @@ using Rect = BasicRect<float>;
  * empty.
  *
  * @par Layout
- * The storage is exactly four contiguous `std::int32_t` values in `x, y, width, height` order. The
+ * The storage is exactly four contiguous `i32` values in `x, y, width, height` order. The
  * class is standard layout and trivially copyable.
  * @ingroup core_math
  * @see Rect
@@ -261,39 +261,34 @@ class Recti
  public:
   constexpr Recti() noexcept = default;
 
-  constexpr Recti(
-    std::int32_t const x,
-    std::int32_t const y,
-    std::int32_t const width,
-    std::int32_t const height
-  ) noexcept
+  constexpr Recti(i32 const x, i32 const y, i32 const width, i32 const height) noexcept
     : m_x(x)
     , m_y(y)
     , m_width(width)
     , m_height(height)
   {}
 
-  [[nodiscard]] constexpr std::int32_t x() const noexcept { return this->m_x; }
+  [[nodiscard]] constexpr i32 x() const noexcept { return this->m_x; }
 
-  [[nodiscard]] constexpr std::int32_t y() const noexcept { return this->m_y; }
+  [[nodiscard]] constexpr i32 y() const noexcept { return this->m_y; }
 
-  [[nodiscard]] constexpr std::int32_t width() const noexcept { return this->m_width; }
+  [[nodiscard]] constexpr i32 width() const noexcept { return this->m_width; }
 
-  [[nodiscard]] constexpr std::int32_t height() const noexcept { return this->m_height; }
+  [[nodiscard]] constexpr i32 height() const noexcept { return this->m_height; }
 
   /**
    * @brief Returns `x() + width()`, the first column past the rectangle.
    */
-  [[nodiscard]] constexpr std::int32_t max_x() const noexcept { return this->m_x + this->m_width; }
+  [[nodiscard]] constexpr i32 max_x() const noexcept { return this->m_x + this->m_width; }
 
   /**
    * @brief Returns `y() + height()`, the first row past the rectangle.
    */
-  [[nodiscard]] constexpr std::int32_t max_y() const noexcept { return this->m_y + this->m_height; }
+  [[nodiscard]] constexpr i32 max_y() const noexcept { return this->m_y + this->m_height; }
 
-  [[nodiscard]] constexpr std::int64_t area() const noexcept
+  [[nodiscard]] constexpr i64 area() const noexcept
   {
-    return this->is_empty() ? 0 : std::int64_t {this->m_width} * this->m_height;
+    return this->is_empty() ? 0 : i64 {this->m_width} * this->m_height;
   }
 
   [[nodiscard]] constexpr bool is_empty() const noexcept
@@ -304,7 +299,7 @@ class Recti
   /**
    * @brief Checks whether the pixel @p px, @p py is inside.
    */
-  [[nodiscard]] constexpr bool contains(std::int32_t const px, std::int32_t const py) const noexcept
+  [[nodiscard]] constexpr bool contains(i32 const px, i32 const py) const noexcept
   {
     return px >= this->m_x and px < this->max_x() and py >= this->m_y and py < this->max_y();
   }
@@ -363,10 +358,7 @@ class Recti
     };
   }
 
-  [[nodiscard]] constexpr Recti translated(
-    std::int32_t const dx,
-    std::int32_t const dy
-  ) const noexcept
+  [[nodiscard]] constexpr Recti translated(i32 const dx, i32 const dy) const noexcept
   {
     return {this->m_x + dx, this->m_y + dy, this->m_width, this->m_height};
   }
@@ -385,17 +377,14 @@ class Recti
     };
   }
 
-  [[nodiscard]] constexpr std::array<std::int32_t, 4> to_array() const noexcept
+  [[nodiscard]] constexpr std::array<i32, 4> to_array() const noexcept
   {
     return {this->m_x, this->m_y, this->m_width, this->m_height};
   }
 
   [[nodiscard]] std::string to_string() const;
 
-  [[nodiscard]] static constexpr Recti from_size(
-    std::int32_t const width,
-    std::int32_t const height
-  ) noexcept
+  [[nodiscard]] static constexpr Recti from_size(i32 const width, i32 const height) noexcept
   {
     return {0, 0, width, height};
   }
@@ -407,23 +396,23 @@ class Recti
   template <std::floating_point T>
   [[nodiscard]] static Recti enclosing(BasicRect<T> const& rect) noexcept
   {
-    auto const x = static_cast<std::int32_t>(std::floor(rect.x()));
-    auto const y = static_cast<std::int32_t>(std::floor(rect.y()));
+    auto const x = static_cast<i32>(std::floor(rect.x()));
+    auto const y = static_cast<i32>(std::floor(rect.y()));
     return {
       x,
       y,
-      static_cast<std::int32_t>(std::ceil(rect.max().x())) - x,
-      static_cast<std::int32_t>(std::ceil(rect.max().y())) - y,
+      static_cast<i32>(std::ceil(rect.max().x())) - x,
+      static_cast<i32>(std::ceil(rect.max().y())) - y,
     };
   }
 
   [[nodiscard]] constexpr bool operator==(Recti const&) const noexcept = default;
 
  private:
-  std::int32_t m_x = 0;
-  std::int32_t m_y = 0;
-  std::int32_t m_width = 0;
-  std::int32_t m_height = 0;
+  i32 m_x = 0;
+  i32 m_y = 0;
+  i32 m_width = 0;
+  i32 m_height = 0;
 };
 
 template <std::floating_point T>
@@ -465,7 +454,7 @@ struct std::hash<w::common::Recti>
  * component.
  */
 template <std::floating_point T>
-struct fmt::formatter<w::common::BasicRect<T>> : fmt::formatter<T>
+struct fmt::formatter<w::common::BasicRect<T>> : formatter<T>
 {
   format_context::iterator format(w::common::BasicRect<T> const& rect, format_context& ctx) const
   {
@@ -478,7 +467,7 @@ struct fmt::formatter<w::common::BasicRect<T>> : fmt::formatter<T>
  * component.
  */
 template <>
-struct fmt::formatter<w::common::Recti> : fmt::formatter<std::int32_t>
+struct fmt::formatter<w::common::Recti> : formatter<w::i32>
 {
   format_context::iterator format(w::common::Recti const& rect, format_context& ctx) const
   {
@@ -492,7 +481,7 @@ struct fmt::formatter<w::common::Recti> : fmt::formatter<std::int32_t>
       }
       first = false;
       ctx.advance_to(out);
-      out = fmt::formatter<std::int32_t>::format(value, ctx);
+      out = formatter<w::i32>::format(value, ctx);
     }
     *out++ = ')';
     return out;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include <cstdint>
 
 #include <algorithm>
 #include <array>
@@ -20,6 +19,7 @@
 
 #include <glaze/chrono.hpp>
 
+#include <w/common/stdint.h>
 #include <w/common/glaze/detail.h>
 
 W_COMMON_NAMESPACE_BEGIN
@@ -188,7 +188,7 @@ struct glz::meta<std::chrono::duration<Rep, Period>>
  * @note Include this header wherever durations are read: without it glaze reads the count only.
  * @ingroup core_glaze
  */
-template <std::uint32_t Format, typename Rep, typename Period>
+template <w::u32 Format, typename Rep, typename Period>
 struct glz::from<Format, std::chrono::duration<Rep, Period>>
 {
   using duration_type = std::chrono::duration<Rep, Period>;
@@ -214,12 +214,7 @@ struct glz::from<Format, std::chrono::duration<Rep, Period>>
 
   // binary formats that read the type tag of a value before it, e.g. MessagePack
   template <auto Opts, typename... Args>
-  static void op(
-    duration_type& value,
-    std::uint8_t const tag,
-    is_context auto&& ctx,
-    Args&&... args
-  )
+  static void op(duration_type& value, w::u8 const tag, is_context auto&& ctx, Args&&... args)
   {
     auto count = Rep {};
     glz::from<Format, Rep>::template op<Opts>(count, tag, ctx, std::forward<Args>(args)...);

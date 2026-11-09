@@ -1,7 +1,6 @@
 #pragma once
 
 #include <concepts>
-#include <cstddef>
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -15,6 +14,7 @@
 
 #include <fmt/format.h>
 
+#include <w/common/stdint.h>
 #include <w/common/config.h>
 #include <w/common/detail/format.h>
 #include <w/common/detail/namespace.h>
@@ -94,7 +94,7 @@ class BasicMatrix3x3
    * @brief Returns the row at @p index.
    * @throws std::out_of_range if @p index is not in `[0, 3)`.
    */
-  [[nodiscard]] constexpr BasicVector3<T> row(std::size_t const index) const
+  [[nodiscard]] constexpr BasicVector3<T> row(usize const index) const
   {
     return this->m_rows.at(index);
   }
@@ -103,7 +103,7 @@ class BasicMatrix3x3
    * @brief Returns the column at @p index.
    * @throws std::out_of_range if @p index is not in `[0, 3)`.
    */
-  [[nodiscard]] constexpr BasicVector3<T> column(std::size_t const index) const
+  [[nodiscard]] constexpr BasicVector3<T> column(usize const index) const
   {
     auto const& [a, b, c] = this->m_rows;
     return {component(a, index), component(b, index), component(c, index)};
@@ -113,7 +113,7 @@ class BasicMatrix3x3
    * @brief Returns the element in @p row and @p column.
    * @throws std::out_of_range if either index is not in `[0, 3)`.
    */
-  [[nodiscard]] constexpr T at(std::size_t const row, std::size_t const column) const
+  [[nodiscard]] constexpr T at(usize const row, usize const column) const
   {
     return component(this->m_rows.at(row), column);
   }
@@ -381,7 +381,7 @@ class BasicMatrix3x3
     : m_rows {a, b, c}
   {}
 
-  [[nodiscard]] static constexpr T component(BasicVector3<T> const v, std::size_t const index)
+  [[nodiscard]] static constexpr T component(BasicVector3<T> const v, usize const index)
   {
     switch(index) {
       case 0: return v.x();
@@ -469,7 +469,7 @@ struct fmt::formatter<w::common::BasicMatrix3x3<T>> : fmt::formatter<T>
   {
     auto out = ctx.out();
     *out++ = '[';
-    for(auto index = std::size_t {0}; index < 3; ++index) {
+    for(auto index = 0uz; index < 3; ++index) {
       if(index != 0) {
         *out++ = ',';
         *out++ = ' ';
