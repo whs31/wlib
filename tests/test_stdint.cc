@@ -31,7 +31,6 @@ TEST_CASE("Fixed-width scalar aliases name their standard types", "[stdint]")
   STATIC_CHECK(std::same_as<uptr, std::uintptr_t>);
   STATIC_CHECK(std::same_as<imax, std::intmax_t>);
   STATIC_CHECK(std::same_as<umax, std::uintmax_t>);
-  STATIC_CHECK(std::same_as<byte, std::byte>);
 }
 
 TEST_CASE("Integer literals preserve their requested width", "[stdint]")

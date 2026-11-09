@@ -2,12 +2,12 @@
 
 W_COMMON_NAMESPACE_BEGIN
 
-ByteReader::ByteReader(std::span<byte const> const data) noexcept
+ByteReader::ByteReader(std::span<std::byte const> const data) noexcept
   : m_data(data)
   , m_size(data.size())
 {}
 
-std::span<byte const> ByteReader::take(usize const count)
+std::span<std::byte const> ByteReader::take(usize const count)
 {
   if(count > this->m_data.size())
     throw ByteReadError("input ends early: {} bytes needed, {} left", count, this->m_data.size());
@@ -25,12 +25,12 @@ void ByteReader::expect_end() const
 
 usize ByteReader::remaining() const noexcept { return this->m_data.size(); }
 
-ByteWriter& ByteWriter::append(std::span<byte const> const bytes)
+ByteWriter& ByteWriter::append(std::span<std::byte const> const bytes)
 {
   this->m_data.insert(this->m_data.end(), bytes.begin(), bytes.end());
   return *this;
 }
 
-std::vector<byte> ByteWriter::finish() && noexcept { return std::move(this->m_data); }
+std::vector<std::byte> ByteWriter::finish() && noexcept { return std::move(this->m_data); }
 
 W_COMMON_NAMESPACE_END

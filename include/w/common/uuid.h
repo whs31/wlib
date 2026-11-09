@@ -76,7 +76,7 @@ class W_COMMON_API Uuid
 
   constexpr Uuid() noexcept = default;
 
-  explicit Uuid(std::span<byte const, 16> bytes) noexcept;
+  explicit Uuid(std::span<std::byte const, 16> bytes) noexcept;
 
   explicit constexpr Uuid(unsigned char const (&bytes)[16]) noexcept  // NOLINT(*-avoid-c-arrays)
   {

@@ -35,7 +35,7 @@ namespace
 TEST_CASE("Values and byte spans read back unchanged", "[bytes]")
 {
   auto out = ByteWriter();
-  auto const tail = std::array {byte {0xAA}, byte {0xBB}};
+  auto const tail = std::array {std::byte {0xAA}, std::byte {0xBB}};
   out.write(u32 {7}).write(Kind::Sphere).write(true).write(-1.5F).append(tail);
 
   auto const bytes = std::move(out).finish();
@@ -69,9 +69,9 @@ TEST_CASE("Writer and reader align to the same byte offset", "[bytes]")
   auto const bytes = std::move(out).finish();
 
   REQUIRE(bytes.size() == 6);
-  CHECK(bytes.at(1) == byte {0});
-  CHECK(bytes.at(2) == byte {0});
-  CHECK(bytes.at(3) == byte {0});
+  CHECK(bytes.at(1) == std::byte {0});
+  CHECK(bytes.at(2) == std::byte {0});
+  CHECK(bytes.at(3) == std::byte {0});
 
   auto in = ByteReader(bytes);
   CHECK(in.read<u8>() == 1);
@@ -82,7 +82,7 @@ TEST_CASE("Writer and reader align to the same byte offset", "[bytes]")
 
 TEST_CASE("A reader refuses a read past the end", "[bytes][error]")
 {
-  auto const bytes = std::array {byte {1}, byte {2}, byte {3}};
+  auto const bytes = std::array {std::byte {1}, std::byte {2}, std::byte {3}};
   auto in = ByteReader(bytes);
 
   CHECK_THROWS_AS(in.read<u32>(), ByteReadError);
@@ -95,7 +95,7 @@ TEST_CASE("A reader refuses a read past the end", "[bytes][error]")
 
 TEST_CASE("A reader refuses alignment past the end", "[bytes][error]")
 {
-  auto const bytes = std::array {byte {1}, byte {0}};
+  auto const bytes = std::array {std::byte {1}, std::byte {0}};
   auto in = ByteReader(bytes);
   CHECK(in.read<u8>() == 1);
 
@@ -105,7 +105,7 @@ TEST_CASE("A reader refuses alignment past the end", "[bytes][error]")
 
 TEST_CASE("A reader refuses trailing bytes", "[bytes][error]")
 {
-  auto const bytes = std::array {byte {1}, byte {2}};
+  auto const bytes = std::array {std::byte {1}, std::byte {2}};
   auto in = ByteReader(bytes);
   CHECK(in.read<u8>() == 1);
 
@@ -118,7 +118,7 @@ TEST_CASE("A reader refuses trailing bytes", "[bytes][error]")
 
 TEST_CASE("A bool is read only from zero or one", "[bytes][error]")
 {
-  auto const bytes = std::array {byte {0}, byte {1}, byte {2}};
+  auto const bytes = std::array {std::byte {0}, std::byte {1}, std::byte {2}};
   auto in = ByteReader(bytes);
 
   CHECK_FALSE(in.read<bool>());
@@ -133,7 +133,7 @@ TEST_CASE("A byte read error is a library error", "[bytes][error]")
 {
   STATIC_CHECK(std::is_base_of_v<Error, ByteReadError>);
 
-  auto in = ByteReader(std::span<byte const>());
+  auto in = ByteReader(std::span<std::byte const>());
   try {
     static_cast<void>(in.read<u8>());
     FAIL("the read must throw");

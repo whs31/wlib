@@ -55,7 +55,7 @@ class W_COMMON_API ByteReader final
    * @brief Creates a reader of @p data.
    * @param data Bytes to read, which must outlive the reader.
    */
-  explicit ByteReader(std::span<byte const> data) noexcept;
+  explicit ByteReader(std::span<std::byte const> data) noexcept;
 
   /**
    * @brief Reads the next value from as many bytes as its type has.
@@ -73,7 +73,7 @@ class W_COMMON_API ByteReader final
       return value == 1;
     }
     else {
-      auto bytes = std::array<byte, sizeof(T)>();
+      auto bytes = std::array<std::byte, sizeof(T)>();
       auto const source = this->take(sizeof(T));
       std::ranges::copy(source, bytes.begin());
       return std::bit_cast<T>(bytes);
@@ -84,7 +84,7 @@ class W_COMMON_API ByteReader final
    * @brief Takes the next @p count bytes without copying them.
    * @throws ByteReadError If fewer than @p count bytes remain.
    */
-  [[nodiscard]] std::span<byte const> take(usize count);
+  [[nodiscard]] std::span<std::byte const> take(usize count);
 
   /**
    * @brief Skips zero padding up to the next multiple of @p Alignment from the input start.
@@ -110,7 +110,7 @@ class W_COMMON_API ByteReader final
   [[nodiscard]] usize remaining() const noexcept;
 
  private:
-  std::span<byte const> m_data;
+  std::span<std::byte const> m_data;
   usize m_size;
 };
 
@@ -137,7 +137,7 @@ class W_COMMON_API ByteWriter final
   /**
    * @brief Appends @p bytes unchanged.
    */
-  ByteWriter& append(std::span<byte const> bytes);
+  ByteWriter& append(std::span<std::byte const> bytes);
 
   /**
    * @brief Zero-fills the buffer up to its next multiple of @p Alignment.
@@ -154,10 +154,10 @@ class W_COMMON_API ByteWriter final
   /**
    * @brief Hands over the completed byte buffer.
    */
-  [[nodiscard]] std::vector<byte> finish() && noexcept;
+  [[nodiscard]] std::vector<std::byte> finish() && noexcept;
 
  private:
-  std::vector<byte> m_data;
+  std::vector<std::byte> m_data;
 };
 
 W_COMMON_NAMESPACE_END

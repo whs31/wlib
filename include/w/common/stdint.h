@@ -30,8 +30,6 @@ using uptr = std::uintptr_t;
 using imax = std::intmax_t;
 using umax = std::uintmax_t;
 
-using std::byte;
-
 inline namespace literals
 {
   namespace _literals_impl                                 // NOLINT(*-identifier-naming)

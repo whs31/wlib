@@ -67,7 +67,6 @@ Use `<w/common/stdint.h>` instead of `<cstdint>` and `<cstddef>` for fixed-width
 | Sizes                  | `w::usize`, `w::isize`                |
 | Pointer integers       | `w::uptr`, `w::iptr`                  |
 | Maximum-width integers | `w::umax`, `w::imax`                  |
-| Byte                   | `w::byte`                             |
 
 The integer literals have the type in their suffix, for example `255_u8`, `65'535_u16` and
 `42_i64`. A literal outside its type's range is a compile-time error.

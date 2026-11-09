@@ -319,7 +319,7 @@ Uuid const Uuid::NAMESPACE_OID = from_fields(0x6ba7b812, 0x9dad, 0x11d1, rfc_nam
 Uuid const Uuid::NAMESPACE_URL = from_fields(0x6ba7b811, 0x9dad, 0x11d1, rfc_namespace_tail);
 Uuid const Uuid::NAMESPACE_X500 = from_fields(0x6ba7b814, 0x9dad, 0x11d1, rfc_namespace_tail);
 
-Uuid::Uuid(std::span<w::byte const, 16> const bytes) noexcept
+Uuid::Uuid(std::span<std::byte const, 16> const bytes) noexcept
 {
   for(auto i = 0uz; i < this->m_bytes.size(); ++i)
     this->m_bytes[i] = std::to_integer<u8>(bytes[i]);
